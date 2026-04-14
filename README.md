@@ -1,4 +1,4 @@
-# ToInet - Лаунчер для СОБ (ByeDPI и ЛМ)
+# ToInet - Лаунчер для СОБ (ByeDPI, TGWS и ЛМ)
 ---
 Все права принадлежат тем, кому они принадлежат:<br>
 https://github.com/hufrea/byedpi - ByeDPI<br>
