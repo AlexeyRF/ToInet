@@ -15,3 +15,4 @@ https://github.com/Flowseal/tg-ws-proxy - TgWS Proxy<br><br>
 2. Скачайте ByeDPI и поместите корень -> byedpi (внутри должен быть ciadpi.exe, bat файлы не нужны)
 3. Установите любую иконку icon.ico
 
+Либо вы можете использовать готовую версию, для неё нужен только python и установка модулей install.bat
