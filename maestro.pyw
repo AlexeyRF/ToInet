@@ -537,7 +537,7 @@ class TorrcConfigurator(QMainWindow):
             f"DataDirectory {self.data_edit.text()}",
             f"GeoIPFile {self.geoip_edit.text()}",
             f"GeoIPv6File {self.geoipv6_edit.text()}",
-            "SocksPort 9051",
+            "SocksPort 9853",
         ]
         
         # Add ExitNodes if countries are selected
