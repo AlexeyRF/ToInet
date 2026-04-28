@@ -8,7 +8,7 @@ def generate_torrc(bridges):
         f"DataDirectory {Path.cwd() / 'data'}",
         f"GeoIPFile {Path.cwd()}\data\geoip",
         f"GeoIPv6File {Path.cwd()}\data\geoip6",
-        "SocksPort 9051",
+        "SocksPort 9853",
         "ExitNodes {us},{de},{fr},{nl},{se}",
         "UseBridges 1",
         *[f"Bridge {bridge}" for bridge in bridges],
