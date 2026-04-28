@@ -234,7 +234,7 @@ def reset_inetcpl_proxy():
     global inetcpl_tor_active, inetcpl_bd_active
     
     if inetcpl_tor_active:
-        run_cpller(9051, 0)
+        run_cpller(9853, 0)
         inetcpl_tor_active = False
         log("Сброшен TOR прокси в inetcpl")
     
@@ -287,7 +287,7 @@ def toggle_all():
             stop_tgws()
         
         if inetcpl_tor_active:
-            run_cpller(9051, 0)
+            run_cpller(9853, 0)
             inetcpl_tor_active = False
         if inetcpl_bd_active:
             run_cpller(1080, 0)
@@ -358,12 +358,12 @@ def toggle_inetcpl_tor():
             if run_cpller(1080, 0):
                 inetcpl_bd_active = False
         
-        if run_cpller(9051, 1):
+        if run_cpller(9853, 1):
             inetcpl_tor_active = True
             if not proxy_enabled and (byedpi_manager.is_running() or tgws_running or tor_manager.is_running()):
                 proxy_enabled = True
     else:
-        if run_cpller(9051, 0):
+        if run_cpller(9853, 0):
             inetcpl_tor_active = False
             if not byedpi_manager.is_running() and not tgws_running and not tor_manager.is_running() and not inetcpl_bd_active:
                 proxy_enabled = False
@@ -375,7 +375,7 @@ def toggle_inetcpl_bd():
     
     if not inetcpl_bd_active:
         if inetcpl_tor_active:
-            if run_cpller(9051, 0):
+            if run_cpller(9853, 0):
                 inetcpl_tor_active = False
         
         if run_cpller(1080, 1):
@@ -521,7 +521,7 @@ def exit_app():
         stop_tgws()
     
     if inetcpl_tor_active:
-        run_cpller(9051, 0)
+        run_cpller(9853, 0)
     if inetcpl_bd_active:
         run_cpller(1080, 0)
     
@@ -699,8 +699,8 @@ def update_menu():
         add_tgws_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(1081))
         tray_menu.addAction(add_tgws_proxy_action)
         
-        add_tor_proxy_action = QAction("Добавить TOR (9051) в Telegram", tray_menu)
-        add_tor_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(9051))
+        add_tor_proxy_action = QAction("Добавить TOR (9853) в Telegram", tray_menu)
+        add_tor_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(9853))
         tray_menu.addAction(add_tor_proxy_action)
         
         add_bd_proxy_action = QAction("Добавить BD (1080) в Telegram", tray_menu)
