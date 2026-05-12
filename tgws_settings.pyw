@@ -18,7 +18,7 @@ def load_config():
     """Загрузка конфигурации"""
     default_config = {
         "tgws_enabled": True,
-        "tgws_port": 1081,
+        "tgws_port": 1480,
         "tgws_host": "127.0.0.1",
         "tgws_dc_ip": ["2:149.154.167.220", "4:149.154.167.220"],
         "tgws_verbose": False
@@ -61,7 +61,7 @@ class TGWSSettingsDialog(QDialog):
         
         # Порт
         layout.addWidget(QLabel("Порт прокси:"))
-        self.port_edit = QLineEdit(str(self.config.get("tgws_port", 1081)))
+        self.port_edit = QLineEdit(str(self.config.get("tgws_port", 1480)))
         layout.addWidget(self.port_edit)
         
         # DC маппинги
@@ -85,7 +85,7 @@ class TGWSSettingsDialog(QDialog):
         info_label = QLabel(
             "TGWS Proxy будет работать на указанном порту.\n"
             "В Telegram Desktop настройте SOCKS5 прокси:\n"
-            f"{self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1081)} (без логина/пароля)\n\n"
+            f"{self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1480)} (без логина/пароля)\n\n"
             "Примечание: После сохранения настроек может потребоваться\n"
             "перезапуск TGWS Proxy для применения изменений."
         )

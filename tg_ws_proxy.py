@@ -14,7 +14,7 @@ from typing import Dict, List, Optional, Set, Tuple
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 
-DEFAULT_PORT = 1080
+DEFAULT_PORT = 1480
 log = logging.getLogger('tg-ws-proxy')
 
 _TG_RANGES = [

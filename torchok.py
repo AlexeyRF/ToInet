@@ -200,6 +200,48 @@ class TorManager:
                                    "Не удалось перезапустить TOR")
             return False
 
+    def new_circuit(self, parent=None):
+        """Запрашивает новую цепочку (NEWNYM) у TOR"""
+        if not self.tor_running:
+            if parent:
+                QMessageBox.warning(parent, "Ошибка", "TOR не запущен.")
+            return False
+
+        try:
+            import socket
+            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            s.settimeout(2)
+            s.connect(('127.0.0.1', 9851))
+            
+            s.sendall(b'AUTHENTICATE ""\r\n')
+            resp = s.recv(1024).decode('utf-8')
+            if not resp.startswith('250'):
+                log(f"ControlPort AUTHENTICATE failed: {resp}")
+                s.close()
+                if parent:
+                    QMessageBox.warning(parent, "Ошибка", f"Ошибка аутентификации ControlPort: {resp}")
+                return False
+                
+            s.sendall(b'SIGNAL NEWNYM\r\n')
+            resp = s.recv(1024).decode('utf-8')
+            s.close()
+            
+            if resp.startswith('250'):
+                log("Успешно запрошена новая цепочка TOR")
+                if parent:
+                    QMessageBox.information(parent, "TOR", "Новая цепочка успешно запрошена!")
+                return True
+            else:
+                log(f"Ошибка при запросе NEWNYM: {resp}")
+                if parent:
+                    QMessageBox.warning(parent, "Ошибка", f"TOR вернул ошибку при запросе новой цепочки: {resp}")
+                return False
+        except Exception as e:
+            log(f"Не удалось подключиться к ControlPort: {e}")
+            if parent:
+                QMessageBox.warning(parent, "Ошибка", f"Не удалось подключиться к ControlPort TOR (порт 9851).\nВозможно, он не включен в настройках.\nОшибка: {e}")
+            return False
+
     def is_running(self):
         """Возвращает статус работы TOR"""
         # Проверяем, жив ли процесс, если запускали напрямую

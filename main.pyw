@@ -14,6 +14,9 @@ import tg_ws_proxy
 import windows as tgws_windows
 import bdsher
 import torchok
+import noisy_manager
+import tester_manager
+import ext_manager
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 
@@ -50,7 +53,7 @@ DEFAULT_CONFIG = {
     "use_custom_settings": True,
     "byedpi_params": "--split 1 --disorder 3+s --mod-http=h,d --auto=torst --tlsrec 1+s",
     "tgws_enabled": True,
-    "tgws_port": 1081,
+    "tgws_port": 1480,
     "tgws_host": "127.0.0.1",
     "tgws_dc_ip": ["2:149.154.167.220", "4:149.154.167.220"],
     "tgws_verbose": False,
@@ -87,6 +90,7 @@ mode_type = config.get("mode_type", "inetcpl")
 # Обновляем конфигурацию для менеджеров
 byedpi_manager.update_config(config)
 tor_manager.update_config(config)  # Обновляем конфигурацию TOR менеджера
+noisy_manager.update_config(config)
 
 def run_script(script_name):
     if os.path.exists(script_name):
@@ -162,7 +166,7 @@ def run_tgws_thread():
     tgws_stop_event = (loop, stop_ev)
     
     try:
-        port = config.get("tgws_port", 1081)
+        port = config.get("tgws_port", 1480)
         host = config.get("tgws_host", "127.0.0.1")
         dc_ip_list = config.get("tgws_dc_ip", ["2:149.154.167.220", "4:149.154.167.220"])
         
@@ -185,7 +189,7 @@ def start_tgws():
     if tgws_running:
         return True
     
-    port = config.get("tgws_port", 1081)
+    port = config.get("tgws_port", 1480)
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     result = sock.connect_ex(('127.0.0.1', port))
     sock.close()
@@ -239,28 +243,45 @@ def reset_inetcpl_proxy():
         log("Сброшен TOR прокси в inetcpl")
     
     if inetcpl_bd_active:
-        run_cpller(1080, 0)
+        run_cpller(1780, 0)
         inetcpl_bd_active = False
         log("Сброшен BD прокси в inetcpl")
 
 def set_mode_type(mode):
     global mode_type, config, mode_change_pending, proxy_enabled
-    
+
     if mode == mode_type:
         return
-    
-    if mode_type == "inetcpl" and mode == "empty":
+
+    if mode_type == "inetcpl" and mode != "inetcpl":
         reset_inetcpl_proxy()
-    
+
+    if mode_type == "tun" and mode != "tun":
+        stop_tun_mode()
+
+    if mode == "tun":
+        app_file = os.path.join(CURRENT_DIR, "proxification_app.txt")
+        if not os.path.exists(app_file):
+            with open(app_file, 'w', encoding='utf-8') as f:
+                f.write("# Укажите путь к программе-проксификатору (например D:/Proxifier/proxifier.exe)\n")
+        with open(app_file, 'r', encoding='utf-8') as f:
+            path = f.read().strip()
+        if not path or path.startswith('#') or not os.path.exists(path):
+            QMessageBox.warning(None, "TUN режим", "Сначала укажите путь к проксификатору в файле proxification_app.txt!")
+            update_menu()
+            return
+
+        if proxy_enabled:
+            start_tun_mode()
+
     mode_type = mode
     config["mode_type"] = mode
     save_config(config)
     mode_change_pending = False
-    
-    proxy_enabled = tor_manager.is_running() or byedpi_manager.is_running() or tgws_running or inetcpl_tor_active or inetcpl_bd_active
-    
-    update_menu()
 
+    proxy_enabled = tor_manager.is_running() or byedpi_manager.is_running() or tgws_running or inetcpl_tor_active or inetcpl_bd_active or (tun_process is not None)
+
+    update_menu()
 def toggle_all():
     global proxy_enabled, tgws_running
     global inetcpl_tor_active, inetcpl_bd_active
@@ -290,7 +311,7 @@ def toggle_all():
             run_cpller(9853, 0)
             inetcpl_tor_active = False
         if inetcpl_bd_active:
-            run_cpller(1080, 0)
+            run_cpller(1780, 0)
             inetcpl_bd_active = False
         
         proxy_enabled = False
@@ -350,12 +371,26 @@ def restart_byedpi():
     else:
         log("Ошибка перезапуска ByeDPI")
 
+def toggle_noisy():
+    if not noisy_manager.is_running():
+        noisy_manager.start()
+    else:
+        noisy_manager.stop()
+    update_menu()
+
+def toggle_tester():
+    if not tester_manager.is_running():
+        tester_manager.start()
+    else:
+        tester_manager.stop()
+    update_menu()
+
 def toggle_inetcpl_tor():
     global inetcpl_tor_active, inetcpl_bd_active, proxy_enabled
     
     if not inetcpl_tor_active:
         if inetcpl_bd_active:
-            if run_cpller(1080, 0):
+            if run_cpller(1780, 0):
                 inetcpl_bd_active = False
         
         if run_cpller(9853, 1):
@@ -378,12 +413,12 @@ def toggle_inetcpl_bd():
             if run_cpller(9853, 0):
                 inetcpl_tor_active = False
         
-        if run_cpller(1080, 1):
+        if run_cpller(1780, 1):
             inetcpl_bd_active = True
             if not proxy_enabled and (byedpi_manager.is_running() or tgws_running or tor_manager.is_running()):
                 proxy_enabled = True
     else:
-        if run_cpller(1080, 0):
+        if run_cpller(1780, 0):
             inetcpl_bd_active = False
             if not byedpi_manager.is_running() and not tgws_running and not tor_manager.is_running() and not inetcpl_tor_active:
                 proxy_enabled = False
@@ -517,13 +552,17 @@ def auto_connect_last_mode():
 def exit_app():
     tor_manager.stop()
     byedpi_manager.stop()
+    noisy_manager.stop()
+    tester_manager.stop()
+    ext_programs_manager.stop_all()
+    stop_tun_mode()
     if tgws_running:
         stop_tgws()
     
     if inetcpl_tor_active:
         run_cpller(9853, 0)
     if inetcpl_bd_active:
-        run_cpller(1080, 0)
+        run_cpller(1780, 0)
     
     log("Exiting...")
     app.quit()
@@ -549,13 +588,14 @@ auto_connect_action = None
 create_shortcut_action = None
 tor_show_window_action = None
 restart_byedpi_action = None
+noisy_action = None
 
 def update_menu():
     global tray_menu, all_action, tor_action, byedpi_action, tgws_action
     global recreate_action, custom_settings_action, mode_action, settings_action
     global inetcpl_tor_action, inetcpl_bd_action, restart_tor_action, clear_cache_action, open_folder_action
     global auto_start_action, auto_connect_action, create_shortcut_action, tor_show_window_action
-    global restart_byedpi_action
+    global restart_byedpi_action, noisy_action
     
     if tray_menu is None:
         return
@@ -592,6 +632,12 @@ def update_menu():
         inetcpl_mode_action.triggered.connect(lambda: set_mode_type("inetcpl"))
         mode_menu.addAction(inetcpl_mode_action)
         
+        tun_mode_action = QAction("TUN режим", mode_menu)
+        tun_mode_action.setCheckable(True)
+        tun_mode_action.setChecked(mode_type == "tun")
+        tun_mode_action.triggered.connect(lambda: set_mode_type("tun"))
+        mode_menu.addAction(tun_mode_action)
+        
         tray_menu.addMenu(mode_menu)
         
         tray_menu.addSeparator()
@@ -621,6 +667,14 @@ def update_menu():
             restart_byedpi_action = QAction("Перезапустить ByeDPI", tray_menu)
             restart_byedpi_action.triggered.connect(restart_byedpi)
             tray_menu.addAction(restart_byedpi_action)
+        
+        noisy_action = QAction(noisy_manager.get_status_text(), tray_menu)
+        noisy_action.triggered.connect(toggle_noisy)
+        tray_menu.addAction(noisy_action)
+        
+        tester_action = QAction(tester_manager.get_status_text(), tray_menu)
+        tester_action.triggered.connect(toggle_tester)
+        tray_menu.addAction(tester_action)
         
         tgws_action = QAction("Ручной запуск TGWS" if not tgws_running else "Остановить TGWS", tray_menu)
         tgws_action.triggered.connect(toggle_tgws)
@@ -695,16 +749,26 @@ def update_menu():
         
         tray_menu.addSeparator()
         
-        add_tgws_proxy_action = QAction("Добавить TGWS (1081) в Telegram", tray_menu)
-        add_tgws_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(1081))
+        restart_ext_action = QAction("Перезапустить доп. программы", tray_menu)
+        restart_ext_action.triggered.connect(ext_programs_manager.restart_all)
+        tray_menu.addAction(restart_ext_action)
+        
+        config_ext_action = QAction("Настроить доп. программы", tray_menu)
+        config_ext_action.triggered.connect(ext_programs_manager.open_config)
+        tray_menu.addAction(config_ext_action)
+        
+        tray_menu.addSeparator()
+        
+        add_tgws_proxy_action = QAction("Добавить TGWS (1480) в Telegram", tray_menu)
+        add_tgws_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(1480))
         tray_menu.addAction(add_tgws_proxy_action)
         
         add_tor_proxy_action = QAction("Добавить TOR (9853) в Telegram", tray_menu)
         add_tor_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(9853))
         tray_menu.addAction(add_tor_proxy_action)
         
-        add_bd_proxy_action = QAction("Добавить BD (1080) в Telegram", tray_menu)
-        add_bd_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(1080))
+        add_bd_proxy_action = QAction("Добавить BD (1780) в Telegram", tray_menu)
+        add_bd_proxy_action.triggered.connect(lambda: add_proxy_to_telegram(1780))
         tray_menu.addAction(add_bd_proxy_action)
         
         tray_menu.addSeparator()
@@ -800,6 +864,7 @@ def create_tray_menu():
     log("Иконка трея запущена. Нажмите ПКМ на иконке для отображения меню.")
     
     auto_connect_last_mode()
+    ext_programs_manager.start_all()
     
     return app
 

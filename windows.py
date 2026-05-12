@@ -28,7 +28,7 @@ FIRST_RUN_MARKER = APP_DIR / ".first_run_done"
 
 
 DEFAULT_CONFIG = {
-    "port": 1080,
+    "port": 1480,
     "host": "127.0.0.1",
     "dc_ip": ["2:149.154.167.220", "4:149.154.167.220"],
     "verbose": False,
@@ -297,7 +297,7 @@ def _edit_config_dialog():
     ctk.CTkLabel(frame, text="Порт прокси",
                  font=(FONT_FAMILY, 13), text_color=TEXT_PRIMARY,
                  anchor="w").pack(anchor="w", pady=(0, 4))
-    port_var = ctk.StringVar(value=str(cfg.get("port", 1080)))
+    port_var = ctk.StringVar(value=str(cfg.get("port", 1480)))
     port_entry = ctk.CTkEntry(frame, textvariable=port_var, width=120, height=36,
                               font=(FONT_FAMILY, 13), corner_radius=10,
                               fg_color=FIELD_BG, border_color=FIELD_BORDER,
