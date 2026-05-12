@@ -10,7 +10,7 @@ BYEDPI_EXE = os.path.join(os.path.dirname(os.path.abspath(__file__)), r"byedpi\c
 BYEDPI_CUSTOM_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "byedpi_custom.txt")
 
 # Параметры по умолчанию
-DEFAULT_BYEDPI_PARAMS = "--split 1 --disorder 3+s --mod-http=h,d --auto=torst --tlsrec 1+s"
+DEFAULT_BYEDPI_PARAMS = "-p 1780 --split 1 --disorder 3+s --mod-http=h,d --auto=torst --tlsrec 1+s"
 
 class ByeDPIManager(QObject):
     status_changed = pyqtSignal(bool)  # True - запущен, False - остановлен

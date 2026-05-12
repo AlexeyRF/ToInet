@@ -44,11 +44,11 @@ def refresh_internet_settings():
 def show_usage():
     """Показать справку по использованию"""
     print("Использование: python cpller.pyw port flag")
-    print("  port - номер порта (например 9051)")
+    print("  port - номер порта (например 9853)")
     print("  flag - 1 для включения прокси, 0 для отключения")
     print("\nПримеры:")
-    print("  python cpller.pyw 9051 1  # Включить прокси на порту 9051")
-    print("  python cpller.pyw 9051 0  # Отключить прокси")
+    print("  python cpller.pyw 9853 1  # Включить прокси на порту 9853")
+    print("  python cpller.pyw 9853 0  # Отключить прокси")
 
 def validate_port(port):
     """Проверка корректности порта"""
