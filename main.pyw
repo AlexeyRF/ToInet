@@ -35,6 +35,9 @@ TGWS_DEFAULT_CONFIG = tgws_windows.DEFAULT_CONFIG
 # Инициализируем менеджеры
 byedpi_manager = bdsher.get_manager({})
 tor_manager = torchok.get_manager()
+noisy_manager = noisy_manager.get_manager()
+tester_manager = tester_manager.get_manager()
+ext_programs_manager = ext_manager.get_manager()
 
 proxy_enabled = False
 tgws_running = False
@@ -91,6 +94,7 @@ mode_type = config.get("mode_type", "inetcpl")
 byedpi_manager.update_config(config)
 tor_manager.update_config(config)  # Обновляем конфигурацию TOR менеджера
 noisy_manager.update_config(config)
+tester_manager.update_config(config)
 
 def run_script(script_name):
     if os.path.exists(script_name):
@@ -801,10 +805,15 @@ def create_tray_menu():
     global tray, tray_menu
     global config, tgws_running
     
+    app = QApplication(sys.argv)
+    app.setQuitOnLastWindowClosed(False)
+    
     config = load_config()
     # Обновляем конфигурацию для менеджеров
     byedpi_manager.update_config(config)
     tor_manager.update_config(config)
+    noisy_manager.update_config(config)
+    tester_manager.update_config(config)
     
     if config.get("tgws_enabled", False) and not tgws_running:
         log("Запланирован автозапуск TGWS Proxy через 2 секунды")
@@ -820,9 +829,6 @@ def create_tray_menu():
                     QTimer.singleShot(3000, lambda: start_tgws() if not tgws_running else None)
         
         QTimer.singleShot(2000, delayed_tgws_start)
-    
-    app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
     
     tray = QSystemTrayIcon()
    
