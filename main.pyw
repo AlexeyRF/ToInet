@@ -281,6 +281,16 @@ def stop_tun_mode():
             log(f"Ошибка остановки TUN процесса: {e}")
         tun_process = None
 
+def restart_tun_mode():
+    """Перезапуск проксификатора (TUN режим)"""
+    log("Перезапуск TUN режима...")
+    stop_tun_mode()
+    time.sleep(1)
+    if start_tun_mode():
+        log("TUN режим перезапущен")
+    else:
+        log("Ошибка перезапуска TUN режима")
+
 def reset_inetcpl_proxy():
     """Сброс прокси в Internet Explorer при смене режима"""
     global inetcpl_tor_active, inetcpl_bd_active
@@ -334,8 +344,8 @@ def toggle_all():
         byedpi_manager.start()
         tor_manager.start()
         
-        if config.get("tgws_enabled", True):
-            start_tgws()
+        # Запускаем TGWS всегда
+        start_tgws()
         
         # Специальные действия для режимов
         if mode_type == "inetcpl":
@@ -674,12 +684,7 @@ def update_menu():
             inetcpl_bd_action = QAction("Подключиться к BD" if not inetcpl_bd_active else "Отключиться от BD", tray_menu)
             inetcpl_bd_action.triggered.connect(toggle_inetcpl_bd)
             tray_menu.addAction(inetcpl_bd_action)
-
-        if tor_manager.is_running():
-            new_circuit_action = QAction("Новая цепочка TOR", tray_menu)
-            new_circuit_action.triggered.connect(lambda: tor_manager.new_circuit())
-            tray_menu.addAction(new_circuit_action)
-        
+       
         tray_menu.addSeparator()
         
         mode_menu = QMenu("Режим", tray_menu)
@@ -748,6 +753,11 @@ def update_menu():
         tgws_action.triggered.connect(toggle_tgws)
         tray_menu.addAction(tgws_action)
         
+        if mode_type == "tun" and tun_process:
+            restart_tun_action = QAction("Перезапустить проксификатор", tray_menu)
+            restart_tun_action.triggered.connect(restart_tun_mode)
+            tray_menu.addAction(restart_tun_action)
+        
         tray_menu.addSeparator()
         
         recreate_action = QAction("Отключить пересоздание torrc" if tor_manager.get_recreate_status() else "Включить пересоздание torrc", tray_menu)
@@ -808,12 +818,6 @@ def update_menu():
         auto_connect_action.setEnabled(config.get("auto_start", False))
         auto_connect_action.triggered.connect(toggle_auto_connect_last_mode)
         tray_menu.addAction(auto_connect_action)
-        
-        tgws_auto_action = QAction("Автозапуск TGWS Proxy", tray_menu)
-        tgws_auto_action.setCheckable(True)
-        tgws_auto_action.setChecked(config.get("tgws_enabled", True))
-        tgws_auto_action.triggered.connect(toggle_tgws_auto_start)
-        tray_menu.addAction(tgws_auto_action)
         
         tray_menu.addSeparator()
         
@@ -887,7 +891,7 @@ def create_tray_menu():
     
     # Автозапуск TGWS только если не включено автоподключение последнего режима 
     # (так как auto_connect_last_mode само запустит TGWS через toggle_all)
-    if config.get("tgws_enabled", False) and not config.get("auto_connect_last_mode", False):
+    if not config.get("auto_connect_last_mode", False):
         log("Запланирован автозапуск TGWS Proxy через 2 секунды")
         
         def delayed_tgws_start():
