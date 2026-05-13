@@ -51,6 +51,7 @@ tor_process = None
 universal_process = None
 tgws_thread = None
 tgws_stop_event = None
+tun_process = None
 
 DEFAULT_CONFIG = {
     "use_custom_settings": True,
@@ -199,9 +200,9 @@ def start_tgws():
     sock.close()
     
     if result == 0:
-        QMessageBox.critical(None, "Ошибка", 
-                           f"Порт {port} уже используется.\nИзмените порт в настройках.")
-        return False
+        log(f"Порт {port} уже занят, возможно TGWS уже запущен.")
+        tgws_running = True
+        return True
     
     tgws_windows._ensure_dirs()
     tgws_windows.setup_logging(config.get("tgws_verbose", False))
@@ -209,12 +210,11 @@ def start_tgws():
     tgws_thread = threading.Thread(target=run_tgws_thread, daemon=True, name="tgws-proxy")
     tgws_thread.start()
     
-    time.sleep(2)
+    # Ждем чуть дольше для уверенности
+    time.sleep(3)
     
     if tgws_thread.is_alive():
         tgws_running = True
-        config["tgws_enabled"] = True
-        save_config(config)
         log("TG WS Proxy запущен")
         return True
     else:
@@ -233,9 +233,53 @@ def stop_tgws():
     tgws_thread = None
     tgws_stop_event = None
     tgws_running = False
-    config["tgws_enabled"] = False
-    save_config(config)
     log("TG WS Proxy остановлен")
+
+def get_tun_app_path():
+    """Читает путь к проксификатору из файла, пропуская комментарии"""
+    app_file = os.path.join(CURRENT_DIR, "proxification_app.txt")
+    if not os.path.exists(app_file):
+        with open(app_file, 'w', encoding='utf-8') as f:
+            f.write("# Укажите путь к программе-проксификатору (например D:/Proxifier/proxifier.exe)\n")
+        return None
+    
+    with open(app_file, 'r', encoding='utf-8') as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith('#'):
+                return line
+    return None
+
+def start_tun_mode():
+    global tun_process
+    if tun_process:
+        return True
+    
+    path = get_tun_app_path()
+    if path and os.path.exists(path):
+        try:
+            # Запускаем проксификатор
+            tun_process = subprocess.Popen([path])
+            log(f"TUN режим запущен: {path}")
+            return True
+        except Exception as e:
+            log(f"Ошибка запуска TUN режима: {e}")
+            QMessageBox.critical(None, "Ошибка TUN", f"Не удалось запустить проксификатор:\n{e}")
+    return False
+
+def stop_tun_mode():
+    global tun_process
+    if tun_process:
+        try:
+            tun_process.terminate()
+            try:
+                tun_process.wait(timeout=2)
+            except:
+                tun_process.kill()
+            log("TUN режим остановлен (процесс завершен)")
+        except Exception as e:
+            log(f"Ошибка остановки TUN процесса: {e}")
+        tun_process = None
 
 def reset_inetcpl_proxy():
     """Сброс прокси в Internet Explorer при смене режима"""
@@ -264,14 +308,9 @@ def set_mode_type(mode):
         stop_tun_mode()
 
     if mode == "tun":
-        app_file = os.path.join(CURRENT_DIR, "proxification_app.txt")
-        if not os.path.exists(app_file):
-            with open(app_file, 'w', encoding='utf-8') as f:
-                f.write("# Укажите путь к программе-проксификатору (например D:/Proxifier/proxifier.exe)\n")
-        with open(app_file, 'r', encoding='utf-8') as f:
-            path = f.read().strip()
-        if not path or path.startswith('#') or not os.path.exists(path):
-            QMessageBox.warning(None, "TUN режим", "Сначала укажите путь к проксификатору в файле proxification_app.txt!")
+        path = get_tun_app_path()
+        if not path or not os.path.exists(path):
+            QMessageBox.warning(None, "TUN режим", "Сначала укажите корректный путь к проксификатору в файле proxification_app.txt!")
             update_menu()
             return
 
@@ -291,17 +330,20 @@ def toggle_all():
     global inetcpl_tor_active, inetcpl_bd_active
     
     if not proxy_enabled:
-        if mode_type == "empty":
-            byedpi_manager.start()
-            tor_manager.start()
-            if config.get("tgws_enabled", True):
-                start_tgws()
+        # Всегда запускаем основные компоненты
+        byedpi_manager.start()
+        tor_manager.start()
         
-        elif mode_type == "inetcpl":
-            byedpi_manager.start()
-            tor_manager.start()
-            if config.get("tgws_enabled", True):
-                start_tgws()
+        if config.get("tgws_enabled", True):
+            start_tgws()
+        
+        # Специальные действия для режимов
+        if mode_type == "inetcpl":
+            # В режиме inetcpl мы просто запускаем их, но кнопка "Подключиться к TOR/BD" 
+            # управляет системными настройками прокси через cpller.pyw
+            pass
+        elif mode_type == "tun":
+            start_tun_mode()
         
         proxy_enabled = True
     else:
@@ -317,6 +359,9 @@ def toggle_all():
         if inetcpl_bd_active:
             run_cpller(1780, 0)
             inetcpl_bd_active = False
+        
+        if mode_type == "tun":
+            stop_tun_mode()
         
         proxy_enabled = False
     
@@ -547,6 +592,16 @@ def toggle_auto_connect_last_mode():
     save_config(config)
     update_menu()
 
+def toggle_tgws_auto_start():
+    """Включение/выключение автозапуска TGWS"""
+    global config
+    current_state = config.get("tgws_enabled", True)
+    config["tgws_enabled"] = not current_state
+    save_config(config)
+    update_menu()
+    status = "включен" if config["tgws_enabled"] else "выключен"
+    log(f"Автозапуск TGWS Proxy {status}")
+
 def auto_connect_last_mode():
     """Автоматическое подключение последнего режима при запуске"""
     if config.get("auto_connect_last_mode", False):
@@ -619,6 +674,11 @@ def update_menu():
             inetcpl_bd_action = QAction("Подключиться к BD" if not inetcpl_bd_active else "Отключиться от BD", tray_menu)
             inetcpl_bd_action.triggered.connect(toggle_inetcpl_bd)
             tray_menu.addAction(inetcpl_bd_action)
+
+        if tor_manager.is_running():
+            new_circuit_action = QAction("Новая цепочка TOR", tray_menu)
+            new_circuit_action.triggered.connect(lambda: tor_manager.new_circuit())
+            tray_menu.addAction(new_circuit_action)
         
         tray_menu.addSeparator()
         
@@ -659,6 +719,10 @@ def update_menu():
         tray_menu.addAction(tor_action)
         
         if tor_manager.is_running():
+            new_circuit_action = QAction("Запросить новую цепочку TOR", tray_menu)
+            new_circuit_action.triggered.connect(lambda: tor_manager.new_circuit())
+            tray_menu.addAction(new_circuit_action)
+            
             restart_tor_action = QAction("Перезапустить TOR", tray_menu)
             restart_tor_action.triggered.connect(lambda: tor_manager.restart())
             tray_menu.addAction(restart_tor_action)
@@ -745,6 +809,12 @@ def update_menu():
         auto_connect_action.triggered.connect(toggle_auto_connect_last_mode)
         tray_menu.addAction(auto_connect_action)
         
+        tgws_auto_action = QAction("Автозапуск TGWS Proxy", tray_menu)
+        tgws_auto_action.setCheckable(True)
+        tgws_auto_action.setChecked(config.get("tgws_enabled", True))
+        tgws_auto_action.triggered.connect(toggle_tgws_auto_start)
+        tray_menu.addAction(tgws_auto_action)
+        
         tray_menu.addSeparator()
         
         create_shortcut_action = QAction("Создать ярлык на рабочем столе", tray_menu)
@@ -815,18 +885,15 @@ def create_tray_menu():
     noisy_manager.update_config(config)
     tester_manager.update_config(config)
     
-    if config.get("tgws_enabled", False) and not tgws_running:
+    # Автозапуск TGWS только если не включено автоподключение последнего режима 
+    # (так как auto_connect_last_mode само запустит TGWS через toggle_all)
+    if config.get("tgws_enabled", False) and not config.get("auto_connect_last_mode", False):
         log("Запланирован автозапуск TGWS Proxy через 2 секунды")
         
         def delayed_tgws_start():
             if not tgws_running:
                 log("Выполняется автозапуск TGWS Proxy...")
-                success = start_tgws()
-                if success:
-                    log("TGWS Proxy успешно запущен автоматически")
-                else:
-                    log("Не удалось запустить TGWS Proxy автоматически")
-                    QTimer.singleShot(3000, lambda: start_tgws() if not tgws_running else None)
+                start_tgws()
         
         QTimer.singleShot(2000, delayed_tgws_start)
     
@@ -869,7 +936,8 @@ def create_tray_menu():
     
     log("Иконка трея запущена. Нажмите ПКМ на иконке для отображения меню.")
     
-    auto_connect_last_mode()
+    # Небольшая задержка перед автоподключением для стабилизации
+    QTimer.singleShot(500, auto_connect_last_mode)
     ext_programs_manager.start_all()
     
     return app

@@ -126,10 +126,12 @@ class TorManager:
                 return True
             else:
                 log("Не удалось запустить TOR напрямую, используем launcher.pyw")
+                self.tor_process = None
                 return self._run_script(LAUNCHER_SCRIPT)
                 
         except Exception as e:
             log(f"Ошибка запуска TOR напрямую: {e}")
+            self.tor_process = None
             return self._run_script(LAUNCHER_SCRIPT)
 
     def _stop_tor_direct(self):
