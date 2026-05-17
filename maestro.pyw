@@ -12,45 +12,45 @@ from PyQt5.QtGui import QFont, QPixmap, QIcon
 import requests
 from io import BytesIO
 
-# Dictionary with countries and their flag emoji/code
+# Dictionary with countries and their code
 countries = {
-    "Австралия": ("au", "🇦🇺"),
-    "Австрия": ("at", "🇦🇹"),
-    "Болгария": ("bg", "🇧🇬"),
-    "Бразилия": ("br", "🇧🇷"),
-    "Великобритания": ("gb", "🇬🇧"),
-    "Венгрия": ("hu", "🇭🇺"),
-    "Германия": ("de", "🇩🇪"),
-    "Дания": ("dk", "🇩🇰"),
-    "Исландия": ("is", "🇮🇸"),
-    "Испания": ("es", "🇪🇸"),
-    "Канада": ("ca", "🇨🇦"),
-    "Нидерланды": ("nl", "🇳🇱"),
-    "Польша": ("pl", "🇵🇱"),
-    "Россия": ("ru", "🇷🇺"),
-    "Румыния": ("ro", "🇷🇴"),
-    "Сингапур": ("sg", "🇸🇬"),
-    "Словакия": ("sk", "🇸🇰"),
-    "США": ("us", "🇺🇸"),
-    "Финляндия": ("fi", "🇫🇮"),
-    "Франция": ("fr", "🇫🇷"),
-    "Чехия": ("cz", "🇨🇿"),
-    "Швейцария": ("ch", "🇨🇭"),
-    "Швеция": ("se", "🇸🇪"),
-    "Япония": ("jp", "🇯🇵")
+    "Австралия": ("au", ""),
+    "Австрия": ("at", ""),
+    "Болгария": ("bg", ""),
+    "Бразилия": ("br", ""),
+    "Великобритания": ("gb", ""),
+    "Венгрия": ("hu", ""),
+    "Германия": ("de", ""),
+    "Дания": ("dk", ""),
+    "Исландия": ("is", ""),
+    "Испания": ("es", ""),
+    "Канада": ("ca", ""),
+    "Нидерланды": ("nl", ""),
+    "Польша": ("pl", ""),
+    "Россия": ("ru", ""),
+    "Румыния": ("ro", ""),
+    "Сингапур": ("sg", ""),
+    "Словакия": ("sk", ""),
+    "США": ("us", ""),
+    "Финляндия": ("fi", ""),
+    "Франция": ("fr", ""),
+    "Чехия": ("cz", ""),
+    "Швейцария": ("ch", ""),
+    "Швеция": ("se", ""),
+    "Япония": ("jp", "")
 }
 
 class CountryListWidget(QListWidget):
-    """Custom list widget for displaying countries with flags"""
+    """Custom list widget for displaying countries"""
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setSelectionMode(QListWidget.MultiSelection)
         self.setMinimumHeight(200)
         self.setFont(QFont("Segoe UI", 10))
         
-    def add_country(self, name, flag_emoji, code):
-        """Add a country item with flag"""
-        item = QListWidgetItem(f"{flag_emoji} {name}")
+    def add_country(self, name, code):
+        """Add a country item"""
+        item = QListWidgetItem(f"{name}")
         item.setData(Qt.UserRole, code)
         item.setData(Qt.UserRole + 1, name)
         self.addItem(item)
@@ -232,8 +232,8 @@ class TorrcConfigurator(QMainWindow):
         
         # Country list
         self.country_list = CountryListWidget()
-        for name, (code, flag) in sorted(countries.items()):
-            self.country_list.add_country(name, flag, code)
+        for name, (code, _) in sorted(countries.items()):
+            self.country_list.add_country(name, code)
         countries_layout.addWidget(self.country_list)
         
         # Selected countries display
@@ -352,6 +352,44 @@ class TorrcConfigurator(QMainWindow):
         
         tor_group.setLayout(tor_layout)
         main_layout.addWidget(tor_group)
+
+        # Upstream Proxy group
+        proxy_group = QGroupBox("Прокси для TOR (Upstream Proxy)")
+        proxy_layout = QGridLayout()
+
+        proxy_type_label = QLabel("Тип прокси:")
+        proxy_layout.addWidget(proxy_type_label, 0, 0)
+        
+        self.proxy_type_combo = QComboBox()
+        self.proxy_type_combo.addItems(["Нет", "SOCKS4", "SOCKS5", "HTTP/HTTPS"])
+        proxy_layout.addWidget(self.proxy_type_combo, 0, 1)
+
+        proxy_host_label = QLabel("Адрес:")
+        proxy_layout.addWidget(proxy_host_label, 1, 0)
+        self.proxy_host_edit = QLineEdit()
+        self.proxy_host_edit.setPlaceholderText("127.0.0.1")
+        proxy_layout.addWidget(self.proxy_host_edit, 1, 1)
+
+        proxy_port_label = QLabel("Порт:")
+        proxy_layout.addWidget(proxy_port_label, 1, 2)
+        self.proxy_port_edit = QLineEdit()
+        self.proxy_port_edit.setPlaceholderText("1080")
+        self.proxy_port_edit.setFixedWidth(60)
+        proxy_layout.addWidget(self.proxy_port_edit, 1, 3)
+
+        proxy_user_label = QLabel("Логин:")
+        proxy_layout.addWidget(proxy_user_label, 2, 0)
+        self.proxy_user_edit = QLineEdit()
+        proxy_layout.addWidget(self.proxy_user_edit, 2, 1)
+
+        proxy_pass_label = QLabel("Пароль:")
+        proxy_layout.addWidget(proxy_pass_label, 2, 2)
+        self.proxy_pass_edit = QLineEdit()
+        self.proxy_pass_edit.setEchoMode(QLineEdit.Password)
+        proxy_layout.addWidget(self.proxy_pass_edit, 2, 3)
+
+        proxy_group.setLayout(proxy_layout)
+        main_layout.addWidget(proxy_group)
         
         # Generate button
         generate_btn = QPushButton("Создать конфигурацию")
@@ -546,6 +584,27 @@ class TorrcConfigurator(QMainWindow):
         if selected_countries:
             exit_nodes = ','.join(f'{{{code}}}' for code in selected_countries)
             torrc_lines.append(f"ExitNodes {exit_nodes}")
+
+        # Add Upstream Proxy configuration
+        proxy_type = self.proxy_type_combo.currentText()
+        proxy_host = self.proxy_host_edit.text().strip()
+        proxy_port = self.proxy_port_edit.text().strip()
+        proxy_user = self.proxy_user_edit.text().strip()
+        proxy_pass = self.proxy_pass_edit.text().strip()
+
+        if proxy_type != "Нет" and proxy_host and proxy_port:
+            if proxy_type == "SOCKS4":
+                torrc_lines.append(f"Socks4Proxy {proxy_host}:{proxy_port}")
+            elif proxy_type == "SOCKS5":
+                torrc_lines.append(f"Socks5Proxy {proxy_host}:{proxy_port}")
+                if proxy_user:
+                    torrc_lines.append(f"Socks5ProxyUsername {proxy_user}")
+                if proxy_pass:
+                    torrc_lines.append(f"Socks5ProxyPassword {proxy_pass}")
+            elif proxy_type == "HTTP/HTTPS":
+                torrc_lines.append(f"HTTPSProxy {proxy_host}:{proxy_port}")
+                if proxy_user and proxy_pass:
+                    torrc_lines.append(f"HTTPSProxyAuthenticator {proxy_user}:{proxy_pass}")
         
         # Add bridges configuration
         if bridges:

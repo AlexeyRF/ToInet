@@ -54,7 +54,7 @@ class ActionDialog(QDialog):
         layout.setSpacing(20)
         
         # Заголовок
-        title_label = QLabel("⚠️ Внесены изменения в мосты")
+        title_label = QLabel("Внесены изменения в мосты")
         title_label.setStyleSheet("font-size: 14px; font-weight: bold; color: #ff9800;")
         title_label.setAlignment(Qt.AlignCenter)
         layout.addWidget(title_label)
@@ -68,16 +68,16 @@ class ActionDialog(QDialog):
         button_layout = QHBoxLayout()
         button_layout.setSpacing(15)
         
-        self.add_btn = QPushButton("➕ Добавить мосты")
+        self.add_btn = QPushButton("Добавить мосты")
         self.add_btn.clicked.connect(self.accept_add)
         button_layout.addWidget(self.add_btn)
         
-        self.replace_btn = QPushButton("🔄 Заменить мосты")
+        self.replace_btn = QPushButton("Заменить мосты")
         self.replace_btn.setObjectName("replaceBtn")
         self.replace_btn.clicked.connect(self.accept_replace)
         button_layout.addWidget(self.replace_btn)
         
-        self.leave_btn = QPushButton("💾 Оставить как есть")
+        self.leave_btn = QPushButton("Оставить как есть")
         self.leave_btn.setObjectName("leaveBtn")
         self.leave_btn.clicked.connect(self.accept_leave)
         button_layout.addWidget(self.leave_btn)
@@ -194,7 +194,7 @@ class TorBridgeManager(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
         
         # Заголовок
-        title_label = QLabel("🌐 Менеджер Tor мостов")
+        title_label = QLabel("Менеджер Tor мостов")
         title_label.setStyleSheet("""
             font-size: 20px;
             font-weight: bold;
@@ -220,18 +220,18 @@ class TorBridgeManager(QMainWindow):
         """)
         info_layout = QHBoxLayout(info_frame)
         
-        self.bridges_count_label = QLabel("📊 Загружено мостов: 0")
+        self.bridges_count_label = QLabel("Загружено мостов: 0")
         info_layout.addWidget(self.bridges_count_label)
         
         info_layout.addStretch()
         
-        self.file_status_label = QLabel("📁 Файл: bridges.txt")
+        self.file_status_label = QLabel("Файл: bridges.txt")
         info_layout.addWidget(self.file_status_label)
         
         main_layout.addWidget(info_frame)
         
         # Основной текстовый редактор
-        editor_label = QLabel("✏️ Введите мосты (каждый с новой строки):")
+        editor_label = QLabel("Введите мосты (каждый с новой строки):")
         editor_label.setStyleSheet("font-weight: bold; margin-top: 10px;")
         main_layout.addWidget(editor_label)
         
@@ -245,23 +245,23 @@ class TorBridgeManager(QMainWindow):
         button_layout = QHBoxLayout(button_frame)
         button_layout.setSpacing(15)
         
-        self.add_btn = QPushButton("➕ Добавить мосты")
+        self.add_btn = QPushButton("Добавить мосты")
         self.add_btn.clicked.connect(self.add_bridges)
         button_layout.addWidget(self.add_btn)
         
-        self.replace_btn = QPushButton("🔄 Заменить мосты")
+        self.replace_btn = QPushButton("Заменить мосты")
         self.replace_btn.setObjectName("replaceBtn")
         self.replace_btn.clicked.connect(self.replace_bridges)
         button_layout.addWidget(self.replace_btn)
         
         button_layout.addStretch()
         
-        self.update_btn = QPushButton("🗑️ Обновить конфигурацию")
+        self.update_btn = QPushButton("Обновить конфигурацию")
         self.update_btn.setObjectName("updateBtn")
         self.update_btn.clicked.connect(self.update_config)
         button_layout.addWidget(self.update_btn)
         
-        self.config_btn = QPushButton("⚙️ Настроить конфигурацию")
+        self.config_btn = QPushButton("Настроить конфигурацию")
         self.config_btn.setObjectName("configBtn")
         self.config_btn.clicked.connect(self.configure_tor)
         button_layout.addWidget(self.config_btn)
@@ -269,7 +269,7 @@ class TorBridgeManager(QMainWindow):
         main_layout.addWidget(button_frame)
         
         # Кнопка очистки
-        clear_btn = QPushButton("🧹 Очистить поле ввода")
+        clear_btn = QPushButton("Очистить поле ввода")
         clear_btn.setStyleSheet("""
             QPushButton {
                 background-color: #555;
@@ -290,7 +290,7 @@ class TorBridgeManager(QMainWindow):
         # Статус бар
         self.status_bar = QStatusBar()
         self.setStatusBar(self.status_bar)
-        self.status_bar.showMessage("✅ Готов к работе")
+        self.status_bar.showMessage("Готов к работе")
         
     def load_existing_bridges(self):
         """Загрузка существующих мостов из файла"""
@@ -299,7 +299,7 @@ class TorBridgeManager(QMainWindow):
                 with open(self.bridges_file, 'r', encoding='utf-8') as f:
                     bridges = [line.strip() for line in f if line.strip()]
                     count = len(bridges)
-                    self.bridges_count_label.setText(f"📊 Загружено мостов: {count}")
+                    self.bridges_count_label.setText(f"Загружено мостов: {count}")
                     if count > 0:
                         self.status_bar.showMessage(f"Загружено {count} мостов из {self.bridges_file}")
             except Exception as e:
@@ -364,11 +364,11 @@ class TorBridgeManager(QMainWindow):
             self.load_existing_bridges()
             
             QMessageBox.information(self, "Успех", f"Добавлено {len(new_bridges)} новых мостов")
-            self.status_bar.showMessage(f"✅ Добавлено {len(new_bridges)} мостов")
+            self.status_bar.showMessage(f"Добавлено {len(new_bridges)} мостов")
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось добавить мосты: {str(e)}")
-            self.status_bar.showMessage(f"❌ Ошибка при добавлении мостов: {str(e)}")
+            self.status_bar.showMessage(f"Ошибка при добавлении мостов: {str(e)}")
             
     def replace_bridges(self):
         """Замена всех мостов в файле"""
@@ -400,11 +400,11 @@ class TorBridgeManager(QMainWindow):
                 self.load_existing_bridges()
                 
                 QMessageBox.information(self, "Успех", f"Содержимое файла успешно заменено. Добавлено {len(bridges)} мостов.")
-                self.status_bar.showMessage(f"✅ Заменено {len(bridges)} мостов")
+                self.status_bar.showMessage(f"Заменено {len(bridges)} мостов")
                 
             except Exception as e:
                 QMessageBox.critical(self, "Ошибка", f"Не удалось заменить содержимое: {str(e)}")
-                self.status_bar.showMessage(f"❌ Ошибка при замене: {str(e)}")
+                self.status_bar.showMessage(f"Ошибка при замене: {str(e)}")
                 
     def update_config(self):
         """Обновление конфигурации (удаление torrc)"""
@@ -418,7 +418,7 @@ class TorBridgeManager(QMainWindow):
                 
                 if reply == QMessageBox.Yes:
                     os.remove(self.torrc_file)
-                    self.status_bar.showMessage("✅ Файл torrc успешно удален")
+                    self.status_bar.showMessage("Файл torrc успешно удален")
                     QMessageBox.information(self, "Успех", "Файл torrc успешно удален")
             else:
                 QMessageBox.information(self, "Информация", f"Файл {self.torrc_file} не существует в текущей папке")
@@ -426,7 +426,7 @@ class TorBridgeManager(QMainWindow):
                 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось удалить файл torrc: {str(e)}")
-            self.status_bar.showMessage(f"❌ Ошибка при удалении torrc: {str(e)}")
+            self.status_bar.showMessage(f"Ошибка при удалении torrc: {str(e)}")
             
     def configure_tor(self):
         """Настройка конфигурации Tor"""
@@ -451,14 +451,14 @@ class TorBridgeManager(QMainWindow):
             
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось настроить конфигурацию: {str(e)}")
-            self.status_bar.showMessage(f"❌ Ошибка при настройке: {str(e)}")
+            self.status_bar.showMessage(f"Ошибка при настройке: {str(e)}")
             
     def launch_maestro(self):
         """Запуск программы maestro.pyw"""
         try:
             if os.path.exists(self.maestro_file):
                 subprocess.Popen(["pythonw", self.maestro_file], shell=True)
-                self.status_bar.showMessage("✅ Программа maestro.pyw запущена")
+                self.status_bar.showMessage("Программа maestro.pyw запущена")
                 QMessageBox.information(self, "Успех", "Программа maestro.pyw успешно запущена")
             else:
                 QMessageBox.warning(
@@ -466,11 +466,11 @@ class TorBridgeManager(QMainWindow):
                     f"Файл {self.maestro_file} не найден в текущей папке\n"
                     f"Текущая директория: {os.getcwd()}"
                 )
-                self.status_bar.showMessage("❌ Файл maestro.pyw не найден")
+                self.status_bar.showMessage("Файл maestro.pyw не найден")
                 
         except Exception as e:
             QMessageBox.critical(self, "Ошибка", f"Не удалось запустить maestro.pyw: {str(e)}")
-            self.status_bar.showMessage(f"❌ Ошибка при запуске: {str(e)}")
+            self.status_bar.showMessage(f"Ошибка при запуске: {str(e)}")
             
     def clear_text(self):
         """Очистка поля ввода"""
