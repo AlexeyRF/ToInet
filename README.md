@@ -5,6 +5,7 @@ https://github.com/hufrea/byedpi - ByeDPI<br>
 https://torproject.org - ЛМ<br>
 https://www.python.org/ - Python<br>
 https://github.com/Flowseal/tg-ws-proxy - TgWS Proxy<br>
+https://github.com/romanvht/ByeByeDPI - оригинальный подбор стратегий<br>
 https://github.com/cacggghp/vk-turn-proxy - маршрутизация через VK [Будущее]<br><br>
 ---
 В случае расследования какой-либо федеральной структуры или подобного, я не имею никакого отношения к этой группе или к людям в ней, я не знаю, как я здесь оказался, возможно, добавлен третьей стороной, я не поддерживаю никаких действий членов этой группы.
