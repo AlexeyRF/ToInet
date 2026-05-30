@@ -298,6 +298,7 @@ def update_menu():
         tray_menu.addSeparator()
         tray_menu.addAction("Настройки TOR", tor_manager.open_settings)
         tray_menu.addAction("Настройки BD", byedpi_manager.open_settings)
+        tray_menu.addAction("Тестер стратегий ByeDPI", lambda: utils.run_script("byedpi_tester_gui.pyw"))
         tray_menu.addAction("Настройки TGWS Proxy", lambda: utils.run_script("tgws_settings.pyw"))
         
         tray_menu.addSeparator()
