@@ -6,7 +6,10 @@ CONFIG_FILE = os.path.join(CURRENT_DIR, "config.json")
 
 DEFAULT_CONFIG = {
     "use_custom_settings": True,
-    "byedpi_params": "--split 1 --disorder 3+s --mod-http=h,d --auto=torst --tlsrec 1+s",
+    "byedpi_params": "-p 1780 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru",
+    "byedpi_pip_enabled": False,
+    "byedpi_pip_use_tor": False,
+    "byedpi_pip_params": "-p 1781 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru",
     "tgws_enabled": True,
     "tgws_port": 1480,
     "tgws_host": "127.0.0.1",

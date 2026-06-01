@@ -1,0 +1,16 @@
+# Список приоритетных сайтов для проверки
+# Эти сайты отмечены галочками в списке доменов
+
+pypi.org
+pythonhosted.org
+files.pythonhosted.org
+manifest.googlevideo.com
+googleusercontent.com
+googleapis.com
+i.ytimg.com
+youtu.be
+youtube.com
+pypi.python.org
+yt3.ggpht.com
+gstatic.com
+fonts.gstatic.com

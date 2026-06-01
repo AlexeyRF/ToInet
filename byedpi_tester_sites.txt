@@ -1,0 +1,21 @@
+# Список сайтов/доменов для проверки ByeDPI стратегий
+# Вы можете редактировать этот файл вручную
+
+rutracker.org
+nyaa.si
+rutor.org
+nnmclub.to
+speedtest.net
+youtube.com
+youtu.be
+i.ytimg.com
+googleapis.com
+googleusercontent.com
+manifest.googlevideo.com
+pypi.org
+pythonhosted.org
+files.pythonhosted.org
+pypi.python.org
+yt3.ggpht.com
+gstatic.com
+fonts.gstatic.com
