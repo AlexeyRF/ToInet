@@ -43,6 +43,9 @@ noisy_manager.update_config(config)
 tester_manager.update_config(config)
 tgws_mgr.update_config(config)
 
+# Инициализируем менеджер для pip
+pip_manager = bdsher.get_pip_manager(config)
+
 def update_proxy_status():
     global proxy_enabled
     proxy_enabled = (tor_manager.is_running() or 
@@ -60,6 +63,14 @@ def toggle_all():
         tor_manager.start()
         tgws_mgr.start()
         
+        # Запускаем проксирование pip, если оно включено
+        if config.get("byedpi_pip_enabled", False):
+            if config.get("byedpi_pip_use_tor", False):
+                bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+            else:
+                pip_manager.start()
+                bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+        
         if mode_type == "tun":
             mode_mgr.start_tun()
         
@@ -68,6 +79,10 @@ def toggle_all():
         tor_manager.stop()
         byedpi_manager.stop()
         tgws_mgr.stop()
+        
+        # Останавливаем ByeDPI для pip и очищаем прокси pip
+        pip_manager.stop()
+        bdsher.clear_pip_proxy()
         
         if mode_mgr.inetcpl_tor_active:
             mode_mgr.run_cpller(9853, 0)
@@ -222,6 +237,12 @@ def toggle_auto_connect_last_mode():
 def exit_app():
     tor_manager.stop()
     byedpi_manager.stop()
+    
+    # Останавливаем pip-менеджер и чистим настройки pip
+    pip_mgr = bdsher.get_pip_manager()
+    pip_mgr.stop()
+    bdsher.clear_pip_proxy()
+    
     noisy_manager.stop()
     tester_manager.stop()
     ext_programs_manager.stop_all()
@@ -300,6 +321,59 @@ def update_menu():
         tray_menu.addAction("Настройки BD", byedpi_manager.open_settings)
         tray_menu.addAction("Тестер стратегий ByeDPI", lambda: utils.run_script("byedpi_tester_gui.pyw"))
         tray_menu.addAction("Настройки TGWS Proxy", lambda: utils.run_script("tgws_settings.pyw"))
+        
+        # Настройки проксирования pip
+        pip_menu = QMenu("Проксирование pip (PyPI)", tray_menu)
+        
+        pip_enabled_act = QAction("Включить проксирование pip", pip_menu)
+        pip_enabled_act.setCheckable(True)
+        pip_enabled_act.setChecked(config.get("byedpi_pip_enabled", False))
+        
+        pip_use_tor_act = QAction("Использовать TOR вместо ByeDPI", pip_menu)
+        pip_use_tor_act.setCheckable(True)
+        pip_use_tor_act.setChecked(config.get("byedpi_pip_use_tor", False))
+        pip_use_tor_act.setEnabled(config.get("byedpi_pip_enabled", False))
+        
+        def toggle_pip_enabled():
+            config["byedpi_pip_enabled"] = not config.get("byedpi_pip_enabled", False)
+            config_manager.save_config(config)
+            
+            if proxy_enabled:
+                pip_mgr = bdsher.get_pip_manager(config)
+                if config["byedpi_pip_enabled"]:
+                    if config.get("byedpi_pip_use_tor", False):
+                        pip_mgr.stop()
+                        bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+                    else:
+                        pip_mgr.start()
+                        bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+                else:
+                    pip_mgr.stop()
+                    bdsher.clear_pip_proxy()
+            update_menu()
+            
+        def toggle_pip_use_tor():
+            config["byedpi_pip_use_tor"] = not config.get("byedpi_pip_use_tor", False)
+            config_manager.save_config(config)
+            
+            if proxy_enabled and config.get("byedpi_pip_enabled", False):
+                pip_mgr = bdsher.get_pip_manager(config)
+                if config["byedpi_pip_use_tor"]:
+                    pip_mgr.stop()
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+                else:
+                    pip_mgr.start()
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+            update_menu()
+            
+        pip_enabled_act.triggered.connect(toggle_pip_enabled)
+        pip_use_tor_act.triggered.connect(toggle_pip_use_tor)
+        
+        pip_menu.addAction(pip_enabled_act)
+        pip_menu.addAction(pip_use_tor_act)
+        pip_menu.addAction("Настройки ByeDPI для pip", lambda: bdsher.get_pip_manager(config).open_settings())
+        
+        tray_menu.addMenu(pip_menu)
         
         tray_menu.addSeparator()
         tray_menu.addAction("Очистить кэш", lambda: utils.run_script(CACHER_SCRIPT))

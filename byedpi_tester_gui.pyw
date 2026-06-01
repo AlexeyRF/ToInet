@@ -361,7 +361,63 @@ class WorkerThread(QThread):
                     except Exception as e:
                         checked_details[site] = (False, str(e))
 
-            # Stop daemon
+             # Stop daemon
+            pypi_domains = ["pypi.org", "files.pythonhosted.org", "pypi.python.org", "pythonhosted.org"]
+            pypi_accessible = True
+            for domain in pypi_domains:
+                if domain in self.sites:
+                    if domain not in checked_details or not checked_details[domain][0]:
+                        pypi_accessible = False
+                        break
+                        
+            pip_success = False
+            pip_msg = "Не проверялось"
+            
+            if pypi_accessible and not self.is_cancelled:
+                import tempfile
+                import shutil
+                import subprocess
+                import sys
+                
+                temp_dir = tempfile.mkdtemp()
+                try:
+                    cmd = [
+                        sys.executable, "-m", "pip", "download",
+                        "--proxy", f"socks5://127.0.0.1:{p_port}",
+                        "--no-cache-dir",
+                        "--dest", temp_dir,
+                        "pytz",
+                        "--only-binary=:all:"
+                    ]
+                    
+                    result = subprocess.run(
+                        cmd,
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.PIPE,
+                        timeout=15.0,
+                        creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                    )
+                    
+                    if result.returncode == 0:
+                        pip_success = True
+                        pip_msg = "Успешное скачивание pytz через pip!"
+                    else:
+                        err_str = result.stderr.decode('utf-8', errors='ignore').strip()
+                        if len(err_str) > 100:
+                            err_str = err_str[:100] + "..."
+                        pip_msg = f"Ошибка pip: {err_str}"
+                except subprocess.TimeoutExpired:
+                    pip_msg = "Таймаут скачивания через pip (15 сек)"
+                except Exception as e:
+                    pip_msg = f"Ошибка теста pip: {e}"
+                finally:
+                    try:
+                        shutil.rmtree(temp_dir)
+                    except:
+                        pass
+                        
+            checked_details["__pip_test__"] = (pip_success, pip_msg)
+
             byedpi_tester.stop_byedpi(proc)
             time.sleep(0.3)  # wait for port to completely unbind
 
@@ -660,13 +716,14 @@ class ByeDPITesterGUI(QMainWindow):
         table_layout = QVBoxLayout()
         table_layout.setContentsMargins(5, 5, 5, 5)
         
-        self.results_table = QTableWidget(0, 5)
-        self.results_table.setHorizontalHeaderLabels(["#", "Успешность (все)", "Успешность (приор.)", "Успешно", "Параметры стратегии"])
+        self.results_table = QTableWidget(0, 6)
+        self.results_table.setHorizontalHeaderLabels(["#", "Успешность (все)", "Успешность (приор.)", "Успешно", "Тест PIP", "Параметры стратегии"])
         self.results_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
         self.results_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
         self.results_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.ResizeToContents)
         self.results_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
-        self.results_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.Stretch)
+        self.results_table.horizontalHeader().setSectionResizeMode(4, QHeaderView.ResizeToContents)
+        self.results_table.horizontalHeader().setSectionResizeMode(5, QHeaderView.Stretch)
         self.results_table.itemSelectionChanged.connect(self.strategy_selection_changed)
         self.results_table.setSelectionBehavior(QTableWidget.SelectRows)
         self.results_table.setSelectionMode(QTableWidget.SingleSelection)
@@ -753,8 +810,8 @@ class ByeDPITesterGUI(QMainWindow):
             return
             
         for row in range(self.results_table.rowCount()):
-            # Column 4 contains strategy parameters in the results table now
-            strategy = self.results_table.item(row, 4).text()
+            # Column 5 contains strategy parameters in the results table now
+            strategy = self.results_table.item(row, 5).text()
             # Find matching result in results_data
             for strat, pct, succ, tot, details in self.results_data:
                 if strat == strategy:
@@ -960,9 +1017,20 @@ class ByeDPITesterGUI(QMainWindow):
         item_succ.setTextAlignment(Qt.AlignCenter)
         self.results_table.setItem(row, 3, item_succ)
         
-        # Column 4: Параметры стратегии
+        # Column 4: Тест PIP
+        pip_res = details.get("__pip_test__", (False, "Не проверялось"))
+        pip_ok, pip_msg = pip_res
+        item_pip = QTableWidgetItem("OK" if pip_ok else ("Ошибка" if "Ошибка" in pip_msg or "Таймаут" in pip_msg else "-"))
+        item_pip.setTextAlignment(Qt.AlignCenter)
+        if pip_ok:
+            item_pip.setForeground(QColor("#a8c3a8")) # soft green
+        else:
+            item_pip.setForeground(QColor("#c3a8a8")) # soft red
+        self.results_table.setItem(row, 4, item_pip)
+        
+        # Column 5: Параметры стратегии
         item_strat = QTableWidgetItem(strategy)
-        self.results_table.setItem(row, 4, item_strat)
+        self.results_table.setItem(row, 5, item_strat)
         
         # Save results in list
         self.results_data.append((strategy, success_rate, success_count, total, details))
@@ -1024,9 +1092,20 @@ class ByeDPITesterGUI(QMainWindow):
             item_succ.setTextAlignment(Qt.AlignCenter)
             self.results_table.setItem(row, 3, item_succ)
             
-            # Column 4: Параметры стратегии
+            # Column 4: Тест PIP
+            pip_res = details.get("__pip_test__", (False, "Не проверялось"))
+            pip_ok, pip_msg = pip_res
+            item_pip = QTableWidgetItem("OK" if pip_ok else ("Ошибка" if "Ошибка" in pip_msg or "Таймаут" in pip_msg else "-"))
+            item_pip.setTextAlignment(Qt.AlignCenter)
+            if pip_ok:
+                item_pip.setForeground(QColor("#a8c3a8")) # soft green
+            else:
+                item_pip.setForeground(QColor("#c3a8a8")) # soft red
+            self.results_table.setItem(row, 4, item_pip)
+            
+            # Column 5: Параметры стратегии
             item_strat = QTableWidgetItem(strategy)
-            self.results_table.setItem(row, 4, item_strat)
+            self.results_table.setItem(row, 5, item_strat)
 
     def on_testing_finished(self, results):
         self.progress_bar.setValue(self.progress_bar.maximum())
@@ -1148,6 +1227,22 @@ class ByeDPITesterGUI(QMainWindow):
         sni = self.sni_edit.text().strip()
         final_params = strategy.replace("{sni}", sni)
         
+        # Ensure SOCKS5 port 1780 is added if not present in parameters
+        params_list = final_params.split()
+        has_port = False
+        for arg in params_list:
+            if arg == '-p' or arg == '--port':
+                has_port = True
+                break
+            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
+                has_port = True
+                break
+        if not has_port:
+            final_params = "-p 1780 " + final_params
+            
+        pip_res = details.get("__pip_test__", (False, "Не проверялось"))
+        pip_ok, pip_msg = pip_res
+        
         try:
             # Save strategy to byedpi_custom.txt
             with open(BYEDPI_CUSTOM_FILE, 'w', encoding='utf-8') as f:
@@ -1160,6 +1255,75 @@ class ByeDPITesterGUI(QMainWindow):
             if config_manager:
                 config = config_manager.load_config()
                 config["use_custom_settings"] = True
+                
+                if pip_ok:
+                    reply = QMessageBox.question(
+                        self, "Проксирование pip (PyPI)",
+                        "Эта стратегия успешно обходит блокировку PyPI (pip работает)!\n\n"
+                        "Желаете настроить отдельный ByeDPI для автоматического проксирования pip "
+                        "через эту стратегию (порт 1781)? Режим будет автоматически запускаться с приложением.",
+                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                    )
+                    if reply == QMessageBox.Yes:
+                        config["byedpi_pip_enabled"] = True
+                        config["byedpi_pip_use_tor"] = False
+                        
+                        pip_custom_file = os.path.join(os.path.dirname(BYEDPI_CUSTOM_FILE), "byedpi_pip_custom.txt")
+                        pip_params = strategy.replace("{sni}", sni)
+                        pip_params_list = pip_params.split()
+                        pip_has_port = False
+                        for arg in pip_params_list:
+                            if arg == '-p' or arg == '--port':
+                                pip_has_port = True
+                                break
+                            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
+                                pip_has_port = True
+                                break
+                        if not pip_has_port:
+                            pip_params = "-p 1781 " + pip_params
+                            
+                        with open(pip_custom_file, 'w', encoding='utf-8') as f_pip:
+                            f_pip.write("# Установлено автоматически тестером стратегий ByeDPI для PIP\n")
+                            f_pip.write("# Успешность проверки: %.1f%%\n" % pct)
+                            f_pip.write("# Дата установки: %s\n\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
+                            f_pip.write(pip_params + "\n")
+                            
+                        import bdsher
+                        bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+                        
+                        try:
+                            pip_mgr = bdsher.get_pip_manager(config)
+                            pip_mgr.stop()
+                            pip_mgr.start()
+                        except Exception as e:
+                            print(f"Error starting pip manager: {e}")
+                            
+                        QMessageBox.information(
+                            self, "Успех",
+                            "Проксирование pip через отдельный ByeDPI (1781) успешно настроено и запущено!"
+                        )
+                else:
+                    reply = QMessageBox.question(
+                        self, "Проксирование pip через TOR",
+                        "Эта стратегия не смогла восстановить доступ к PyPI для pip.\n\n"
+                        "Желаете настроить автоматическое проксирование pip через сеть TOR (socks5://127.0.0.1:9853)?\n"
+                        "Скачивание пакетов будет работать при запущенном TOR.",
+                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                    )
+                    if reply == QMessageBox.Yes:
+                        config["byedpi_pip_enabled"] = True
+                        config["byedpi_pip_use_tor"] = True
+                        
+                        import bdsher
+                        pip_mgr = bdsher.get_pip_manager(config)
+                        pip_mgr.stop()
+                        bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+                        
+                        QMessageBox.information(
+                            self, "Успех",
+                            "Проксирование pip через TOR (9853) успешно настроено и включено!"
+                        )
+                        
                 config_manager.save_config(config)
                 
             QMessageBox.information(
