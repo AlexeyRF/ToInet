@@ -1,3 +1,4 @@
+import lang
 import os
 import subprocess
 import psutil
@@ -26,7 +27,7 @@ class TesterManager(QObject):
         if not os.path.exists(TESTER_SCRIPT):
             error_msg = f"Файл tester.py не найден:\n{TESTER_SCRIPT}"
             self.error_occurred.emit(error_msg)
-            QMessageBox.critical(None, "Ошибка", error_msg)
+            QMessageBox.critical(None, T("Ошибка", "Error"), error_msg)
             return False
 
         try:
@@ -42,7 +43,7 @@ class TesterManager(QObject):
         except Exception as e:
             error_msg = f"Не удалось запустить tester.py:\n{e}"
             self.error_occurred.emit(error_msg)
-            QMessageBox.critical(None, "Ошибка", error_msg)
+            QMessageBox.critical(None, T("Ошибка", "Error"), error_msg)
             return False
 
     def stop(self):

@@ -1,3 +1,4 @@
+import lang
 import os
 import subprocess
 import json
@@ -95,7 +96,7 @@ class ByeDPIManager(QObject):
         if not os.path.exists(BYEDPI_EXE):
             error_msg = f"Файл Byedpi не найден:\n{BYEDPI_EXE}"
             self.error_occurred.emit(error_msg)
-            QMessageBox.critical(None, "Ошибка", error_msg)
+            QMessageBox.critical(None, T("Ошибка", "Error"), error_msg)
             return False
         
         # Создаем файл кастомных настроек если нужно
@@ -118,7 +119,7 @@ class ByeDPIManager(QObject):
         except Exception as e:
             error_msg = f"Не удалось запустить Byedpi ({self.default_port}):\n{e}"
             self.error_occurred.emit(error_msg)
-            QMessageBox.critical(None, "Ошибка", error_msg)
+            QMessageBox.critical(None, T("Ошибка", "Error"), error_msg)
             return False
     
     def stop(self):

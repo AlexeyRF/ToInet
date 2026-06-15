@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+import lang
 import sys
 import os
 import time
@@ -540,7 +541,7 @@ class ByeDPITesterGUI(QMainWindow):
             print(f"Ошибка сохранения приоритетных сайтов: {e}")
 
     def init_ui(self):
-        self.setWindowTitle("Тестер стратегий ByeDPI")
+        self.setWindowTitle(T("Тестер стратегий ByeDPI", "ByeDPI Strategies Tester"))
         self.setFixedSize(1000, 700)
         self.setStyleSheet(DARK_STYLESHEET)
         
@@ -651,7 +652,7 @@ class ByeDPITesterGUI(QMainWindow):
         self.new_domain_edit = QLineEdit()
         self.new_domain_edit.setPlaceholderText("Добавить новый домен...")
         self.new_domain_edit.returnPressed.connect(self.add_domain)
-        self.add_domain_btn = QPushButton("Добавить")
+        self.add_domain_btn = QPushButton(T("Добавить", "Add"))
         self.add_domain_btn.clicked.connect(self.add_domain)
         add_layout.addWidget(self.new_domain_edit)
         add_layout.addWidget(self.add_domain_btn)
@@ -686,7 +687,7 @@ class ByeDPITesterGUI(QMainWindow):
         self.start_btn.setObjectName("start_btn")
         self.start_btn.clicked.connect(self.start_testing)
         
-        self.stop_btn = QPushButton("Остановить")
+        self.stop_btn = QPushButton(T("Остановить", "Stop"))
         self.stop_btn.setObjectName("stop_btn")
         self.stop_btn.setEnabled(False)
         self.stop_btn.clicked.connect(self.stop_testing)
@@ -906,7 +907,7 @@ class ByeDPITesterGUI(QMainWindow):
     def start_testing(self):
         byedpi_path = self.path_edit.text().strip()
         if not os.path.exists(byedpi_path):
-            QMessageBox.critical(self, "Ошибка", "Исполняемый файл ciadpi.exe не найден по указанному пути:\n%s" % byedpi_path)
+            QMessageBox.critical(self, T("Ошибка", "Error"), "Исполняемый файл ciadpi.exe не найден по указанному пути:\n%s" % byedpi_path)
             return
 
         if not self.domains:
@@ -1020,7 +1021,7 @@ class ByeDPITesterGUI(QMainWindow):
         # Column 4: Тест PIP
         pip_res = details.get("__pip_test__", (False, "Не проверялось"))
         pip_ok, pip_msg = pip_res
-        item_pip = QTableWidgetItem("OK" if pip_ok else ("Ошибка" if "Ошибка" in pip_msg or "Таймаут" in pip_msg else "-"))
+        item_pip = QTableWidgetItem("OK" if pip_ok else (T("Ошибка", "Error") if T("Ошибка", "Error") in pip_msg or "Таймаут" in pip_msg else "-"))
         item_pip.setTextAlignment(Qt.AlignCenter)
         if pip_ok:
             item_pip.setForeground(QColor("#a8c3a8")) # soft green
@@ -1095,7 +1096,7 @@ class ByeDPITesterGUI(QMainWindow):
             # Column 4: Тест PIP
             pip_res = details.get("__pip_test__", (False, "Не проверялось"))
             pip_ok, pip_msg = pip_res
-            item_pip = QTableWidgetItem("OK" if pip_ok else ("Ошибка" if "Ошибка" in pip_msg or "Таймаут" in pip_msg else "-"))
+            item_pip = QTableWidgetItem("OK" if pip_ok else (T("Ошибка", "Error") if T("Ошибка", "Error") in pip_msg or "Таймаут" in pip_msg else "-"))
             item_pip.setTextAlignment(Qt.AlignCenter)
             if pip_ok:
                 item_pip.setForeground(QColor("#a8c3a8")) # soft green
@@ -1175,7 +1176,7 @@ class ByeDPITesterGUI(QMainWindow):
         QMessageBox.information(self, "Проверка завершена", "Тестирование всех стратегий успешно завершено!")
 
     def on_testing_error(self, err_msg):
-        QMessageBox.critical(self, "Ошибка", "Произошла ошибка при тестировании:\n%s" % err_msg)
+        QMessageBox.critical(self, T("Ошибка", "Error"), "Произошла ошибка при тестировании:\n%s" % err_msg)
         self.on_testing_finished([])
 
     def strategy_selection_changed(self):
@@ -1258,7 +1259,7 @@ class ByeDPITesterGUI(QMainWindow):
                 
                 if pip_ok:
                     reply = QMessageBox.question(
-                        self, "Проксирование pip (PyPI)",
+                        self, T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"),
                         "Эта стратегия успешно обходит блокировку PyPI (pip работает)!\n\n"
                         "Желаете настроить отдельный ByeDPI для автоматического проксирования pip "
                         "через эту стратегию (порт 1781)? Режим будет автоматически запускаться с приложением.",
@@ -1299,7 +1300,7 @@ class ByeDPITesterGUI(QMainWindow):
                             print(f"Error starting pip manager: {e}")
                             
                         QMessageBox.information(
-                            self, "Успех",
+                            self, T("Успех", "Success"),
                             "Проксирование pip через отдельный ByeDPI (1781) успешно настроено и запущено!"
                         )
                 else:
@@ -1320,14 +1321,14 @@ class ByeDPITesterGUI(QMainWindow):
                         bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
                         
                         QMessageBox.information(
-                            self, "Успех",
+                            self, T("Успех", "Success"),
                             "Проксирование pip через TOR (9853) успешно настроено и включено!"
                         )
                         
                 config_manager.save_config(config)
                 
             QMessageBox.information(
-                self, "Успех", 
+                self, T("Успех", "Success"), 
                 "Выбранная стратегия успешно записана в файл %s!\n\n"
                 "Параметры: %s\n\n"
                 "В настройках ToInet-MAX включен режим кастомных настроек ByeDPI.\n"

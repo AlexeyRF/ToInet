@@ -1,3 +1,4 @@
+import lang
 import os
 import sys
 import json
@@ -480,7 +481,7 @@ class TorrcConfigurator(QMainWindow):
                     }
                 }
         except Exception as e:
-            QMessageBox.warning(self, "Предупреждение", f"Не удалось загрузить pt_config.json: {e}")
+            QMessageBox.warning(self, T("Предупреждение", "Warning"), f"Не удалось загрузить pt_config.json: {e}")
             return None
     
     def get_bridges_and_transport(self):
@@ -501,7 +502,7 @@ class TorrcConfigurator(QMainWindow):
                     with open(bridges_path, 'r', encoding='utf-8') as f:
                         bridges = [line.strip() for line in f if line.strip()]
                 except Exception as e:
-                    QMessageBox.critical(self, "Ошибка", f"Не удалось прочитать файл мостов: {e}")
+                    QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось прочитать файл мостов: {e}")
                     return [], None
             
             # For normal mode, use lyrebird for all transports
@@ -616,7 +617,7 @@ class TorrcConfigurator(QMainWindow):
             # Check if we're in normal mode but no bridges found
             bridges_path = self.bridges_edit.text()
             if os.path.exists(bridges_path):
-                QMessageBox.warning(self, "Предупреждение", "Файл мостов пуст или содержит некорректные данные")
+                QMessageBox.warning(self, T("Предупреждение", "Warning"), "Файл мостов пуст или содержит некорректные данные")
         
         # Add additional settings
         torrc_lines.extend([
@@ -651,7 +652,7 @@ class TorrcConfigurator(QMainWindow):
             self.statusBar().showMessage(f"Configuration saved to {output_path}", 5000)
             
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось записать конфигурацию, ошибка: {e}")
+            QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось записать конфигурацию, ошибка: {e}")
 
 def main():
     app = QApplication(sys.argv)

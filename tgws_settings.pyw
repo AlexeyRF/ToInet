@@ -1,3 +1,4 @@
+import lang
 import sys
 import os
 import json
@@ -48,7 +49,7 @@ class TGWSSettingsDialog(QDialog):
         self.init_ui()
     
     def init_ui(self):
-        self.setWindowTitle("Настройки TGWS Proxy")
+        self.setWindowTitle(T("Настройки TGWS Proxy", "TGWS Proxy Settings"))
         self.setMinimumWidth(500)
         self.setMinimumHeight(400)
         
@@ -94,8 +95,8 @@ class TGWSSettingsDialog(QDialog):
         
         # Кнопки
         btn_layout = QHBoxLayout()
-        self.save_btn = QPushButton("Сохранить")
-        self.cancel_btn = QPushButton("Отмена")
+        self.save_btn = QPushButton(T("Сохранить", "Save"))
+        self.cancel_btn = QPushButton(T("Отмена", "Cancel"))
         
         self.save_btn.clicked.connect(self.validate_and_save)
         self.cancel_btn.clicked.connect(self.reject)
@@ -114,7 +115,7 @@ class TGWSSettingsDialog(QDialog):
         try:
             socket.inet_aton(host)
         except OSError:
-            QMessageBox.critical(self, "Ошибка", "Некорректный IP-адрес.")
+            QMessageBox.critical(self, T("Ошибка", "Error"), "Некорректный IP-адрес.")
             return
         
         # Проверка порта
@@ -123,7 +124,7 @@ class TGWSSettingsDialog(QDialog):
             if not (1 <= port <= 65535):
                 raise ValueError
         except ValueError:
-            QMessageBox.critical(self, "Ошибка", "Порт должен быть числом от 1 до 65535")
+            QMessageBox.critical(self, T("Ошибка", "Error"), "Порт должен быть числом от 1 до 65535")
             return
         
         # Проверка DC маппингов
@@ -131,7 +132,7 @@ class TGWSSettingsDialog(QDialog):
         try:
             tg_ws_proxy.parse_dc_ip_list(lines)
         except ValueError as e:
-            QMessageBox.critical(self, "Ошибка", str(e))
+            QMessageBox.critical(self, T("Ошибка", "Error"), str(e))
             return
         
         # Сохраняем настройки
@@ -142,7 +143,7 @@ class TGWSSettingsDialog(QDialog):
         self.config["tgws_enabled"] = self.auto_check.isChecked()
         save_config(self.config)
         
-        QMessageBox.information(self, "Успех", "Настройки TGWS Proxy сохранены!")
+        QMessageBox.information(self, T("Успех", "Success"), "Настройки TGWS Proxy сохранены!")
         self.accept()
 
 def main():

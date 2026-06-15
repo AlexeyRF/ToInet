@@ -1,3 +1,4 @@
+import lang
 import sys
 import os
 import subprocess
@@ -198,7 +199,7 @@ class TorManager:
             return True
         else:
             if parent:
-                QMessageBox.critical(parent, "Ошибка", 
+                QMessageBox.critical(parent, T("Ошибка", "Error"), 
                                    "Не удалось перезапустить TOR")
             return False
 
@@ -206,7 +207,7 @@ class TorManager:
         """Запрашивает новую цепочку (NEWNYM) у TOR"""
         if not self.tor_running:
             if parent:
-                QMessageBox.warning(parent, "Ошибка", "TOR не запущен.")
+                QMessageBox.warning(parent, T("Ошибка", "Error"), "TOR не запущен.")
             return False
 
         try:
@@ -221,7 +222,7 @@ class TorManager:
                 log(f"ControlPort AUTHENTICATE failed: {resp}")
                 s.close()
                 if parent:
-                    QMessageBox.warning(parent, "Ошибка", f"Ошибка аутентификации ControlPort: {resp}")
+                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"Ошибка аутентификации ControlPort: {resp}")
                 return False
                 
             s.sendall(b'SIGNAL NEWNYM\r\n')
@@ -236,12 +237,12 @@ class TorManager:
             else:
                 log(f"Ошибка при запросе NEWNYM: {resp}")
                 if parent:
-                    QMessageBox.warning(parent, "Ошибка", f"TOR вернул ошибку при запросе новой цепочки: {resp}")
+                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"TOR вернул ошибку при запросе новой цепочки: {resp}")
                 return False
         except Exception as e:
             log(f"Не удалось подключиться к ControlPort: {e}")
             if parent:
-                QMessageBox.warning(parent, "Ошибка", f"Не удалось подключиться к ControlPort TOR (порт 9851).\nВозможно, он не включен в настройках.\nОшибка: {e}")
+                QMessageBox.warning(parent, T("Ошибка", "Error"), f"Не удалось подключиться к ControlPort TOR (порт 9851).\nВозможно, он не включен в настройках.\nОшибка: {e}")
             return False
 
     def is_running(self):
@@ -287,7 +288,7 @@ class TorManager:
                 log(f"Ошибка запуска {AUTO_MAESTRO_SCRIPT}: {e}")
         
         # Если ничего не сработало
-        QMessageBox.critical(None, "Ошибка", 
+        QMessageBox.critical(None, T("Ошибка", "Error"), 
                            f"Не найдены файлы настроек TOR:\n"
                            f"{MAESTRO_SCRIPT}\n"
                            f"или\n{AUTO_MAESTRO_SCRIPT}")
