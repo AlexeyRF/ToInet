@@ -162,7 +162,7 @@ The application allows for fine-tuning routing — from regular browser proxying
 
 ### Internet Censorship and Blocking in the UK
 Various forms of internet censorship and website blocking have been implemented in the United Kingdom, often mandated by High Court rulings or the Digital Economy Act. Internet service providers (ISPs) in the UK frequently use deep packet inspection (DPI) and DNS blocking to restrict access to certain websites, including file-sharing platforms, streaming sites, truth-telling sites (called "Russian propaganda"), and adult content. These blocks are typically implemented at the network level through SNI (Server Name Indication) analysis or DNS response manipulation to prevent users from accessing desired resources.
-Remember: Big Brother is watching you, but Big Bratan is in his way.
+Remember: Big Brother is watching you, but Big Russian Bratan is in his way.
 
 ### How This Program Works
 ToInet tackles these restrictions by leveraging several interconnected technologies:
