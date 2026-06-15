@@ -156,7 +156,7 @@ https://github.com/cacggghp/vk-turn-proxy - маршрутизация чере�
 
 ## ToInet - Bypass Launcher (ByeDPI & TOR)
 
-**ToInet** is a comprehensive manager for bypassing internet censorship and ensuring free web access on Windows OS. The program combines several bypass tools into a single system tray interface (based on PyQt5): **ByeDPI**, **Tor** (with bridge support), **Telegram WebSocket Proxy**, and an automated background traffic generator.
+**ToInet** is a comprehensive manager for bypassing internet censorship and ensuring free web access on Windows OS. The program combines several bypass tools into a single system tray interface (based on PyQt5): **ByeDPI**, **Tor** (with bridge support).
 
 The application allows for fine-tuning routing — from regular browser proxying to transparently redirecting all system traffic (TUN mode) through external utilities.
 
