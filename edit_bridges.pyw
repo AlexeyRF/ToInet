@@ -1,3 +1,4 @@
+import lang
 import sys
 import os
 import subprocess
@@ -351,7 +352,7 @@ class TorBridgeManager(QMainWindow):
                     new_bridges.append(bridge)
                     
             if not new_bridges:
-                QMessageBox.information(self, "Информация", "Все мосты уже существуют в файле")
+                QMessageBox.information(self, T("Информация", "Information"), "Все мосты уже существуют в файле")
                 return
                 
             # Записываем обновленный список
@@ -363,11 +364,11 @@ class TorBridgeManager(QMainWindow):
             self.text_edit.clear()
             self.load_existing_bridges()
             
-            QMessageBox.information(self, "Успех", f"Добавлено {len(new_bridges)} новых мостов")
+            QMessageBox.information(self, T("Успех", "Success"), f"Добавлено {len(new_bridges)} новых мостов")
             self.status_bar.showMessage(f"Добавлено {len(new_bridges)} мостов")
             
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось добавить мосты: {str(e)}")
+            QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось добавить мосты: {str(e)}")
             self.status_bar.showMessage(f"Ошибка при добавлении мостов: {str(e)}")
             
     def replace_bridges(self):
@@ -399,11 +400,11 @@ class TorBridgeManager(QMainWindow):
                 self.text_edit.clear()
                 self.load_existing_bridges()
                 
-                QMessageBox.information(self, "Успех", f"Содержимое файла успешно заменено. Добавлено {len(bridges)} мостов.")
+                QMessageBox.information(self, T("Успех", "Success"), f"Содержимое файла успешно заменено. Добавлено {len(bridges)} мостов.")
                 self.status_bar.showMessage(f"Заменено {len(bridges)} мостов")
                 
             except Exception as e:
-                QMessageBox.critical(self, "Ошибка", f"Не удалось заменить содержимое: {str(e)}")
+                QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось заменить содержимое: {str(e)}")
                 self.status_bar.showMessage(f"Ошибка при замене: {str(e)}")
                 
     def update_config(self):
@@ -419,13 +420,13 @@ class TorBridgeManager(QMainWindow):
                 if reply == QMessageBox.Yes:
                     os.remove(self.torrc_file)
                     self.status_bar.showMessage("Файл torrc успешно удален")
-                    QMessageBox.information(self, "Успех", "Файл torrc успешно удален")
+                    QMessageBox.information(self, T("Успех", "Success"), "Файл torrc успешно удален")
             else:
-                QMessageBox.information(self, "Информация", f"Файл {self.torrc_file} не существует в текущей папке")
+                QMessageBox.information(self, T("Информация", "Information"), f"Файл {self.torrc_file} не существует в текущей папке")
                 self.status_bar.showMessage("Файл torrc не найден")
                 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось удалить файл torrc: {str(e)}")
+            QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось удалить файл torrc: {str(e)}")
             self.status_bar.showMessage(f"Ошибка при удалении torrc: {str(e)}")
             
     def configure_tor(self):
@@ -450,7 +451,7 @@ class TorBridgeManager(QMainWindow):
             self.launch_maestro()
             
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось настроить конфигурацию: {str(e)}")
+            QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось настроить конфигурацию: {str(e)}")
             self.status_bar.showMessage(f"Ошибка при настройке: {str(e)}")
             
     def launch_maestro(self):
@@ -459,7 +460,7 @@ class TorBridgeManager(QMainWindow):
             if os.path.exists(self.maestro_file):
                 subprocess.Popen(["pythonw", self.maestro_file], shell=True)
                 self.status_bar.showMessage("Программа maestro.pyw запущена")
-                QMessageBox.information(self, "Успех", "Программа maestro.pyw успешно запущена")
+                QMessageBox.information(self, T("Успех", "Success"), "Программа maestro.pyw успешно запущена")
             else:
                 QMessageBox.warning(
                     self, "Файл не найден",
@@ -469,7 +470,7 @@ class TorBridgeManager(QMainWindow):
                 self.status_bar.showMessage("Файл maestro.pyw не найден")
                 
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка", f"Не удалось запустить maestro.pyw: {str(e)}")
+            QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось запустить maestro.pyw: {str(e)}")
             self.status_bar.showMessage(f"Ошибка при запуске: {str(e)}")
             
     def clear_text(self):

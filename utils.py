@@ -1,3 +1,4 @@
+import lang
 import os
 import sys
 import subprocess
@@ -41,18 +42,18 @@ def open_project_folder(directory):
     try:
         if os.path.exists(directory):
             os.startfile(directory)
-            log("Папка проекта открыта")
+            log(T("Папка проекта открыта", "Project folder opened"))
             return True
         else:
-            log("Папка проекта не найдена")
+            log(T("Папка проекта не найдена", "Project folder not found"))
             return False
     except Exception as e:
         log(f"Ошибка открытия папки проекта: {e}")
-        QMessageBox.critical(None, "Ошибка", f"Не удалось открыть папку проекта:\n{e}")
+        QMessageBox.critical(None, T("Ошибка", "Error"), f"Не удалось открыть папку проекта:\n{e}")
         return False
 
 def open_browser_properties():
     try:
         subprocess.run(['inetcpl.cpl'], shell=True)
     except Exception as e:
-        QMessageBox.warning(None, "Ошибка", f"Не удалось открыть свойства браузера:\n{e}")
+        QMessageBox.warning(None, T("Ошибка", "Error"), f"Не удалось открыть свойства браузера:\n{e}")
