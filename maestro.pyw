@@ -7,11 +7,17 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QFileDialog, 
                              QMessageBox, QGroupBox, QGridLayout, QComboBox,
-                             QRadioButton, QButtonGroup)
-from PyQt5.QtCore import Qt, QSize
+                             QRadioButton, QButtonGroup, QCheckBox, QProgressDialog)
+from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 import requests
 from io import BytesIO
+import platform
+import shutil
+import tarfile
+import re
+import time
+import subprocess
 
 # Dictionary with countries and their code
 countries = {
@@ -63,11 +69,266 @@ class CountryListWidget(QListWidget):
             codes.append(item.data(Qt.UserRole))
         return codes
 
+class TorUpdaterThread(QThread):
+    progress = pyqtSignal(str)
+    finished = pyqtSignal(bool, str)
+
+    def __init__(self, channel="stable", archive_path=None):
+        super().__init__()
+        self.channel = channel
+        self.archive_path = archive_path
+        self.project_folder = Path(__file__).parent.absolute()
+        self.tor_latest_dir = self.project_folder / "tor"
+        self.backup_dir = self.project_folder / "backup"
+
+    def get_system_info(self):
+        os_name = platform.system().lower()
+        arch = platform.machine().lower()
+        
+        if "windows" in os_name:
+            os_name = "windows"
+        elif "linux" in os_name:
+            os_name = "linux"
+        elif "darwin" in os_name:
+            os_name = "macos"
+        
+        if arch in ["x86_64", "amd64"]:
+            arch = "x86_64"
+        elif arch in ["i386", "i686"]:
+            arch = "i686"
+        elif arch in ["aarch64", "arm64"]:
+            arch = "aarch64"
+            
+        return os_name, arch
+
+    def get_bridges(self):
+        return ["webtunnel [2001:db8:cf6:ce7:c7fc:5a42:72d5:8c8b]:443 D0A1F802127A925F47A7C9713F17A9E1D1292E54 url=https://cdn-131.airstrip1.net/4c5d6e7f8g9h0i1j2k3l4m5n ver=0.0.2", 
+                "webtunnel [2001:db8:50c6:f177:293a:6612:f682:feb0]:443 6736F1245C77FBDCE4252F5711DE3137A7C10125 url=https://www.itssohotrightnow.com/0bc106e5688f206329e24a350b084c43 ver=0.0.4", 
+                "webtunnel [2001:db8:1ecc:edad:a642:10d8:adc1:c886]:443 C2176476CDD39DFAB550BBC94E1DF3980398E5FC url=https://mstdn.plus/Lohguu6eequaethu ver=0.0.2"]
+
+    def parse_download_url(self, html_content, os_name, arch, channel):
+        links = re.findall(r'href="(https://[^"]+tor-expert-bundle-[^"]+\.tar\.gz)"', html_content)
+        target_pattern = f"tor-expert-bundle-{os_name}-{arch}"
+        filtered_links = [l for l in links if target_pattern in l]
+        
+        if not filtered_links:
+            return None
+            
+        if channel == "alpha":
+            result = [l for l in filtered_links if "a" in l.split('/')[-2]]
+        else:
+            result = [l for l in filtered_links if "a" not in l.split('/')[-2]]
+            
+        return result[0] if result else filtered_links[0]
+
+    def run(self):
+        tor_process = None
+        try:
+            try:
+                import subprocess, platform, time
+                self.progress.emit(T("Остановка всех процессов Tor...", "Stopping all Tor processes..."))
+                if platform.system().lower() == "windows":
+                    subprocess.run(["taskkill", "/F", "/IM", "tor.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                else:
+                    subprocess.run(["killall", "tor"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                time.sleep(1)
+            except:
+                pass
+
+            update_info_path = self.project_folder / "update_info.json"
+            
+            if self.archive_path:
+                local_filename = Path(self.archive_path)
+                self.progress.emit(T(f"Использование локального архива: {local_filename.name}...", f"Using local archive: {local_filename.name}..."))
+                self._extract_and_apply(local_filename)
+                return
+            else:
+                self.progress.emit("Определение системы...")
+                os_name, arch = self.get_system_info()
+                
+                base_dir = self.project_folder
+            if update_info_path.exists():
+                try:
+                    with open(update_info_path, 'r') as f:
+                        info = json.load(f)
+                        folder_name = info.get('use_folder')
+                        if folder_name and (self.project_folder / folder_name).exists():
+                            base_dir = self.project_folder / folder_name
+                except:
+                    pass
+
+            tor_exe = base_dir / "tor" / ("tor.exe" if os_name == "windows" else "tor")
+            lyrebird_exe = base_dir / "tor" / "pluggable_transports" / ("lyrebird.exe" if os_name == "windows" else "lyrebird")
+            
+            if not tor_exe.exists():
+                found = False
+                for fallback in [self.project_folder, self.backup_dir, self.project_folder / "tor"]:
+                    t_exe = fallback / "tor" / ("tor.exe" if os_name == "windows" else "tor")
+                    l_exe = fallback / "tor" / "pluggable_transports" / ("lyrebird.exe" if os_name == "windows" else "lyrebird")
+                    if t_exe.exists():
+                        tor_exe, lyrebird_exe = t_exe, l_exe
+                        found = True
+                        break
+                if not found:
+                    self.finished.emit(False, T("Tor executable не найден. Восстановите файлы или скачайте Tor вручную.", "Tor executable not found. Restore files or download Tor manually."))
+                    return
+
+            self.progress.emit(T("Генерация временного torrc...", "Generating temporary torrc..."))
+            torrc_path = self.project_folder / "temp_torrc"
+            data_dir = self.project_folder / "temp_data"
+            data_dir.mkdir(exist_ok=True)
+            
+            bridges_str = "\n".join([f"Bridge {b}" for b in self.get_bridges()])
+            torrc_content = f"""
+DataDirectory {data_dir}
+SocksPort 127.0.0.1:9750
+UseBridges 1
+ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec {lyrebird_exe}
+AvoidDiskWrites 1
+ClientOnly 1
+{bridges_str}
+"""
+            torrc_path.write_text(torrc_content.strip())
+            
+            self.progress.emit(T("Запуск Tor для загрузки обновления...", "Starting Tor to download the update..."))
+            env = os.environ.copy()
+            if os_name != "windows":
+                lib_path = str(tor_exe.parent)
+                env['LD_LIBRARY_PATH'] = f"{lib_path}:{env.get('LD_LIBRARY_PATH', '')}"
+                os.chmod(tor_exe, 0o755)
+                if lyrebird_exe.exists():
+                    os.chmod(lyrebird_exe, 0o755)
+
+            creation_flags = 0
+            if os_name == "windows":
+                creation_flags = subprocess.CREATE_NO_WINDOW
+                
+            tor_process = subprocess.Popen(
+                [str(tor_exe), "-f", str(torrc_path)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                bufsize=1,
+                universal_newlines=True,
+                env=env,
+                creationflags=creation_flags
+            )
+            
+            self.progress.emit(T("Ожидание подключения Tor (Bootstrap)...", "Waiting for Tor connection (Bootstrap)..."))
+            bootstrapped = False
+            start_time = time.time()
+            timeout = 360
+            
+            while True:
+                if tor_process.poll() is not None:
+                    break
+                line = tor_process.stdout.readline()
+                if not line:
+                    break
+                if "Bootstrapped 100%" in line:
+                    bootstrapped = True
+                    break
+                if time.time() - start_time > timeout:
+                    break
+                    
+            if not bootstrapped:
+                tor_process.terminate()
+                self.finished.emit(False, T("Не удалось подключиться к сети Tor (таймаут).", "Failed to connect to the Tor network (timeout)."))
+                return
+            
+            self.progress.emit(T("Tor подключен. Поиск обновлений...", "Tor connected. Searching for updates..."))
+            proxies = {
+                'http': 'socks5h://127.0.0.1:9750',
+                'https': 'socks5h://127.0.0.1:9750'
+            }
+            
+            session = requests.Session()
+            session.proxies = proxies
+            
+            response = session.get("https://www.torproject.org/download/tor/")
+            response.raise_for_status()
+            
+            download_url = self.parse_download_url(response.text, os_name, arch, self.channel)
+            if not download_url:
+                tor_process.terminate()
+                self.finished.emit(False, T("Не удалось найти ссылку на скачивание.", "Failed to find the download link."))
+                return
+                
+            self.progress.emit(T(f"Скачивание обновления: {download_url.split('/')[-1]}...", f"Downloading update: {download_url.split('/')[-1]}..."))
+            local_filename = self.project_folder / download_url.split('/')[-1]
+            with session.get(download_url, stream=True) as r:
+                r.raise_for_status()
+                with open(local_filename, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=8192):
+                        f.write(chunk)
+            
+            if not self.archive_path:
+                self.progress.emit(T("Остановка временного Tor...", "Stopping temporary Tor..."))
+                tor_process.terminate()
+                tor_process.wait()
+                tor_process = None
+            
+            self._extract_and_apply(local_filename)
+            
+        except Exception as e:
+            if tor_process:
+                try:
+                    tor_process.terminate()
+                except:
+                    pass
+            self.finished.emit(False, T(f"Ошибка при обновлении: {str(e)}", f"Error during update: {str(e)}"))
+
+    def _extract_and_apply(self, local_filename):
+        self.progress.emit(T("Распаковка обновления...", "Extracting update..."))
+        try:
+            if self.backup_dir.exists():
+                shutil.rmtree(self.backup_dir)
+            self.backup_dir.mkdir(parents=True, exist_ok=True)
+            for d in ['tor', 'data', 'docs']:
+                src = self.project_folder / d
+                if src.exists():
+                    shutil.move(str(src), str(self.backup_dir / d))
+        except PermissionError as pe:
+            self.finished.emit(False, T(f"Файлы заняты другим процессом. Закройте ToInet/Tor и попробуйте снова.\nПодробности: {pe}", f"Files are locked by another process. Close ToInet/Tor and try again.\nDetails: {pe}"))
+            return
+
+        if str(local_filename).endswith('.zip'):
+            import zipfile
+            with zipfile.ZipFile(local_filename, 'r') as zip_ref:
+                zip_ref.extractall(self.project_folder)
+        else:
+            import tarfile
+            with tarfile.open(local_filename, "r:gz") as tar:
+                if hasattr(tarfile, 'data_filter'):
+                    tar.extractall(path=self.project_folder, filter='data')
+                else:
+                    tar.extractall(path=self.project_folder)
+        
+        if not self.archive_path:
+            import os
+            os.remove(local_filename)
+        
+        self.progress.emit("Обновление конфигурации...")
+        update_info_path = self.project_folder / "update_info.json"
+        info = {}
+        if update_info_path.exists():
+            import json
+            with open(update_info_path, 'r') as f:
+                info = json.load(f)
+        if 'use_folder' in info:
+            del info['use_folder']
+        info['branch'] = self.channel
+        import json
+        with open(update_info_path, 'w') as f:
+            json.dump(info, f)
+            
+        self.finished.emit(True, T("Обновление успешно завершено! Изменения вступят в силу после перезапуска.", "Update successfully completed! Changes will take effect after restart."))
+
 class TorrcConfigurator(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle("Конфигуратор")
-        self.setMinimumSize(800, 750)
+        self.setMinimumSize(800, 950)
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #2b2b2b;
@@ -197,11 +458,25 @@ class TorrcConfigurator(QMainWindow):
         
         # Set default paths
         self.current_dir = os.getcwd()
-        self.data_dir = os.path.join(self.current_dir, "data")
-        self.geoip_path = os.path.join(self.current_dir, "data", "geoip")
-        self.geoipv6_path = os.path.join(self.current_dir, "data", "geoip6")
+        
+        # Determine base tor dir from update_info.json
+        self.base_tor_dir = self.current_dir
+        update_info_path = os.path.join(self.current_dir, "update_info.json")
+        if os.path.exists(update_info_path):
+            try:
+                with open(update_info_path, 'r') as f:
+                    info = json.load(f)
+                    folder_name = info.get('use_folder')
+                    if folder_name and os.path.exists(os.path.join(self.current_dir, folder_name)):
+                        self.base_tor_dir = os.path.join(self.current_dir, folder_name)
+            except:
+                pass
+
+        self.data_dir = os.path.join(self.base_tor_dir, "data")
+        self.geoip_path = os.path.join(self.base_tor_dir, "data", "geoip")
+        self.geoipv6_path = os.path.join(self.base_tor_dir, "data", "geoip6")
         self.bridges_path = os.path.join(self.current_dir, "bridges.txt")
-        self.pt_config_path = os.path.join(self.current_dir, "tor", "pluggable_transports", "pt_config.json")
+        self.pt_config_path = os.path.join(self.base_tor_dir, "tor", "pluggable_transports", "pt_config.json")
         
         self.init_ui()
         
@@ -213,21 +488,10 @@ class TorrcConfigurator(QMainWindow):
         main_layout.setSpacing(15)
         main_layout.setContentsMargins(20, 20, 20, 20)
         
-        # Title
-        title_label = QLabel("Tor Exit Node Configuration")
-        title_label.setStyleSheet("""
-            font-size: 18px;
-            font-weight: bold;
-            color: #4CAF50;
-            padding: 10px;
-            border-bottom: 2px solid #4CAF50;
-            margin-bottom: 10px;
-        """)
-        title_label.setAlignment(Qt.AlignCenter)
-        main_layout.addWidget(title_label)
+
         
         # Countries selection group
-        countries_group = QGroupBox("Выбрать страны конечного ip")
+        countries_group = QGroupBox(T("Выбрать страны конечного ip", "Select exit IP countries"))
         countries_layout = QVBoxLayout()
         countries_layout.setSpacing(10)
         
@@ -238,7 +502,7 @@ class TorrcConfigurator(QMainWindow):
         countries_layout.addWidget(self.country_list)
         
         # Selected countries display
-        self.selected_label = QLabel("Выбрано: Ничего")
+        self.selected_label = QLabel(T("Выбрано: Ничего", "Selected: None"))
         self.selected_label.setStyleSheet("color: #4CAF50; font-weight: bold;")
         self.selected_label.setAlignment(Qt.AlignCenter)
         self.country_list.itemSelectionChanged.connect(self.update_selected_label)
@@ -248,18 +512,18 @@ class TorrcConfigurator(QMainWindow):
         main_layout.addWidget(countries_group)
         
         # Bridges mode selection group
-        bridges_mode_group = QGroupBox("Режим мостов")
+        bridges_mode_group = QGroupBox(T("Режим мостов", "Bridges Mode"))
         bridges_mode_layout = QVBoxLayout()
         
         # Radio buttons for bridge modes
         self.bridge_mode_group = QButtonGroup()
         
-        self.normal_mode_rb = QRadioButton("Обычный режим (использовать bridges.txt)")
+        self.normal_mode_rb = QRadioButton(T("Обычный режим (использовать bridges.txt)", "Normal mode (use bridges.txt)"))
         self.normal_mode_rb.setChecked(True)
-        self.obfs4_mode_rb = QRadioButton("Предустановленные obfs4 мосты")
-        self.snowflake_mode_rb = QRadioButton("Предустановленные snowflake мосты")
-        self.conjure_mode_rb = QRadioButton("Предустановленные conjure мосты")
-        self.meek_mode_rb = QRadioButton("Предустановленные meek мосты")
+        self.obfs4_mode_rb = QRadioButton(T("Предустановленные obfs4 мосты", "Pre-installed obfs4 bridges"))
+        self.snowflake_mode_rb = QRadioButton(T("Предустановленные snowflake мосты", "Pre-installed snowflake bridges"))
+        self.conjure_mode_rb = QRadioButton(T("Предустановленные conjure мосты", "Pre-installed conjure bridges"))
+        self.meek_mode_rb = QRadioButton(T("Предустановленные meek мосты", "Pre-installed meek bridges"))
         
         self.bridge_mode_group.addButton(self.normal_mode_rb, 0)
         self.bridge_mode_group.addButton(self.obfs4_mode_rb, 1)
@@ -284,10 +548,10 @@ class TorrcConfigurator(QMainWindow):
         main_layout.addWidget(bridges_mode_group)
         
         # Bridges file group (for normal mode)
-        bridges_file_group = QGroupBox("Мосты (для обычного режима)")
+        bridges_file_group = QGroupBox(T("Мосты (для обычного режима)", "Bridges (for normal mode)"))
         bridges_file_layout = QGridLayout()
         
-        bridges_label = QLabel("Файл мостов (bridges.txt):")
+        bridges_label = QLabel(T("Файл мостов (bridges.txt):", "Bridges file (bridges.txt):"))
         bridges_label.setStyleSheet("font-weight: normal;")
         bridges_file_layout.addWidget(bridges_label, 0, 0)
         
@@ -296,7 +560,7 @@ class TorrcConfigurator(QMainWindow):
         self.bridges_edit.setReadOnly(True)
         bridges_file_layout.addWidget(self.bridges_edit, 0, 1)
         
-        bridges_browse_btn = QPushButton("Выбрать")
+        bridges_browse_btn = QPushButton(T("Выбрать", "Browse"))
         bridges_browse_btn.setObjectName("browseBtn")
         bridges_browse_btn.clicked.connect(self.browse_bridges)
         bridges_file_layout.addWidget(bridges_browse_btn, 0, 2)
@@ -306,11 +570,11 @@ class TorrcConfigurator(QMainWindow):
         self.bridges_file_group = bridges_file_group
         
         # Tor directories group
-        tor_group = QGroupBox("Файлы TOR")
+        tor_group = QGroupBox(T("Файлы TOR", "TOR Files"))
         tor_layout = QGridLayout()
         
         # Data directory
-        data_label = QLabel("Папка Data:")
+        data_label = QLabel(T("Папка Data:", "Data Folder:"))
         data_label.setStyleSheet("font-weight: normal;")
         tor_layout.addWidget(data_label, 0, 0)
         
@@ -318,13 +582,13 @@ class TorrcConfigurator(QMainWindow):
         self.data_edit.setText(self.data_dir)
         tor_layout.addWidget(self.data_edit, 0, 1)
         
-        data_browse_btn = QPushButton("Выбрать")
+        data_browse_btn = QPushButton(T("Выбрать", "Browse"))
         data_browse_btn.setObjectName("browseBtn")
         data_browse_btn.clicked.connect(self.browse_data_dir)
         tor_layout.addWidget(data_browse_btn, 0, 2)
         
         # GeoIP file
-        geoip_label = QLabel("GeoIP Файл:")
+        geoip_label = QLabel(T("GeoIP Файл:", "GeoIP File:"))
         geoip_label.setStyleSheet("font-weight: normal;")
         tor_layout.addWidget(geoip_label, 1, 0)
         
@@ -332,13 +596,13 @@ class TorrcConfigurator(QMainWindow):
         self.geoip_edit.setText(self.geoip_path)
         tor_layout.addWidget(self.geoip_edit, 1, 1)
         
-        geoip_browse_btn = QPushButton("Выбрать")
+        geoip_browse_btn = QPushButton(T("Выбрать", "Browse"))
         geoip_browse_btn.setObjectName("browseBtn")
         geoip_browse_btn.clicked.connect(lambda: self.browse_file(self.geoip_edit))
         tor_layout.addWidget(geoip_browse_btn, 1, 2)
         
         # GeoIPv6 file
-        geoipv6_label = QLabel("GeoIPv6 Файл:")
+        geoipv6_label = QLabel(T("GeoIPv6 Файл:", "GeoIPv6 File:"))
         geoipv6_label.setStyleSheet("font-weight: normal;")
         tor_layout.addWidget(geoipv6_label, 2, 0)
         
@@ -346,7 +610,7 @@ class TorrcConfigurator(QMainWindow):
         self.geoipv6_edit.setText(self.geoipv6_path)
         tor_layout.addWidget(self.geoipv6_edit, 2, 1)
         
-        geoipv6_browse_btn = QPushButton("Выбрать")
+        geoipv6_browse_btn = QPushButton(T("Выбрать", "Browse"))
         geoipv6_browse_btn.setObjectName("browseBtn")
         geoipv6_browse_btn.clicked.connect(lambda: self.browse_file(self.geoipv6_edit))
         tor_layout.addWidget(geoipv6_browse_btn, 2, 2)
@@ -355,35 +619,35 @@ class TorrcConfigurator(QMainWindow):
         main_layout.addWidget(tor_group)
 
         # Upstream Proxy group
-        proxy_group = QGroupBox("Прокси для TOR (Upstream Proxy)")
+        proxy_group = QGroupBox(T("Прокси для TOR (Upstream Proxy)", "Proxy for TOR (Upstream Proxy)"))
         proxy_layout = QGridLayout()
 
-        proxy_type_label = QLabel("Тип прокси:")
+        proxy_type_label = QLabel(T("Тип прокси:", "Proxy Type:"))
         proxy_layout.addWidget(proxy_type_label, 0, 0)
         
         self.proxy_type_combo = QComboBox()
-        self.proxy_type_combo.addItems(["Нет", "SOCKS4", "SOCKS5", "HTTP/HTTPS"])
+        self.proxy_type_combo.addItems([T("Нет", "None"), "SOCKS4", "SOCKS5", "HTTP/HTTPS"])
         proxy_layout.addWidget(self.proxy_type_combo, 0, 1)
 
-        proxy_host_label = QLabel("Адрес:")
+        proxy_host_label = QLabel(T("Адрес:", "Address:"))
         proxy_layout.addWidget(proxy_host_label, 1, 0)
         self.proxy_host_edit = QLineEdit()
         self.proxy_host_edit.setPlaceholderText("127.0.0.1")
         proxy_layout.addWidget(self.proxy_host_edit, 1, 1)
 
-        proxy_port_label = QLabel("Порт:")
+        proxy_port_label = QLabel(T("Порт:", "Port:"))
         proxy_layout.addWidget(proxy_port_label, 1, 2)
         self.proxy_port_edit = QLineEdit()
         self.proxy_port_edit.setPlaceholderText("1080")
         self.proxy_port_edit.setFixedWidth(60)
         proxy_layout.addWidget(self.proxy_port_edit, 1, 3)
 
-        proxy_user_label = QLabel("Логин:")
+        proxy_user_label = QLabel(T("Логин:", "Username:"))
         proxy_layout.addWidget(proxy_user_label, 2, 0)
         self.proxy_user_edit = QLineEdit()
         proxy_layout.addWidget(self.proxy_user_edit, 2, 1)
 
-        proxy_pass_label = QLabel("Пароль:")
+        proxy_pass_label = QLabel(T("Пароль:", "Password:"))
         proxy_layout.addWidget(proxy_pass_label, 2, 2)
         self.proxy_pass_edit = QLineEdit()
         self.proxy_pass_edit.setEchoMode(QLineEdit.Password)
@@ -392,8 +656,42 @@ class TorrcConfigurator(QMainWindow):
         proxy_group.setLayout(proxy_layout)
         main_layout.addWidget(proxy_group)
         
+        # Tor Update Settings
+        update_group = QGroupBox(T("Настройки обновления TOR", "TOR Update Settings"))
+        update_layout = QGridLayout()
+
+        branch_label = QLabel(T("Ветка обновления:", "Update Branch:"))
+        branch_label.setStyleSheet("font-weight: normal;")
+        update_layout.addWidget(branch_label, 0, 0)
+
+        self.branch_combo = QComboBox()
+        self.branch_combo.addItems(["stable", "alpha"])
+        update_layout.addWidget(self.branch_combo, 0, 1)
+
+        self.autoupdate_cb = QCheckBox(T("Автообновление TOR при запуске ToInet", "Auto-update TOR when ToInet starts"))
+        self.autoupdate_cb.setStyleSheet("color: #e0e0e0; font-size: 11px;")
+        self.autoupdate_cb.toggled.connect(self.on_autoupdate_changed)
+        update_layout.addWidget(self.autoupdate_cb, 1, 0, 1, 2)
+
+        update_btn = QPushButton(T("Проверить и обновить", "Check and update"))
+        update_btn.clicked.connect(self.run_update)
+        update_layout.addWidget(update_btn, 2, 0)
+
+        rollback_btn = QPushButton(T("Откат к бекапу", "Rollback to backup"))
+        rollback_btn.clicked.connect(self.rollback_update)
+        update_layout.addWidget(rollback_btn, 2, 1)
+
+        archive_btn = QPushButton(T("Установить из архива", "Install from archive"))
+        archive_btn.clicked.connect(self.install_from_archive)
+        update_layout.addWidget(archive_btn, 3, 0, 1, 2)
+
+        update_group.setLayout(update_layout)
+        main_layout.addWidget(update_group)
+        
+        self.load_update_settings()
+
         # Generate button
-        generate_btn = QPushButton("Создать конфигурацию")
+        generate_btn = QPushButton(T("Создать конфигурацию", "Generate Configuration"))
         generate_btn.setMinimumHeight(40)
         generate_btn.setStyleSheet("""
             QPushButton {
@@ -408,6 +706,183 @@ class TorrcConfigurator(QMainWindow):
         generate_btn.clicked.connect(self.generate_torrc)
         main_layout.addWidget(generate_btn)
         
+    def load_update_settings(self):
+        update_info_path = os.path.join(self.current_dir, "update_info.json")
+        if os.path.exists(update_info_path):
+            try:
+                with open(update_info_path, 'r') as f:
+                    info = json.load(f)
+                    if info.get('auto_update', False):
+                        self.autoupdate_cb.setChecked(True)
+                    
+                    branch = info.get('branch', 'stable')
+                    index = self.branch_combo.findText(branch)
+                    if index >= 0:
+                        self.branch_combo.setCurrentIndex(index)
+            except:
+                pass
+
+    def on_autoupdate_changed(self, state):
+        update_info_path = os.path.join(self.current_dir, "update_info.json")
+        info = {}
+        if os.path.exists(update_info_path):
+            try:
+                with open(update_info_path, 'r') as f:
+                    info = json.load(f)
+            except:
+                pass
+        
+        info['auto_update'] = self.autoupdate_cb.isChecked()
+        try:
+            with open(update_info_path, 'w') as f:
+                json.dump(info, f)
+        except:
+            pass
+
+    def install_from_archive(self):
+        file_path, _ = QFileDialog.getOpenFileName(self, T("Выберите архив Tor", "Select Tor archive"), "", "Archives (*.zip *.tar.gz)")
+        if file_path:
+            self.run_update(archive_path=file_path)
+
+    def run_update(self, archive_path=None):
+        branch = self.branch_combo.currentText()
+        
+        # Save branch preference
+        self.on_autoupdate_changed(None)
+        update_info_path = os.path.join(self.current_dir, "update_info.json")
+        try:
+            with open(update_info_path, 'r') as f:
+                info = json.load(f)
+            info['branch'] = branch
+            with open(update_info_path, 'w') as f:
+                json.dump(info, f)
+        except:
+            pass
+
+        # Check IP only if downloading
+        if not archive_path:
+            country_code = None
+            try:
+                res = requests.get('http://ip-api.com/json', proxies={'http': 'socks5h://127.0.0.1:9853', 'https': 'socks5h://127.0.0.1:9853'}, timeout=3).json()
+                country_code = res.get('countryCode')
+            except:
+                try:
+                    res = requests.get('http://ip-api.com/json', timeout=3).json()
+                    country_code = res.get('countryCode')
+                except:
+                    pass
+
+            if country_code == 'RU':
+                QMessageBox.warning(self, T("Внимание", "Warning"), T("Отключите все экземпляры TOR, скачивание из РФ невозможно.", "Disable all TOR instances, downloading from RF is impossible."))
+                return
+            elif country_code == 'GB':
+                reply = QMessageBox.question(self, T("Предупреждение", "Warning"), T("Внимание: скачивание Tor в Великобритании может привлечь внимание госорганов. Продолжить?", "Warning: downloading Tor in the UK may attract the attention of government authorities. Continue?"), QMessageBox.Yes | QMessageBox.No)
+                if reply == QMessageBox.No:
+                    return
+
+        self.progress_dialog = QProgressDialog(T("Подготовка к обновлению...", "Preparing to update..."), T("Отмена", "Cancel"), 0, 0, self)
+        self.progress_dialog.setWindowTitle(T("Обновление Tor", "Tor Update"))
+        self.progress_dialog.setWindowModality(Qt.WindowModal)
+        self.progress_dialog.setCancelButton(None)
+        self.progress_dialog.setStyleSheet("""
+            QProgressDialog {
+                background-color: #2b2b2b;
+                color: #e0e0e0;
+            }
+            QLabel {
+                color: #e0e0e0;
+                font-weight: bold;
+                font-size: 12px;
+            }
+            QProgressBar {
+                border: 1px solid #555;
+                border-radius: 3px;
+                background-color: #3c3c3c;
+                text-align: center;
+            }
+            QProgressBar::chunk {
+                background-color: #4CAF50;
+            }
+        """)
+        self.progress_dialog.show()
+        
+        self.updater_thread = TorUpdaterThread(channel=branch, archive_path=archive_path)
+        self.updater_thread.progress.connect(self.update_progress)
+        self.updater_thread.finished.connect(self.update_finished)
+        self.updater_thread.start()
+
+    def update_progress(self, msg):
+        if hasattr(self, 'progress_dialog') and self.progress_dialog:
+            self.progress_dialog.setLabelText(msg)
+
+    def update_finished(self, success, msg):
+        if hasattr(self, 'progress_dialog') and self.progress_dialog:
+            self.progress_dialog.close()
+        
+        if success:
+            QMessageBox.information(self, T("Успех", "Success"), msg)
+            new_dir = os.path.join(self.current_dir, "tor")
+            if os.path.exists(new_dir):
+                self.base_tor_dir = new_dir
+                self.data_edit.setText(os.path.join(new_dir, "data"))
+                self.geoip_edit.setText(os.path.join(new_dir, "data", "geoip"))
+                self.geoipv6_edit.setText(os.path.join(new_dir, "data", "geoip6"))
+        else:
+            QMessageBox.critical(self, T("Ошибка", "Error"), msg)
+
+    def rollback_update(self):
+        update_info_path = os.path.join(self.current_dir, "update_info.json")
+        backup_dir = os.path.join(self.current_dir, "backup")
+        
+        if not os.path.exists(backup_dir):
+            QMessageBox.warning(self, T("Ошибка", "Error"), T("Папка backup не найдена. Откат невозможен.", "Backup folder not found. Rollback is impossible."))
+            return
+            
+        try:
+            import subprocess, platform, time
+            if platform.system().lower() == "windows":
+                subprocess.run(["taskkill", "/F", "/IM", "tor.exe"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                subprocess.run(["killall", "tor"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            time.sleep(1)
+        except:
+            pass
+
+        try:
+            import shutil
+            # Move from backup to root
+            for d in ['tor', 'data', 'docs']:
+                src = os.path.join(backup_dir, d)
+                dst = os.path.join(self.current_dir, d)
+                if os.path.exists(src):
+                    if os.path.exists(dst):
+                        shutil.rmtree(dst)
+                    shutil.move(src, dst)
+            
+            # Delete tor_latest if it exists
+            tor_latest_dir = os.path.join(self.current_dir, "tor_latest")
+            if os.path.exists(tor_latest_dir):
+                shutil.rmtree(tor_latest_dir)
+                
+            info = {}
+            if os.path.exists(update_info_path):
+                with open(update_info_path, 'r') as f:
+                    info = json.load(f)
+            
+            info['use_folder'] = ''
+            with open(update_info_path, 'w') as f:
+                json.dump(info, f)
+                
+            QMessageBox.information(self, T("Успешно", "Success"), T("Откат выполнен успешно. Файлы восстановлены из бекапа.", "Rollback successful. Files restored from backup."))
+            self.base_tor_dir = self.current_dir
+            self.data_edit.setText(os.path.join(self.current_dir, "data"))
+            self.geoip_edit.setText(os.path.join(self.current_dir, "data", "geoip"))
+            self.geoipv6_edit.setText(os.path.join(self.current_dir, "data", "geoip6"))
+        except PermissionError:
+            QMessageBox.critical(self, T("Ошибка", "Error"), T("Файлы заняты другим процессом. Пожалуйста, закройте ToInet/Tor перед откатом.", "Files are locked by another process. Please close ToInet/Tor before rolling back."))
+        except Exception as e:
+            QMessageBox.critical(self, T("Ошибка", "Error"), T(f"Не удалось выполнить откат: {e}", f"Failed to rollback: {e}"))
+
     def on_bridge_mode_changed(self):
         """Handle bridge mode change"""
         if self.normal_mode_rb.isChecked():
@@ -492,7 +967,7 @@ class TorrcConfigurator(QMainWindow):
         
         bridges = []
         transport_plugin = None
-        pt_path = os.path.join(self.current_dir, "tor", "pluggable_transports", "")
+        pt_path = os.path.join(self.base_tor_dir, "tor", "pluggable_transports", "")
         
         if self.normal_mode_rb.isChecked():
             # Normal mode: read from bridges.txt
