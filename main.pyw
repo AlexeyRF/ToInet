@@ -63,7 +63,7 @@ def toggle_all():
     if not proxy_enabled:
         byedpi_manager.start()
         tor_manager.start()
-        if not lang._is_en:
+        if not lang._is_en or config.get("enable_ru_features", False):
             tgws_mgr.start()
         
         # Запускаем проксирование pip, если оно включено
@@ -303,7 +303,7 @@ def update_menu():
         if byedpi_manager.is_running():
             rb_act = QAction(T("Перезапустить ByeDPI", "Restart ByeDPI"), tray_menu); rb_act.triggered.connect(lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start())); tray_menu.addAction(rb_act)
         
-        if not lang._is_en:
+        if not lang._is_en or config.get("enable_ru_features", False):
             noisy_act = QAction(noisy_manager.get_status_text(), tray_menu); noisy_act.triggered.connect(toggle_noisy); tray_menu.addAction(noisy_act)
             tester_act = QAction(tester_manager.get_status_text(), tray_menu); tester_act.triggered.connect(toggle_tester); tray_menu.addAction(tester_act)
             tg_act = QAction(T("Ручной запуск TGWS", "Manual Start TGWS") if not tgws_mgr.running else T("Остановить TGWS", "Stop TGWS"), tray_menu); tg_act.triggered.connect(toggle_tgws); tray_menu.addAction(tg_act)
@@ -323,8 +323,23 @@ def update_menu():
         tray_menu.addSeparator()
         tray_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
         tray_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
+        
+        if lang._is_en:
+            ru_feat_act = QAction("Enable unsupported features (for RU region)", tray_menu)
+            ru_feat_act.setCheckable(True)
+            ru_feat_act.setChecked(config.get("enable_ru_features", False))
+            def toggle_ru_features():
+                config["enable_ru_features"] = not config.get("enable_ru_features", False)
+                config_manager.save_config(config)
+                update_menu()
+            ru_feat_act.triggered.connect(toggle_ru_features)
+            tray_menu.addAction(ru_feat_act)
+            
+        if not lang._is_en or config.get("enable_ru_features", False):
+            tray_menu.addAction(T("VK Turn Proxy", "VK Turn Proxy Launcher"), lambda: utils.run_script("vk_turn_proxy_gui.pyw"))
+            
         tray_menu.addAction(T("Реабилитировать SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
-        if not lang._is_en:
+        if not lang._is_en or config.get("enable_ru_features", False):
             tray_menu.addAction(T("Тестер стратегий ByeDPI", "ByeDPI Strategies Tester"), lambda: utils.run_script("byedpi_tester_gui.pyw"))
             tray_menu.addAction(T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: utils.run_script("tgws_settings.pyw"))
         
@@ -397,7 +412,7 @@ def update_menu():
         tray_menu.addAction(T("Настроить доп. программы", "Configure Ext. Programs"), ext_programs_manager.open_config)
         
         tray_menu.addSeparator()
-        if not lang._is_en:
+        if not lang._is_en or config.get("enable_ru_features", False):
             tray_menu.addAction(T("Добавить TGWS (1480) в Telegram", "Add TGWS (1480) to Telegram"), lambda: utils.add_proxy_to_telegram(1480))
         tray_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tray_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
@@ -420,7 +435,7 @@ def create_tray_menu():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     
-    if not config.get("auto_connect_last_mode", False) and not lang._is_en:
+    if not config.get("auto_connect_last_mode", False) and (not lang._is_en or config.get("enable_ru_features", False)):
         QTimer.singleShot(2000, lambda: tgws_mgr.start() if not tgws_mgr.running else None)
     
     tray = QSystemTrayIcon()
