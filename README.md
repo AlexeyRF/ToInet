@@ -27,6 +27,7 @@
 *   **Генератор сетевого шума Noisy (`noisy.py`):**
     *   Фоновый веб-краулер, имитирующий случайный веб-серфинг по доверенным сайтам.
     *   Маскирует ваш реальный зашифрованный трафик от систем DPI и анализаторов провайдера, создавая поток «белого шума».
+*   **VK-Turn-Proxy
 *   **Автозапуск и Удобство:**
     *   Сворачивание в системный трей Windows.
     *   Встроенный установщик автозапуска.
@@ -86,12 +87,6 @@
         C:\Program Files\Proxifier\Proxifier.exe
         ```
 
-### Как собрать (текущая версия): 
-1. Скачайте ЛМ и поместите его таким образом, что корень -> (data (внутри geoip и geoip6), tor (внутри (tor.exe, tor-gencert.exe, pluggable_transports (внутри conjure-client.exe, lyrebird.exe, pt_config.json)))
-2. Скачайте ByeDPI и поместите корень -> byedpi (внутри должен быть ciadpi.exe, bat файлы не нужны)
-3. Установите любую иконку icon.ico
----
-
 ## Запуск и использование
 
 1.  Запустите программу двойным щелчком по файлу **`launch.bat`** .
@@ -138,14 +133,13 @@ https://torproject.org - ЛМ<br>
 https://www.python.org/ - Python<br>
 https://github.com/Flowseal/tg-ws-proxy - TgWS Proxy<br>
 https://github.com/romanvht/ByeByeDPI - оригинальный подбор стратегий<br>
-https://github.com/cacggghp/vk-turn-proxy - маршрутизация через VK [Будущее]<br><br>
+https://github.com/cacggghp/vk-turn-proxy - маршрутизация через VK<br><br>
 ---
 В случае расследования какой-либо федеральной структуры или подобного, я не имею никакого отношения к этой группе или к людям в ней, я не знаю, как я здесь оказался, возможно, добавлен третьей стороной, я не поддерживаю никаких действий членов этой группы.
 ---
 
  <br>Планы на следующие версии: <br>
- 1. Внедрить обход белых списков через VK-TURN-PROXY
- 2. Реализация механизма нейтрализации цифровых угроз суверинитета
+ 1. Реализация механизма нейтрализации цифровых угроз суверинитета
 
 ---
 
@@ -230,11 +224,6 @@ The program provides three operational modes:
 3.  If planning to use **TUN mode**:
     *   Install a proxifier.
     *   Open `proxification_app.txt` and write the absolute path to the executable (e.g., `C:\Program Files\Proxifier\Proxifier.exe`).
-
-### Build Instructions (Current Version):
-1. Download Tor and place the root at `tor` directory (must contain `tor.exe`, `tor-gencert.exe`, and a `pluggable_transports` folder with `conjure-client.exe`, `lyrebird.exe`). Place GeoIP data in `data`.
-2. Download ByeDPI and place the root at `byedpi` (must contain `ciadpi.exe`).
-3. Set any icon as `icon.ico`.
 
 ---
 
