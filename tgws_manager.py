@@ -4,6 +4,10 @@ import socket
 import tg_ws_proxy
 import windows as tgws_windows
 from PyQt5.QtWidgets import QMessageBox
+import sys
+import subprocess
+import os
+import json
 
 class TGWSManager:
     def __init__(self):
@@ -11,6 +15,7 @@ class TGWSManager:
         self.thread = None
         self.stop_event = None
         self.config = {}
+        self.gatik_process = None
 
     def log(self, msg):
         print(f"[TGWS] {msg}")
@@ -68,6 +73,33 @@ class TGWSManager:
         if self.thread.is_alive():
             self.running = True
             self.log("TG WS Proxy запущен")
+            
+            # Start reabilitator if configured
+            try:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
+                config_path = os.path.join(base_dir, "socks_reabilitator_config.json")
+                if os.path.exists(config_path):
+                    with open(config_path, "r", encoding="utf-8") as f:
+                        cfg = json.load(f)
+                    if "host" in cfg and "port" in cfg and "strat" in cfg:
+                        reab_script = os.path.join(base_dir, "socks-reabilitator.pyw")
+                        if os.path.exists(reab_script):
+                            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                            subprocess.Popen([sys.executable, reab_script, "--silent"], creationflags=creationflags)
+                            self.log("Socks-Reabilitator запущен в фоне")
+            except Exception as e:
+                self.log(f"Failed to start reabilitator: {e}")
+                
+            # Start Gatik
+            try:
+                gatik_script = os.path.join(base_dir, "gatik.py")
+                if os.path.exists(gatik_script):
+                    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                    self.gatik_process = subprocess.Popen([sys.executable, gatik_script], creationflags=creationflags)
+                    self.log("Gatik (Telegram Smart Router) запущен в фоне")
+            except Exception as e:
+                self.log(f"Failed to start gatik: {e}")
+                
             return True
         else:
             self.log("Ошибка: поток TG WS Proxy не запустился")
@@ -84,6 +116,29 @@ class TGWSManager:
         self.stop_event = None
         self.running = False
         self.log("TG WS Proxy остановлен")
+        
+        # Stop reabilitator
+        try:
+            base_dir = os.path.dirname(os.path.abspath(__file__))
+            reab_script = os.path.join(base_dir, "socks-reabilitator.pyw")
+            if os.path.exists(reab_script):
+                creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                subprocess.Popen([sys.executable, reab_script, "--stop"], creationflags=creationflags)
+                self.log("Отправлена команда остановки Socks-Reabilitator")
+        except Exception as e:
+            self.log(f"Failed to stop reabilitator: {e}")
+            
+        if self.gatik_process:
+            try:
+                self.gatik_process.terminate()
+                self.gatik_process.wait(timeout=3)
+            except Exception:
+                try:
+                    self.gatik_process.kill()
+                except:
+                    pass
+            self.gatik_process = None
+            self.log("Gatik (Telegram Smart Router) остановлен")
 
 _manager = TGWSManager()
 
