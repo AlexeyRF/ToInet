@@ -3,12 +3,39 @@ import sys
 import os
 
 if getattr(sys, 'frozen', False):
+    import runpy
+    
+    # --- Монкипатч для os.path.exists и os.path.isfile ---
+    # Так как мы подменили CURRENT_DIR на папку с EXE, стандартные проверки
+    # наличия Python-скриптов будут падать, потому что скрипты лежат в _MEIPASS.
+    # Этот патч глобально чинит все вызовы os.path.exists для .py и .pyw файлов.
+    original_exists = os.path.exists
+    original_isfile = os.path.isfile
+    exe_dir = os.path.dirname(sys.executable)
+    
+    def smart_check(path, original_func):
+        if original_func(path):
+            return True
+        if isinstance(path, str) and path.endswith(('.py', '.pyw')):
+            if path.startswith(exe_dir):
+                rel = os.path.relpath(path, exe_dir)
+                meipass_path = os.path.join(sys._MEIPASS, rel)
+                if original_func(meipass_path):
+                    return True
+            meipass_path = os.path.join(sys._MEIPASS, os.path.basename(path))
+            if original_func(meipass_path):
+                return True
+        return False
+
+    os.path.exists = lambda p: smart_check(p, original_exists)
+    os.path.isfile = lambda p: smart_check(p, original_isfile)
+    # ----------------------------------------------------
+
     if len(sys.argv) >= 2 and sys.argv[1].endswith(('.py', '.pyw')):
-        import runpy
-        base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        base_path = getattr(sys, '_MEIPASS', exe_dir)
         script_path = sys.argv[1]
         full_path = os.path.join(base_path, script_path)
-        if not os.path.exists(full_path):
+        if not original_exists(full_path):
             full_path = script_path
         sys.argv = [full_path] + sys.argv[2:]
         runpy.run_path(full_path, run_name="__main__")
