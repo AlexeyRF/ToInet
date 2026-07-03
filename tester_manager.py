@@ -1,4 +1,4 @@
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import lang
 import os
 import subprocess
@@ -105,5 +105,6 @@ def get_manager(config=None):
     elif config is not None:
         _tester_manager.update_config(config)
     return _tester_manager
+
 
 

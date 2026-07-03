@@ -7,7 +7,7 @@ import platform
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QObject, pyqtSignal
 
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 
 def get_opera_proxy_exe():
     machine = platform.machine().lower()
@@ -120,3 +120,4 @@ def get_manager(config=None):
     if _manager is None:
         _manager = OperaProxyManager(config)
     return _manager
+

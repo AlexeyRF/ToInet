@@ -1,4 +1,4 @@
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import lang
 import os
 import subprocess
@@ -283,5 +283,6 @@ def open_byedpi_settings():
 def get_byedpi_params():
     manager = get_manager()
     return manager.get_params()
+
 
 

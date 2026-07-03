@@ -77,7 +77,7 @@ import tester_manager
 import ext_manager
 import opera_manager
 
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
 CACHER_SCRIPT = os.path.join(CURRENT_DIR, "cacher.pyw")
 
@@ -632,3 +632,4 @@ def create_tray_menu():
 if __name__ == "__main__":
     app = create_tray_menu()
     sys.exit(app.exec_())
+

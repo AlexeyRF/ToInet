@@ -1,4 +1,4 @@
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import os
 import psutil
 
@@ -15,5 +15,6 @@ for proc in psutil.process_iter(['pid', 'name']):
                 proc.kill()
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         continue
+
 
 

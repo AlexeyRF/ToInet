@@ -1,4 +1,4 @@
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import threading
 import time
 import socket
@@ -158,5 +158,6 @@ _manager = TGWSManager()
 
 def get_manager():
     return _manager
+
 
 

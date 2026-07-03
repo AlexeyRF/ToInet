@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import QMessageBox
 import lang
 import config_manager
 
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "cpller.pyw")
 
 class ModeManager:
@@ -129,3 +129,4 @@ _manager = ModeManager()
 
 def get_manager():
     return _manager
+
