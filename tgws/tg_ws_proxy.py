@@ -1,3 +1,4 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 from __future__ import annotations
 
 import os
@@ -15,7 +16,7 @@ from typing import Dict, Optional, Set, Tuple
 
 
 if __name__ == '__main__' and (__package__ is None or __package__ == ''):
-    _repo_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    _repo_root = CURRENT_DIR
     if _repo_root not in sys.path:
         sys.path.insert(0, _repo_root)
     __package__ = 'proxy'
@@ -786,3 +787,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

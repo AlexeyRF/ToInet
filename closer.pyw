@@ -1,7 +1,8 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import os
 import psutil
 
-script_dir = os.path.dirname(os.path.abspath(__file__))
+script_dir = CURRENT_DIR
 tor_path = os.path.join(script_dir, "tor", "tor.exe")
 
 tor_path = os.path.normcase(os.path.normpath(tor_path))
@@ -14,3 +15,5 @@ for proc in psutil.process_iter(['pid', 'name']):
                 proc.kill()
     except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
         continue
+
+

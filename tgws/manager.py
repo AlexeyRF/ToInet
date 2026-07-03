@@ -1,3 +1,4 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import threading
 import time
 import socket
@@ -89,7 +90,7 @@ class TGWSManager:
             
             # Start reabilitator if configured
             try:
-                base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+                base_dir = CURRENT_DIR
                 config_path = os.path.join(base_dir, "socks_reabilitator_config.json")
                 if os.path.exists(config_path):
                     with open(config_path, "r", encoding="utf-8") as f:
@@ -132,7 +133,7 @@ class TGWSManager:
         
         # Stop reabilitator
         try:
-            base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            base_dir = CURRENT_DIR
             reab_script = os.path.join(base_dir, "socks-reabilitator.pyw")
             if os.path.exists(reab_script):
                 creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
@@ -157,3 +158,5 @@ _manager = TGWSManager()
 
 def get_manager():
     return _manager
+
+

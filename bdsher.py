@@ -1,3 +1,4 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import lang
 import os
 import subprocess
@@ -7,8 +8,8 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QObject, pyqtSignal
 
 # Константы
-BYEDPI_EXE = os.path.join(os.path.dirname(os.path.abspath(__file__)), r"byedpi\ciadpi.exe")
-BYEDPI_CUSTOM_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "byedpi_custom.txt")
+BYEDPI_EXE = os.path.join(CURRENT_DIR, r"byedpi\ciadpi.exe")
+BYEDPI_CUSTOM_FILE = os.path.join(CURRENT_DIR, "byedpi_custom.txt")
 
 # Параметры по умолчанию
 DEFAULT_BYEDPI_PARAMS = "-p 1780 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru"
@@ -282,3 +283,5 @@ def open_byedpi_settings():
 def get_byedpi_params():
     manager = get_manager()
     return manager.get_params()
+
+

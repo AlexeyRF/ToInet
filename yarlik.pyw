@@ -1,3 +1,4 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import os
 import sys
 import ctypes
@@ -30,7 +31,7 @@ def get_app_directory():
         return os.path.dirname(sys.executable)
     else:
         # Если запущено как скрипт
-        return os.path.dirname(os.path.abspath(__file__))
+        return CURRENT_DIR
 
 def create_shortcut():
     """Создает ярлык на рабочем столе"""
@@ -117,3 +118,5 @@ if __name__ == "__main__":
     
 
     create_shortcut()
+
+
