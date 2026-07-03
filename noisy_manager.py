@@ -1,3 +1,4 @@
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import lang
 import os
 import subprocess
@@ -5,7 +6,7 @@ import psutil
 from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QObject, pyqtSignal
 
-NOISY_SCRIPT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "noisy.py")
+NOISY_SCRIPT = os.path.join(CURRENT_DIR, "noisy.py")
 
 class NoisyManager(QObject):
     status_changed = pyqtSignal(bool)
@@ -104,3 +105,5 @@ def get_manager(config=None):
     elif config is not None:
         _noisy_manager.update_config(config)
     return _noisy_manager
+
+

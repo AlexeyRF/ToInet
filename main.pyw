@@ -32,11 +32,24 @@ if getattr(sys, 'frozen', False):
     # ----------------------------------------------------
 
     if len(sys.argv) >= 2 and sys.argv[1].endswith(('.py', '.pyw')):
-        base_path = getattr(sys, '_MEIPASS', exe_dir)
         script_path = sys.argv[1]
-        full_path = os.path.join(base_path, script_path)
+        
+        # Если передан абсолютный путь, который начинается с папки программы,
+        # преобразуем его в относительный, чтобы найти внутри _MEIPASS
+        if os.path.isabs(script_path) and script_path.startswith(exe_dir):
+            rel_path = os.path.relpath(script_path, exe_dir)
+            full_path = os.path.join(getattr(sys, '_MEIPASS', exe_dir), rel_path)
+        else:
+            # Иначе просто склеиваем (сработает для относительных путей)
+            # или берем только имя файла как запасной вариант
+            base_path = getattr(sys, '_MEIPASS', exe_dir)
+            full_path = os.path.join(base_path, script_path)
+            if not original_exists(full_path) and os.path.isabs(script_path):
+                full_path = os.path.join(base_path, os.path.basename(script_path))
+                
         if not original_exists(full_path):
             full_path = script_path
+            
         sys.argv = [full_path] + sys.argv[2:]
         runpy.run_path(full_path, run_name="__main__")
         sys.exit(0)
