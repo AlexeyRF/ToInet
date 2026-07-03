@@ -2,9 +2,18 @@ import asyncio
 import struct
 import logging
 import time
+import os
+import sys
 
 # Настройка логирования для вывода информации в консоль
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+
+CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
+import config_manager
+_config = config_manager.load_config()
 
 # === НАСТРОЙКИ СЕТИ ===
 # Адрес и порт нашего умного шлюза (эти данные нужно вбить в Telegram)
@@ -13,15 +22,15 @@ LISTEN_PORT = 1777
 
 # Прокси для СКАЧИВАНИЯ (быстрый Download - TOR)
 DOWNLOAD_PROXY_HOST = '127.0.0.1'
-DOWNLOAD_PROXY_PORT = 9853
+DOWNLOAD_PROXY_PORT = _config.get("tor_socks_port", 9853)
 
 # Прокси для ЗАГРУЗКИ (быстрый Upload - TGWS)
-UPLOAD_PROXY_HOST = '127.0.0.1'
-UPLOAD_PROXY_PORT = 1480
+UPLOAD_PROXY_HOST = _config.get("tgws_host", "127.0.0.1")
+UPLOAD_PROXY_PORT = _config.get("tgws_port", 1480)
 
 # Порог размера первого пакета (в байтах).
 # Вы можете подкорректировать это значение, если маршрутизация будет ошибаться.
-UPLOAD_THRESHOLD = 1024 
+UPLOAD_THRESHOLD = 1024  
 
 # Глобальный флаг: до какого времени форсировать все новые соединения через TGWS
 global_upload_mode_until = 0

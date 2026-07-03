@@ -1,0 +1,37 @@
+{
+  "use_custom_settings": true,
+  "byedpi_params": "-p 1780 -d1 -s1+s -s3+s -s6+s -s9+s -s12+s -s15+s -s20+s -s30+s -a1",
+  "tgws_enabled": false,
+  "tgws_port": 1480,
+  "tgws_host": "0.0.0.0",
+  "tgws_dc_ip": [
+    "2:149.154.167.220",
+    "4:149.154.167.220"
+  ],
+  "tgws_verbose": false,
+  "mode_type": "tun",
+  "auto_start": true,
+  "auto_connect_last_mode": true,
+  "tor_show_window": false,
+  "byedpi_pip_enabled": false,
+  "byedpi_pip_use_tor": false,
+  "byedpi_pip_params": "-p 1781 -q1 -r25+s -a1",
+  "opera_params": "-bind-address 127.0.0.1:1785 -socks-mode -verbosity 20 -country EU -server-selection random -proxy socks5://127.0.0.1:1787",
+  "proxification_app": "D:\\Documents\\ToInet-MAX\\Proxifier\\Proxifier.exe",
+  "ext_programs": [],
+  "socks_reabilitator": {
+    "port": "1080",
+    "host": "127.0.0.1",
+    "strat": 21,
+    "username": "",
+    "password": ""
+  },
+  "autostart_tools": [
+    "byedpi",
+    "tor",
+    "tgws",
+    "proxifier"
+  ],
+  "tgws_secret": "4923bebb047398c7f41479b8759fa54d",
+  "tgws_fake_tls": "vk.com"
+}

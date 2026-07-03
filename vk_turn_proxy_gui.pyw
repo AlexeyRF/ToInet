@@ -170,16 +170,16 @@ class VKTurnProxyGUI(QWidget):
     def get_executable(self):
         machine = platform.machine().lower()
         if "arm" in machine or "aarch64" in machine:
-            exe = "client-windows-arm64.exe"
+            exe = "bin/client-windows-arm64.exe"
         else:
-            exe = "client-windows-amd64.exe"
+            exe = "bin/client-windows-amd64.exe"
         
         # fallback
         if not os.path.exists(exe):
-            if exe == "client-windows-arm64.exe" and os.path.exists("client-windows-amd64.exe"):
-                return "client-windows-amd64.exe"
-            elif exe == "client-windows-amd64.exe" and os.path.exists("client-windows-arm64.exe"):
-                return "client-windows-arm64.exe"
+            if exe == "bin/client-windows-arm64.exe" and os.path.exists("bin/client-windows-amd64.exe"):
+                return "bin/client-windows-amd64.exe"
+            elif exe == "bin/client-windows-amd64.exe" and os.path.exists("bin/client-windows-arm64.exe"):
+                return "bin/client-windows-arm64.exe"
         return exe
 
     def start_proxy(self):

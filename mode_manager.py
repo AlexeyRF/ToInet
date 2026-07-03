@@ -3,6 +3,8 @@ import sys
 import subprocess
 import time
 from PyQt5.QtWidgets import QMessageBox
+import lang
+import config_manager
 
 CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
 CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "cpller.pyw")
@@ -12,51 +14,68 @@ class ModeManager:
         self.tun_process = None
         self.inetcpl_tor_active = False
         self.inetcpl_bd_active = False
+        self.inetcpl_opera_active = False
 
     def log(self, msg):
         print(f"[MODE] {msg}")
 
     def run_cpller(self, port, action_flag):
-        if not os.path.exists(CPLLER_SCRIPT):
-            self.log(f"cpller.pyw не найден: {CPLLER_SCRIPT}")
-            return False
+        cmd = [sys.executable, CPLLER_SCRIPT, "--port", str(port), action_flag]
+        creationflags = 0
+        if os.name == "nt":
+            creationflags = subprocess.CREATE_NO_WINDOW
         
         try:
-            subprocess.Popen([sys.executable, CPLLER_SCRIPT, str(port), str(action_flag)], 
-                             creationflags=subprocess.CREATE_NO_WINDOW)
-            self.log(f"Запущен cpller.pyw с портом {port} и флагом {action_flag}")
+            self.log(f"Запуск cpller.pyw: {' '.join(cmd)}")
+            subprocess.Popen(cmd, creationflags=creationflags)
             return True
         except Exception as e:
             self.log(f"Ошибка запуска cpller.pyw: {e}")
             return False
 
     def get_tun_app_path(self):
-        app_file = os.path.join(CURRENT_DIR, "proxification_app.txt")
-        if not os.path.exists(app_file):
-            with open(app_file, 'w', encoding='utf-8') as f:
-                f.write("# Укажите путь к программе-проксификатору (например D:/Proxifier/proxifier.exe)\n")
-            return None
-        
-        with open(app_file, 'r', encoding='utf-8') as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith('#'):
-                    return line
-        return None
+        config = config_manager.load_config()
+        app_path = config.get("proxification_app", "")
+        if not app_path:
+            import getpass
+            username = getpass.getuser()
+            default_pb = rf"C:\Users\{username}\ProxyBridge\ProxyBridge_cli.exe --profile ToInet.pbprofile"
+            config["proxification_app"] = default_pb
+            config_manager.save_config(config)
+            return default_pb
+        return app_path
 
     def start_tun(self):
         if self.tun_process:
             return True
         
-        path = self.get_tun_app_path()
-        if path and os.path.exists(path):
+        from PyQt5.QtWidgets import QMessageBox
+        import lang
+        import shlex
+        import getpass
+        
+        path_line = self.get_tun_app_path()
+        if not path_line:
+            return False
+            
+        args = shlex.split(path_line, posix=False)
+        exe_path = args[0].strip('"\'')
+        
+        if os.path.exists(exe_path):
             try:
-                self.tun_process = subprocess.Popen([path])
-                self.log(f"TUN режим запущен: {path}")
+                self.tun_process = subprocess.Popen(args, cwd=CURRENT_DIR)
+                self.log(f"TUN режим запущен: {path_line}")
                 return True
             except Exception as e:
                 self.log(f"Ошибка запуска TUN режима: {e}")
                 QMessageBox.critical(None, "Ошибка TUN", f"Не удалось запустить проксификатор:\n{e}")
+        else:
+            msg = lang.T(
+                f"Программа для TUN режима не найдена:\n{exe_path}\n\nСкачайте ProxyBridge v4.0.0 по ссылке:\nhttps://github.com/InterceptSuite/ProxyBridge/releases/tag/v4.0.0\nи поместите в эту папку, либо измените путь в proxification_app.txt",
+                f"TUN mode application not found:\n{exe_path}\n\nDownload ProxyBridge v4.0.0 from:\nhttps://github.com/InterceptSuite/ProxyBridge/releases/tag/v4.0.0\nand place it in that folder, or change path in proxification_app.txt"
+            )
+            QMessageBox.warning(None, lang.T("Не настроен TUN", "TUN not configured"), msg)
+            
         return False
 
     def stop_tun(self):
@@ -73,10 +92,27 @@ class ModeManager:
             self.tun_process = None
 
     def restart_tun(self):
-        self.log("Перезапуск TUN режима...")
         self.stop_tun()
+        import time
         time.sleep(1)
-        return self.start_tun()
+        self.start_tun()
+
+    def open_proxifier_config(self):
+        from PyQt5.QtWidgets import QInputDialog
+        config = config_manager.load_config()
+        current_path = config.get("proxification_app", self.get_tun_app_path())
+        
+        text, ok = QInputDialog.getText(
+            None, 
+            "Настройка Проксификатора", 
+            "Укажите команду запуска проксификатора (например, путь к ProxyBridge с аргументами):", 
+            text=current_path
+        )
+        
+        if ok:
+            config["proxification_app"] = text.strip()
+            config_manager.save_config(config)
+            QMessageBox.information(None, "Успех", "Настройки сохранены. Перезапустите проксификатор.")
 
     def reset_inetcpl_proxy(self):
         if self.inetcpl_tor_active:
