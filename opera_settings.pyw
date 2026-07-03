@@ -8,7 +8,7 @@ from PyQt5.QtGui import QFont, QIcon
 import lang
 import config_manager
 
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 OPERA_CUSTOM_FILE = os.path.join(CURRENT_DIR, "opera_proxy_custom.txt")
 DEFAULT_PARAMS = "-bind-address 127.0.0.1:1785 -socks-mode -verbosity 20 -country EU -server-selection random -proxy socks5://127.0.0.1:1787"
 
@@ -179,3 +179,4 @@ if __name__ == "__main__":
     window = OperaSettingsWindow()
     window.show()
     sys.exit(app.exec_())
+

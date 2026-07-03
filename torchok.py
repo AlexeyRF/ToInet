@@ -7,7 +7,7 @@ import psutil
 from PyQt5.QtWidgets import QMessageBox
 
 # Пути к файлам
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 TORRC_FILE = os.path.join(CURRENT_DIR, "torrc")
 RECREATE_TORRC_FILE = os.path.join(CURRENT_DIR, "recreate_torrc.txt")
 LAUNCHER_SCRIPT = os.path.join(CURRENT_DIR, "launcher.pyw")
@@ -299,3 +299,4 @@ def log(msg):
 def get_manager():
     """Возвращает экземпляр менеджера TOR"""
     return TorManager()
+

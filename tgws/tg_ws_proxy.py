@@ -1,5 +1,5 @@
-import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 from __future__ import annotations
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 
 import os
 import sys
@@ -787,5 +787,7 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
 
 
