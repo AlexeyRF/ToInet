@@ -16,3 +16,18 @@ bridges.txt
 .antigravitycli/
 Proxifier/*
 Proxifier/
+# Build artifacts
+build/
+dist/
+*.spec
+
+# Ignored data and external tools
+byedpi/
+tor/
+data/
+config.json
+icon.ico
+recreate_torrc.txt
+Ростелеком быстрая отправка.txt
+
+*Ростелеком*.txt

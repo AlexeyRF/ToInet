@@ -6,14 +6,16 @@ import glob
 PROJECT_NAME = "ToInet-MAX"
 
 # Список расширений и конкретных файлов для включения (основные файлы)
-EXTENSIONS = ['*.py', '*.pyw', '*.ico', '*.bat']
+EXTENSIONS = ['*.py', '*.pyw', 'tgws/*.py', 'tgws/*.pyw', '*.ico', '*.bat']
 SPECIFIC_FILES = ['bridges.txt', "byedpi_tester_priority_sites.txt", "byedpi_tester_sites.txt", "byedpi_tester_strategies.txt"]
 
-# Дополнительные файлы и папки для полной сборки
-FULL_RELEASE_FILES = [
+# Дополнительные файлы и папки для полной сборки (теперь поддерживает glob)
+FULL_RELEASE_GLOBS = [
     'data/geoip',
     'data/geoip6',
     'byedpi/ciadpi.exe',
+    'byedpi/lists/*',
+    'byedpi/bin/*',
     'tor/tor.exe',
     'tor/tor-gencert.exe',
     'tor/pluggable_transports/conjure-client.exe',
@@ -64,12 +66,14 @@ def build_full_release_for_arch(arch_name, exe_name, opera_exe):
                 zipf.write(file, arcname)
             
             # Добавляем бинарники и данные с сохранением структуры
-            for file_path in FULL_RELEASE_FILES:
-                if os.path.exists(file_path):
-                    arcname = os.path.join(PROJECT_NAME, file_path)
-                    zipf.write(file_path, arcname)
-                else:
-                    print(f"ПРЕДУПРЕЖДЕНИЕ: Файл не найден: {file_path}")
+            for glob_path in FULL_RELEASE_GLOBS:
+                matched_files = glob.glob(glob_path)
+                if not matched_files:
+                    print(f"ПРЕДУПРЕЖДЕНИЕ: Файлы не найдены по пути: {glob_path}")
+                for file_path in matched_files:
+                    if os.path.isfile(file_path):
+                        arcname = os.path.join(PROJECT_NAME, file_path)
+                        zipf.write(file_path, arcname)
                 
         print(f"Полный релиз успешно создан: {output_zip}\n")
     except Exception as e:

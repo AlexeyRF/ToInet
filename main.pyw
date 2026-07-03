@@ -1,7 +1,23 @@
 import lang
 import sys
 import os
+
+if getattr(sys, 'frozen', False):
+    if len(sys.argv) >= 2 and sys.argv[1].endswith(('.py', '.pyw')):
+        import runpy
+        base_path = getattr(sys, '_MEIPASS', os.path.dirname(sys.executable))
+        script_path = sys.argv[1]
+        full_path = os.path.join(base_path, script_path)
+        if not os.path.exists(full_path):
+            full_path = script_path
+        sys.argv = [full_path] + sys.argv[2:]
+        runpy.run_path(full_path, run_name="__main__")
+        sys.exit(0)
+    elif len(sys.argv) >= 3 and sys.argv[1] == '-m':
+        sys.exit(1)
+
 import time
+import subprocess
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QTimer
@@ -21,7 +37,7 @@ import tester_manager
 import ext_manager
 import opera_manager
 
-CURRENT_DIR = os.path.dirname(os.path.abspath(__file__))
+import sys; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
 CACHER_SCRIPT = os.path.join(CURRENT_DIR, "cacher.pyw")
 
