@@ -180,19 +180,12 @@ ToInet tackles these restrictions by leveraging several interconnected technolog
 *   **ByeDPI Strategy Tester (`byedpi_tester_gui.pyw`):**
     *   Interface to test various ByeDPI parameters against blocked resources.
     *   Automatically finds a working bypass strategy for your ISP.
-*   **Telegram WebSocket Proxy (TGWS):**
-    *   A built-in local proxy server for tunneling Telegram traffic via WebSocket.
-    *   **Smart Multiplexing:** Acts as both a **SOCKS5** and **MTProto** proxy simultaneously on the same port (`1480`).
-    *   Supports configuring **MTProto Secret** and **Fake TLS** domains via a GUI.
-    *   One-click adding of proxy settings (SOCKS5 or MTProto) directly to the Telegram client via the tray menu.
 *   **Opera Proxy (`opera-proxy`):**
     *   A local SOCKS5 proxy server wrapping Opera's built-in VPN infrastructure.
     *   Allows fast and easy bypass without complex configurations.
 *   **Autostart & Convenience:**
     *   Minimizes to the Windows system tray.
     *   Built-in autostart installer and one-click desktop shortcut creator.
-*   **Agy Fix (Agy Фикс):**
-    *   Interactive console utility to fix Gemini CLI issues, unlock AIzaSy keys, and resolve Google OAuth regional blocks.
 
 ---
 
@@ -221,8 +214,6 @@ The program provides three operational modes:
 | **ByeDPI (Main)** | `1780` | SOCKS5 | Main bypass proxy for browsers |
 | **Tor (Main)** | `9853` | SOCKS5 | Anonymous access via Tor network |
 | **Tor Control Port** | `9851` | TCP | Control port for Tor (circuit rotation) |
-| **Telegram WS Proxy** | `1480` | SOCKS5 / MTProto | Smart proxy specifically for Telegram Desktop |
-| **Gatik Router** | `1777` | SOCKS5 | Smart traffic router for accelerating Telegram |
 | **Opera Proxy** | `1785` | SOCKS5 | Fast bypass using Opera VPN infrastructure |
 
 ---
