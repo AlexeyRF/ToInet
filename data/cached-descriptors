@@ -1,0 +1,168 @@
+@downloaded-at 2026-07-03 08:14:38
+@source "2001:db8:12ff:2d55:9130:36a7:c49b:d1f4"
+@purpose bridge
+router TunnelToFreedomY 195.128.102.85 29309 0 0
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQAB5FUATap7isnv0z5MLURrMe+k6TETPNnxbNnqi4+Yldd2+uLAQAgBAA8lwYL
+ehUqcBBOVGAUyuecpYpYI0AanQk0K+fZ39DP2gjbEnGcSQ0cNpqBNPtHzHo/YNzi
+OZDRQt3WIqOKKIjbobVEs+ys5VMdtJfMkp9WZZUoe3JKycSgAK5y4o3p2QY=
+-----END ED25519 CERT-----
+master-key-ed25519 PJcGC3oVKnAQTlRgFMrnnKWKWCNAGp0JNCvn2d/Qz9o
+or-address [2a03:4000:35:58a:e87b:a2ff:fe42:9e6b]:29309
+platform Tor 0.4.9.6 on Linux
+proto Conflux=1 Cons=1-2 Desc=1-4 DirCache=2 FlowCtrl=1-2 HSDir=2 HSIntro=4-5 HSRend=1-2 Link=3-5 LinkAuth=3 Microdesc=1-3 Padding=2 Relay=2-6
+published 2026-07-03 07:44:46
+fingerprint 933C 998E C827 D1C1 7CC9 3D12 92BB C417 3586 7CF8
+uptime 8328283
+bandwidth 15728640 31457280 12341160
+extra-info-digest D22F89247A4A04F2E2FC819C7AEE3505A2A5229A RrhI9ATCF8M+OVRdVhSrACVIiedfXgDDSlKuX+5bcmg
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAMmaVjKTZFoZuZdp/pCUjh/3mZMKwfP1CFoMugxUlYcc/V8mb+uzUKiD
+I7tj+aVT9DFocz7B8GzeDRdu+5YV/zsYXVWFJ6o9uiIgAgamCdYQ8uuLoivgA1hF
+TmnM+/+RBHrGK+BH4qYiY2a5H7WRS7z/io5rBGAkZbLjo2xrMX3bAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBANLf3LsbIyIqAOqJGuvXh3WP3D+b/7aaLgg9whHpCW2X5wW+1gXMJpNn
+Y4i/loOTeqEFIQsywd/VNxeF8/7Vg1O9hx+vR+MPxxQb6XIyqXGKISc3pT+oXf2H
+UBVon8q9Uam2OQ+HIdYcFGsfBdN+XWVGC3ZyjSFe91n+NFkMNisxAgMBAAE=
+-----END RSA PUBLIC KEY-----
+onion-key-crosscert
+-----BEGIN CROSSCERT-----
+Caqx7YR+jNKuD6NjWu0LQzalGnHZhp09vO19IkwfZUj+8h/3e/mltrJF7RYaxsRM
+HMX7Dy4DK+zcY2z+spSk5G70+OLdIMHac9Vg8vHIa3wvPYpOGcdgUvzD6F7YROXj
+Sih0tQHwuxPs77IRdUVOBB57frhc/mAedWLgsk7pVOo=
+-----END CROSSCERT-----
+ntor-onion-key-crosscert 1
+-----BEGIN ED25519 CERT-----
+AQoAB5FgATyXBgt6FSpwEE5UYBTK55ylilgjQBqdCTQr59nf0M/aAETtq6yXSP/i
+Maf8eI+O8Yzk5C4btgYlRGg2P4lHCuLW/bjjHY2l9TMWNdQivnlf5LeqzvSTExU0
+DhD6U5fuzgo=
+-----END ED25519 CERT-----
+hidden-service-dir
+contact admin@tor.utilizer.cloud
+bridge-distribution-request any
+ntor-onion-key S3JToKTAuso+/OS9/AoTskPnWEqFmxflj1knkd0ozxY
+reject *:*
+tunnelled-dir-server
+router-sig-ed25519 89kk1faYOS8oQt8gwM1wDFFDlH8DyJjh2m6NrWr6FvTMXRxVCtwCp9OebaZZCzJkyGbwAtL67NPIdEWdvaw1DA
+router-signature
+-----BEGIN SIGNATURE-----
+vF2ncS5+XYaiBQLdXjZDrfcZNsaNOUrRC+aKSpPGKXvMUzYr9H19ZjUASfPig/v6
+URDeyeUMVGZ4WmaP2vPuHcLvIKrWbOp3baxoisSARV+St9JG8jwHLo2xJErLS4EV
+e9rRflVrV4Oahqe4nAA4g/UEXlOeXgJ64AaRThzBN+g=
+-----END SIGNATURE-----
+@downloaded-at 2026-07-03 08:14:43
+@source "2001:db8:72cd:a490:2485:20b0:4987:35ec"
+@purpose bridge
+router TriplebitAI 103.17.154.134 37431 0 0
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQAB5FeAcCLQ45ViXS2f0UhI9WfCRnmuHlTtL2pz5ED/LTToN/mAQAgBAAw1FvP
+YqwujpJ1WYzotZSq3dBK2KGYKnD1xNarB5jWs6obeqD1JSwmp9upB5trSsXZPJk+
+GktAix6f3XAuFDIuddiSY2A+fgxUj9Jg3dKUBW5WNJOhEptsZk0NUgM+fwg=
+-----END ED25519 CERT-----
+master-key-ed25519 MNRbz2KsLo6SdVmM6LWUqt3QStihmCpw9cTWqweY1rM
+or-address [2602:f81c:83:210::134]:46399
+platform Tor 0.4.9.11 on Linux
+proto Conflux=1 Cons=1-2 Desc=1-4 DirCache=2 FlowCtrl=1-2 HSDir=2 HSIntro=4-5 HSRend=1-2 Link=3-5 LinkAuth=3 Microdesc=1-3 Padding=2 Relay=2-6
+published 2026-07-03 07:52:58
+fingerprint C0B9 0984 E829 C31B B316 CCB8 A89C B4F3 1889 1871
+uptime 262568
+bandwidth 1073741824 1073741824 16338944
+extra-info-digest 938AC9D69E4F7360528F4D9968F3EE2D7147562D GOk3kBCoPT0897MvOS+yOzubg5Zav/Z5cKL/HUrMJhM
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBANdd8Ga/RMpMEgGCVQuw2D1ZRy6XWOU583VvepJcEX6998D5vaWzn+u5
+b2dnxkB0zgpqEiO/bgFpf5mLkx3ugZkZJt14HOF7UcnUBFMVSiMV+nnSBaBhqjNx
+vaO+LDsN6rP+LDh8RE3uslgc2Vo9rCniOJBO+p43zaGK8DMeOYpJAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAKykbSpgTyWJObL1A3nHpCnUxHvUK4EfZTAaExdn9SoQjBVYsZl5qh9Z
+rmFkRSjUn/L/y619G4FYapqC37KfKtzPBxSqANwLvDitiWwgVNwzVyJD/su1CTFb
+IBcI6Pe0uyE2p9mWQdDlT6zHOk/1M59OYnkgqxSBF8vOm7QhARi9AgMBAAE=
+-----END RSA PUBLIC KEY-----
+onion-key-crosscert
+-----BEGIN CROSSCERT-----
+BoSmuxBm2uGrrPXz/8fjZfYFmny3ANP+HOIKPP/7l5qlnKDV1taJMc29Q1yMgBgY
+MfKxAORCng0gQ2DplyuNLCRYUx38XbcetJ1ThAgmSoPCDIZsd0jURfUYaF8mXd8P
+JnDfBUfo41gEVGetuhRo0zaHsI916mlQwLfQ0h0VsnM=
+-----END CROSSCERT-----
+ntor-onion-key-crosscert 0
+-----BEGIN ED25519 CERT-----
+AQoAB5FgATDUW89irC6OknVZjOi1lKrd0ErYoZgqcPXE1qsHmNazAO4vbWsY+4JF
+CxYj7WtD+U0VZDRLzXQEiuQzH9vLwzvbaRN62Ps+pJZPvS9OYz3rUVXRcfwZTvz4
+smSJAv4hgQI=
+-----END ED25519 CERT-----
+hidden-service-dir
+contact url:https://www.triplebit.org mastodon:https://mstdn.plus/@triplebit email:relays[]triplebit.net trafficacct:unmetered proof:uri-rsa ciissversion:2
+bridge-distribution-request telegram
+ntor-onion-key Yl2vSe8Z+/CjjJLGWLJ059AfCbg1GkfBPgIQT9mNhT0
+reject *:*
+tunnelled-dir-server
+router-sig-ed25519 oVaxxOpZV4oqp6b26w5KoH/QEsIutyXA99q1zFCCtSwLlqWu4xkZs4YTWHw52Ur0psqjrWLXejsSC0MWCiQ+Aw
+router-signature
+-----BEGIN SIGNATURE-----
+WSRt+XpMyfwg7DyMRpgtfy0n3RcR460ufW6XHmWEPVTS+nIMHZAs9Ajerq13xMKK
+cpVudoLZszHFWiaD4TaqN7CB0fzgCFE10Akc6Yx8oIvvpz3TLNaaAq2kGWIttf+i
+FrULkavRfOOsic2SVs69Nif8ouBXl2RPF2mq4LMmvzg=
+-----END SIGNATURE-----
+@downloaded-at 2026-07-03 11:14:35
+@source "2001:db8:11d3:d5e7:2939:8453:7baf:868f"
+@purpose bridge
+router TriplebitAJ 103.17.153.34 38573 0 0
+identity-ed25519
+-----BEGIN ED25519 CERT-----
+AQQAB5FhAepEdwRltHbXP+ItT4FVHsusRU/uREm9NSBKljJZvDm+AQAgBACHHZq8
+74cAuSSceLV2w/rjI30Pu9zxPlj+1kvuKIhfhv3asCzgKSVKN4q84ZYYkqrnyh+B
+3t5/fUvrncz7WI7VFvNtZnfpFvMjr1o8+zI5Fi3fSQn10Dystc7LKPWP+A0=
+-----END ED25519 CERT-----
+master-key-ed25519 hx2avO+HALkknHi1dsP64yN9D7vc8T5Y/tZL7iiIX4Y
+or-address [2602:f81c:81:5::34]:34503
+platform Tor 0.4.9.6 on Linux
+proto Conflux=1 Cons=1-2 Desc=1-4 DirCache=2 FlowCtrl=1-2 HSDir=2 HSIntro=4-5 HSRend=1-2 Link=3-5 LinkAuth=3 Microdesc=1-3 Padding=2 Relay=2-6
+published 2026-07-03 10:09:22
+fingerprint 5316 4055 9965 FB75 01EB 5C00 6018 F61D 1E9F A1BB
+uptime 6235197
+bandwidth 1073741824 1073741824 25543128
+extra-info-digest 35627E903AD86381B3A8D2A4F05BB417AE0FDDAA KslhFL730cZ/FaT6vICWSeu+RIHzWGj6B1CPKbtScSQ
+onion-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBALZaIQr3V6CM1rONyWxjxeKnngZpmv1/SedzD9VLcwfMNemS7zUAcdw8
+fdyW33trlfEDXdPrkMLCfBi0v/wlnBopCGYGlYtio+N/0yfiyhktG2/3itWOMiRh
+fcKWkr12LUvuANwQlgXvFPZhTPOYfpw1wEkpwpjm2dSUXn2kR3DRAgMBAAE=
+-----END RSA PUBLIC KEY-----
+signing-key
+-----BEGIN RSA PUBLIC KEY-----
+MIGJAoGBAN9WeLDu+hqBLSvtR8MVT4eRhJdFDm0JAs2K6spulMcZkq4XSIVAdiQG
+yyzfmENurwC/5Om8YQSy23qyrxAEH8yXtjF04ZqvJbvZyRV8muLiDq55lZAQPzZx
+ACzu4a5T2+2Ptp1qDqVh2qhybmM3ATmuSB0BFPt+A5Jy3nI0EtqZAgMBAAE=
+-----END RSA PUBLIC KEY-----
+onion-key-crosscert
+-----BEGIN CROSSCERT-----
+ZHzh+RdCRrb2fNLoo77KTpHEuah2U/PB7GoN6OaN+ir+G9VuE66v8fljO0Dd4SiQ
+SMutjedIZaokFU5j8ZQbnG1BJjxlhcgfNT4/1P4FPdZ9jkS5x+lt2Oq8jYaCjWck
+aKsYI7NvXrxMyAmhQt/8EgbMLZPDCWQ1Zmb2ABpf2Gs=
+-----END CROSSCERT-----
+ntor-onion-key-crosscert 0
+-----BEGIN ED25519 CERT-----
+AQoAB5FjAYcdmrzvhwC5JJx4tXbD+uMjfQ+73PE+WP7WS+4oiF+GAOFoOWkL19QY
+dX23qGPFKpxvgiE8w67NvmFAsc2hKKghzuL6Iq5bcfcWisW3vV2+oe+bz3AKyxZb
+4i+RKtVlfwA=
+-----END ED25519 CERT-----
+hidden-service-dir
+contact url:https://www.triplebit.org mastodon:https://mstdn.plus/@triplebit email:relays[]triplebit.net trafficacct:unmetered proof:uri-rsa ciissversion:2
+bridge-distribution-request telegram
+ntor-onion-key KgyaFgKmIMskUow9notuyd2QMtSJVnLwMUe+y/DSs18
+reject *:*
+tunnelled-dir-server
+router-sig-ed25519 F2SSDwNwS0bz9X+HlbbfsL5yKpIuGKuCq3cZnEh7RqKPMt+yUc6Gf2XJ6xfvXh7r/ZmuO3f1PkpTNbtGspS6Bw
+router-signature
+-----BEGIN SIGNATURE-----
+TYYF0NEojmIzL+3BF++O91lL62B6CA7ds1vg3/7cCszx9pdjuDMTGy7jdBXzRe2T
+Z/2kke40UdP1LOndj71VcsbVQfRO8f44jA5BjzR+TI05tr+uTpy/bkposzi18MiM
+WU+SZHtmZZtpVeSF8ibIwrJrkWL4AFGVatelCKvmtC4=
+-----END SIGNATURE-----

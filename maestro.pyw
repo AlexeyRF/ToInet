@@ -304,9 +304,31 @@ ClientOnly 1
                 else:
                     tar.extractall(path=self.project_folder)
         
-        if not self.archive_path:
+                if not self.archive_path:
             import os
-            os.remove(local_filename)
+            try: os.remove(local_filename)
+            except: pass
+            
+        # FIX: Move tor, data, docs out of tor/ if Tor archive has them nested
+        import shutil
+        for d in ['data', 'docs']:
+            wrong_path = self.project_folder / "tor" / d
+            right_path = self.project_folder / d
+            if wrong_path.exists():
+                if right_path.exists():
+                    shutil.rmtree(str(right_path))
+                shutil.move(str(wrong_path), str(right_path))
+        
+        tor_inner = self.project_folder / "tor" / "tor"
+        tor_exe_inner = self.project_folder / "tor" / "tor" / "tor.exe"
+        tor_exe_right = self.project_folder / "tor" / "tor.exe"
+        if tor_exe_inner.exists() and not tor_exe_right.exists():
+            # Meaning it unpacked to tor/tor/tor.exe
+            # We should move contents of tor/tor to tor/
+            temp_tor = self.project_folder / "tor_temp_swap"
+            shutil.move(str(tor_inner), str(temp_tor))
+            shutil.rmtree(str(self.project_folder / "tor"))
+            shutil.move(str(temp_tor), str(self.project_folder / "tor"))
         
         self.progress.emit("Обновление конфигурации...")
         update_info_path = self.project_folder / "update_info.json"

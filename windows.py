@@ -18,7 +18,7 @@ from pathlib import Path
 from typing import Dict, Optional
 from PIL import Image, ImageDraw, ImageFont
 
-import tg_ws_proxy as tg_ws_proxy
+from tgws import tg_ws_proxy, config as tgws_config
 
 
 APP_NAME = "TgWsProxy"
@@ -154,10 +154,13 @@ def _run_proxy_thread(port: int, dc_opt: Dict[int, str], verbose: bool,
     _asyncio.set_event_loop(loop)
     stop_ev = _asyncio.Event()
     _async_stop = (loop, stop_ev)
-
+    
     try:
+        tgws_config.proxy_config.port = port
+        tgws_config.proxy_config.host = host
+        tgws_config.proxy_config.dc_redirects = dc_opt
         loop.run_until_complete(
-            tg_ws_proxy._run(port, dc_opt, stop_event=stop_ev, host=host))
+            tg_ws_proxy._run(stop_event=stop_ev))
     except Exception as exc:
         log.error("Proxy thread crashed: %s", exc)
         if "10048" in str(exc) or "Address already in use" in str(exc):
@@ -180,7 +183,7 @@ def start_proxy():
     verbose = cfg.get("verbose", False)
 
     try:
-        dc_opt = tg_ws_proxy.parse_dc_ip_list(dc_ip_list)
+        dc_opt = tgws_config.parse_dc_ip_list(dc_ip_list)
     except ValueError as e:
         log.error("Bad config dc_ip: %s", e)
         _show_error(f"Ошибка конфигурации:\n{e}")
@@ -350,7 +353,7 @@ def _edit_config_dialog():
         lines = [l.strip() for l in dc_textbox.get("1.0", "end").strip().splitlines()
                  if l.strip()]
         try:
-            tg_ws_proxy.parse_dc_ip_list(lines)
+            tgws_config.parse_dc_ip_list(lines)
         except ValueError as e:
             _show_error(str(e))
             return

@@ -13,25 +13,19 @@ import socket
 import struct
 import time
 
+import config_manager
+
 # ---------------------------------------------------------------------------
-CONFIG_FILE = Path(__file__).parent / "socks_reabilitator_config.json"
 PID_FILE = Path(__file__).parent / "socks_layer_pid.txt"
 
 def load_config():
-    if CONFIG_FILE.exists():
-        try:
-            with open(CONFIG_FILE, "r", encoding="utf-8") as f:
-                return json.load(f)
-        except Exception:
-            pass
-    return {}
+    config = config_manager.load_config()
+    return config.get("socks_reabilitator", {})
 
-def save_config(config):
-    try:
-        with open(CONFIG_FILE, "w", encoding="utf-8") as f:
-            json.dump(config, f, indent=4)
-    except Exception:
-        pass
+def save_config(local_config):
+    config = config_manager.load_config()
+    config["socks_reabilitator"] = local_config
+    config_manager.save_config(config)
 
 def is_process_running(pid: int) -> bool:
     try:
@@ -51,6 +45,12 @@ def is_process_running(pid: int) -> bool:
 # ---------------------------------------------------------------------------
 # Поток проверки стратегии (асинхронный)
 # ---------------------------------------------------------------------------
+def kill_process_tree(proc):
+    if not proc: return
+    if os.name == 'nt':
+        subprocess.call(f'taskkill /F /T /PID {proc.pid}', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    else:
+        proc.terminate()
 
 class StrategyVerifier(QThread):
     result = pyqtSignal(bool, str)  # флаг успеха, сообщение
@@ -63,7 +63,7 @@ class StrategyVerifier(QThread):
         self.upstream_port = upstream_port
         self.username = username
         self.password = password
-        self.listen_port = 1080
+        self.listen_port = 1089
         self.byedpi_port = 1788
         self.process = None
         self.sock = None
@@ -107,7 +107,7 @@ class StrategyVerifier(QThread):
             if len(resp) < 10 or resp[1] != 0:
                 raise Exception("Upstream connection via proxy failed")
         except Exception as e:
-            self.process.terminate()
+            kill_process_tree(self.process)
             self.result.emit(False, f"Не удалось проверить SOCKS5: {e}")
             return
             
@@ -119,7 +119,7 @@ class StrategyVerifier(QThread):
             if not reply:
                 raise Exception("Connection dropped")
         except Exception as e:
-            self.process.terminate()
+            kill_process_tree(self.process)
             self.result.emit(False, f"Соединение разорвано: {e}")
             return
         finally:
@@ -127,9 +127,8 @@ class StrategyVerifier(QThread):
                 self.sock.close()
             except Exception:
                 pass
-            self.process.terminate()
+            kill_process_tree(self.process)
         self.result.emit(True, "Стратегия прошла проверку (соединение держалось 60 сек).")
-
 
 class AllStrategyVerifier(QThread):
     # Отправка результата по каждой стратегии: индекс, успех, сообщение
@@ -189,7 +188,7 @@ class AllStrategyVerifier(QThread):
                 if len(resp) < 10 or resp[1] != 0:
                     raise Exception("Upstream connection via proxy failed")
             except Exception as e:
-                self.process.terminate()
+                kill_process_tree(self.process)
                 self.per_result.emit(idx, False, f"Не удалось проверить SOCKS5: {e}")
                 continue
                 
@@ -201,7 +200,7 @@ class AllStrategyVerifier(QThread):
                 if not reply:
                     raise Exception("Connection dropped")
             except Exception as e:
-                self.process.terminate()
+                kill_process_tree(self.process)
                 self.per_result.emit(idx, False, f"Соединение разорвано: {e}")
                 continue
             finally:
@@ -209,7 +208,7 @@ class AllStrategyVerifier(QThread):
                     self.sock.close()
                 except Exception:
                     pass
-                self.process.terminate()
+                kill_process_tree(self.process)
             self.per_result.emit(idx, True, f"Стратегия {idx} прошла проверку (соединение держалось 60 сек).")
         self.finished.emit()
 
@@ -250,7 +249,7 @@ class Socks5Gui(QMainWindow):
         upstream_label = QLabel("Удалённый SOCKS5‑прокси (host:port):")
         upstream_layout = QHBoxLayout()
         self.upstream_host_edit = QLineEdit("127.0.0.1")
-        self.upstream_port_edit = QLineEdit("1080")
+        self.upstream_port_edit = QLineEdit("1089")
         upstream_layout.addWidget(self.upstream_host_edit)
         upstream_layout.addWidget(QLabel(":"))
         upstream_layout.addWidget(self.upstream_port_edit)
@@ -372,7 +371,9 @@ class Socks5Gui(QMainWindow):
         cmd = [sys.executable, str(script_path),
                "--strategy-index", str(strat_index),
                "--upstream-host", host,
-               "--upstream-port", str(port)]
+               "--upstream-port", str(port),
+               "--listen-port", "1788",
+               "--byedpi-port", "1787"]
         if username:
             cmd.extend(["--username", username])
         if password:
@@ -406,16 +407,15 @@ class Socks5Gui(QMainWindow):
             return
             
         if self.process:
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=5)
-            except Exception:
-                self.process.kill()
+            if os.name == 'nt':
+                subprocess.call(f'taskkill /F /T /PID {self.process.pid}', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+            else:
+                self.process.terminate()
             self.process = None
         else:
             # Kill by PID
             if os.name == 'nt':
-                subprocess.call(f'taskkill /F /PID {self.running_pid}', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+                subprocess.call(f'taskkill /F /T /PID {self.running_pid}', shell=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
             else:
                 try:
                     os.kill(self.running_pid, 9)

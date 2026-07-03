@@ -1,0 +1,128 @@
+{
+  "Version": "1.0",
+  "Name": "Toinet_",
+  "LocalhostViaProxy": false,
+  "IsTrafficLoggingEnabled": true,
+  "AutoClearConnectionLogs": true,
+  "Language": "en",
+  "CloseToTray": true,
+  "ProxyConfigs": [
+    {
+      "Id": 1,
+      "Type": "SOCKS5",
+      "Host": "127.0.0.1",
+      "Port": "1780",
+      "Username": "",
+      "Password": ""
+    },
+    {
+      "Id": 2,
+      "Type": "SOCKS5",
+      "Host": "127.0.0.1",
+      "Port": "9853",
+      "Username": "",
+      "Password": ""
+    },
+    {
+      "Id": 3,
+      "Type": "SOCKS5",
+      "Host": "192.168.0.130",
+      "Port": "9595",
+      "Username": "user",
+      "Password": "pass"
+    }
+  ],
+  "ProxyRules": [
+    {
+      "ProcessName": "*",
+      "TargetHosts": "localhost;127.0.0.0/8; %ComputerName%; ::1;192.168.0.0/24",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "DIRECT",
+      "IsEnabled": true,
+      "ProxyConfigId": 0
+    },
+    {
+      "ProcessName": "agy.exe",
+      "TargetHosts": "*",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "PROXY",
+      "IsEnabled": false,
+      "ProxyConfigId": 2
+    },
+    {
+      "ProcessName": "\"NVIDIA App.exe\";*Photoshop*\\*;widgets.exe;onenote.exe;searchhost.exe;lsass.exe;studio64.exe;systemsettings.exe;*NVIDIA*;steam.exe;steamwebhelper.exe;qbittorrent.exe;telegram.exe;ciadpi.exe;tor.exe;lyrebird.exe;pythonw.exe;svchost.exe;setup.exe;*.app.exe;msedgewebview2.exe;minecraft.exe",
+      "TargetHosts": "*",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "DIRECT",
+      "IsEnabled": true,
+      "ProxyConfigId": 0
+    },
+    {
+      "ProcessName": "studio64.exe",
+      "TargetHosts": "*",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "PROXY",
+      "IsEnabled": false,
+      "ProxyConfigId": 1
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "*.1c.ru;*giga.chat;permkrai.ru;*.permkrai.ru;*permkrai.ru;*okcdn.ru;*.okcdn.ru;yandex.ru;*.yandex.ru;*.gosuslugi.ru;*.sdamgia.ru;sdamgia.ru;finance.ozon.ru;*.ozon.ru;web.max.ru;*.deepseek.com*;chat.deepseek.com;*max.ru;*.vk.com;*vk.com;vk.com;*.vk.ru;*vk.ru;vk.ru;*.kontur.ru;*spb.ru;*.drweb.ru;alphacephei.com;*.kaspersky.ru;*.edu.ru;*.ege.edu.ru;*.gazprom.ru;*.rosatom.ru;*.lukoil.ru;*.rosneft.ru;*.tatneft.ru;*.sibur.ru;*.nornickel.ru;*.uralkali.ru;*.rzd.ru;*.aeroflot.ru;*.s7.ru;*.rosselhoz.ru;*.russianpost.ru;4ege.ru;*.pochta.ru;*.rt.ru;*.rostelecom.ru;*.beeline.ru;*.mts.ru;*.megafon.ru;*.tele2.ru;*.mail.ru;*.yandex.net;*.ya.ru;*.sberbank.ru;*.tinkoff.ru;*.vtb.ru;*.alfabank.ru;*.gazprombank.ru;*.bank.vtb.ru;*.open.ru;*.raiffeisen.ru;*.psbank.ru;*.pochtabank.ru;*.rshb.ru;*.akbars.ru;*.sovcombank.ru;*.mkb.ru;*.promsvyazbank.ru;*.binbank.ru;*.uralsibbank.ru;*.rosbank.ru;*.mtsbank.ru;*.cbcf.ru;*.mosbirja.ru;*.spbexchange.ru;*.gov.ru;*.government.ru;*.kremlin.ru;*.duma.gov.ru;*.minfin.gov.ru;*.customs.gov.ru;*.nalog.gov.ru;*.gost.ru;*.rospotrebnadzor.ru;myip.ru;*.deepseek.com;wikipedia.org;curseforge.com;modrinth.com;*.modrinth.com;perm.*;*.vk.me;fsp-perm.ru;*fsp-russia.ru;ozon.ru;uts.sirius.online;www.ozon.ru;modern.brainoom.com;*fipi.ru;www.gismeteo.ru;rus-na5.ru;01ege.ru;www.citilink.ru;www.dns-shop.ru;giga.chat;*.giga.chat;*.shkolkovo.online;*uchi.ru;sber.ru;*.sber.ru;*sber.ru;siriusolymp.ru;rutube.ru;*rutube.ru;*.rutube.ru;pusher.com;citilink.ru;yandex.com;nvidia.com;donationalerts.com;yandex.kz;multimc.org;dns-shop.ru;habr.com;3dnews.ru;wildberries.ru;msi.com;2ip.ru;",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "DIRECT",
+      "IsEnabled": true,
+      "ProxyConfigId": 0
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "meduza.io;meduza.app;*.meduza.io;currenttime.tv;tvrain.tv;d0tdot.tv;ovdinfo.org;mbk-news.app;novayagazeta.ru;novayagazeta.eu;echo.msk.ru;zona.media;holod.media;istories.media;proekt.media;theins.ru;theins.info;openmedia.io;kavkazr.com;severreal.org;svoboda.org;crimea-realii.org;sibirreal.org;*.dw.com;*.bbc.com;*kavkaz.tv;*kavkaznews.com;*kavkaz.org.uk;*kavkazcenter.com;*kavkazcenter.net;*StopFake.org;nemotrix.org;*kavkazcenter.info;*instagram.com;*facebook.com;*whatsapp.com;*telemetry.mozilla.org;*.currenttime.tv;currenttime.tv;*imamtv.com;tsn.ua; pravda.com.ua; rbc.ua; unian.net; ukrinform.ua; nv.ua; korrespondent.net; liga.net; censor.net; zn.ua; gordonua.com; obozrevatel.com; suspilne.media; lb.ua; hromadske.ua; 24tv.ua; meduza.io; novayagazeta.eu; tvrain.tv; zona.media; theins.ru; istories.media; vpost.media; paperpaper.io; holod.media; republic.ru; delfi.ee; delfi.lv; delfi.lt; postimees.ee; tvnet.lv; lsm.lv; lrt.lt; err.ee; bnn-news.com; baltictimes.com; 15min.lt; lrytas.lt; ziniu-radijas.lt; mixnews.lv; gorod.lv; rus.tvnet.lv; rus.delfi.ee; rus.lsm.lv; novaya.lv; nra.lv; diena.lv; kasjauns.lv; kurier.lt; obzor.lt; respublika.lt; ve.lt; kauno.diena.lt; klaipeda.diena.lt; alfa.lt; vz.lt; lzinios.lt; bernardinai.lt; 7md.lt; alkas.lt; skrastas.lt; etaplius.lt; anyksta.lt; taurageszinios.lt; silutesnaujienos.lt; sviesa.lt; santaka.info; druskonis.lt; kedainietis.lt; jonava.lt; mazeikiai.lt; rumsiskes.lt; voruta.lt; ukininkopatarejas.lt; ugnis.lt; valstietis.lt; mmm.lt; siauliunaujienos.lt; kvitrina.lt; gkr.lt; sirvinta.net; ukmergeszinios.lt; gimtoji-zeme.lt; svencionys.lt; drg.lt; suduvosgidas.lt; raseiniunaujienos.lt; alytausgidas.lt; fm99.lt; radviliskiunaujienos.lt; siauliai.lt; panevezys.lt; marijampole.lt; utena.lt; alytus.lt; plunges-zinios.lt; neringa.lt; palanga.lt; birstonas.lt; vilnius.lt; kaunas.lt; klaipeda.lt;*.golosameriki.com;golosameriki.com;*daymohk.org;telega.me;*chechenpress.info;*chechenpress.org;*ingushetiya.ru;*kavkazjihad.com;*shamilonline.org;*vdagestan.com;*vdagestan.info;*vdagestan.net;*kavkazpress.ru;*kavkazchat.com;*kavkazweb.net;*abror.info;*kavkazcenter.tv;*kavkaz.org;*kavkazjihad.org;*chechenews.com;*ichkeria.info;*hunafa.com;*islamdin.com;*islamdin.biz;*islamdin.net;*jamaattakbir.com;*djamaattakbir.com;*kcblog.info;*imaratkavkaz.az;*nuruddin.info;*shamilonline.org;*nuruddin.wordpress.com;*abusalima770.blogspot.de;*abusalima770.blogspot.ru;*alisnad.com;*anonscaucasus.com;*beladusham.com;*davmohk.net;*davmohk.org;*djamagat.wordpress.com;*fisadilillahi.com;*goodbyekavkaz.org;*halifat.info;*imamtv.clan.su;*imamtv.com.ua;*ingushetiyaru.org;*ipvnews.org;*islamic-state.tv;*islamskiyemiratkavkaz.blogspot.be;*islamskiyemiratkavkaz.blogspot.ru;*jihadology.net;*kavkazblog.com;*kavkazcenter.net.ru;*kavkazcenter.tv.ru;*kavkazjihad.com.ru;*kavkaznews.blogspot.com;*kavkazpress.org;*kavkazpress.ru.com;*kavkaztoday.com;*kavkazweb.com;*kcblog.com;*koransunnah.wordpress.com;*magaspost.com;*muslim-site.livejournal.com;*nohchipress.info;*nuruddin-info.blogspot.com;*nuruddin.org;*shamilonline.wordpress.com;*shariat.com;*sodiqlar.info;*thechechenpress.com;*ummanews.com;*ummanews.ru;*usudusham.com;*vchera.com;*vilayatiu.co.cc;*xalifat.wordpress.com;*www.angusht.com;*www.chechenews.com;*www.chechenpress.com;*www.chechentimes.net;*www.davmohk.net;*www.davmohk.org;*www.djamaat-takbir.blogspot.ru;*www.hunafa.com;*www.imamtv.com;*www.ingushetia.org;*www.ingushetiyaru.org;*www.islamdin.com;*www.islamdin.info;*www.islamskiyemiratkavkaz.blogspot.be;*www.islamskiyemiratkavkaz.blogspot.ru;*www.jamaattakbir.com;*www.kavkazcenter.com;*www.kavkazcenter.info;*www.kavkazcenter.net;*www.kavkazcenter.tv;*www.kavkazchat.com;*www.kavkazjihad.com;*www.kavkazpress.com;*www.kavkazweb.net;*www.kavkazweb.org;*www.kavkazweb.tv;*www.kcblog.info;*www.muslim-site.livejournal.com;*www.nuruddin.info;*www.nuruddin.org;*www.shamilonline.org;*www.sodiqlar.info;*www.thechechenpress.com;*www.ummanews.com;*www.ummanews.ru;*www.vdagestan.com;*www.vdagestan.info;*www.vdagestan.net;*www.vilayatdaggia.com;*www.xalifat.wordpress.com;*yaraq.info;*akhbaralquds.com;*ansardin.wordpress.com;*ar-raid.info;*assakina.com;*at-tahrim.com;*bayanns.com;*cdi-kavkaz.com;*chechencenter.com;*chechencenter.info;*chechencenter.net;*chechencenter.org;*chechenpress.co;*chechenpress.info.com;*chechenpress.org.ru;*chechentoday.com;*chechenweb.com;*daymohk.info;*daymohk.net;*daymohk.org.ru;*dzharullah.com;*gory-kavkaz.ru;*halifah.ru;*hizb-russia.info;*hizb-ut-tahrir.info;*hizb-ut-tahrir.org;*hizbuttahrir.org;*hizbuttahrir.ru;*hunafa.org;*idel-ural.org;*ikavkaz.info;*ikavkaz.net;*imam-abu-hanifa.ru;*imam-tv.ru;*imamtv.com.ru;*imarat-kavkaz.com;*imarat-kavkaz.info;*imarat-kavkaz.net;*imarat-kavkaz.org;*imarat-kavkaz.ru;*imaratkavkaz.com;*imaratkavkaz.info;*imaratkavkaz.net;*imaratkavkaz.org;*imaratkavkaz.ru;*imaratkavkaz.wordpress.com;*ingushforum.ru;*ingushetia.ru;*ingushetia.org.ru;*ingushetiya.com;*ingushetiya.net;*ingushetiya.org;*ingushetiyaru.com;*islam-kavkaz.com;*islam-kavkaz.ru;*islamcom.tv;*islamdin.tv;*islamdin.tv.ru;*islamic-state.ru;*islamtoday.ru;*islamweb.ru;*jamaatshariat.com;*jamaatshariat.ru;*jihad-news.ru;*jihadica.com;*kavkaz-ayat.ru;*kavkaz-news.com;*kavkaz-news.info;*kavkaz-news.net;*kavkaz-news.org;*kavkaz-news.ru;*kavkaz-press.com;*kavkaz-press.info;*kavkaz-press.net;*kavkaz-press.org;*kavkaz-press.ru;*kavkaz-tv.com;*kavkaz-tv.info;*kavkaz-tv.net;*kavkaz-tv.org;*kavkaz-tv.ru;*kavkaz.org.ru;*kavkaz.tv.ru;*kavkazblog.ru;*kavkazcenter.org;*kavkazcenter.ru;*kavkazcenter.tv.ru;*kavkazchat.ru;*kavkazforum.ru;*kavkazinfo.com;*kavkazinfo.net;*kavkazinfo.ru;*kavkazjihad.ru;*kavkaznews.info;*kavkaznews.net;*kavkaznews.org;*kavkaznews.ru;*kavkazpress.info;*kavkazpress.net;*kavkazpress.org;*kavkazpress.ru.com;*kavkazweb.info;*kavkazweb.ru;*kc-fm.ru;*kc-radio.ru;*kc-tv.ru;*kcblog.ru;*kcpress.ru;*koran-sunna.ru;*kuraev.ru;*livani.net;*milleti-ibrahim.info;*muslimherald.com;*nadir.info;*nasij.net;*nkavkaz.com;*nkavkaz.info;*nkavkaz.net;*nkavkaz.org;*nkavkaz.ru;*nokhchi.org;*nokhchi.ru;*nur-al-jazeera.com;*nur-news.com;*nur-news.info;*nur-news.net;*nur-news.org;*nur-news.ru;*nur-tv.com;*nur-tv.info;*nur-tv.net;*nur-tv.org;*nur-tv.ru;*nuruddin.com;*nuruddin.net;*nuruddin.ru;*nuruddininfo.wordpress.com;*palestine-info.ru;*palinfo.com;*palinfo.ru;*pravda-kavkaza.ru;*qoqaz.com;*qoqaz.info;*qoqaz.net;*qoqaz.org;*qoqaz.ru;*sadat.ru;*salaf-forum.com;*salafi.ru;*salafiportal.com;*salafportal.com;*salafportal.net;*salafportal.org;*salafportal.ru;*salafsite.com;*salafsite.ru;*sham-news.info;*sham-news.net;*sham-news.org;*sham-news.ru;*sham-today.com;*sham-today.info;*sham-today.net;*sham-today.org;*sham-today.ru;*shamil.org;*shamil.ru;*shamilonline.ru;*sharhsunna.net;*sharhsunna.org;*sharqforum.org;*sodiqlar.net;*sodiqlar.org;*sodiqlar.ru;*taliban.org;*taliban.ru;*tawba.info;*tawhid.ru;*tayba.info;*tayba.ru;*urakavkaz.com;*urakavkaz.info;*urakavkaz.net;*urakavkaz.org;*urakavkaz.ru;*vchera.ru;*vdagestan.ru;*vilayatdaggia.ru;*vilayati.org;*vkavkaz.com;*vkavkaz.info;*vkavkaz.net;*vkavkaz.org;*vkavkaz.ru;*wahabi.ru;*wahabizm.ru;*waytoislam.com;*wikibit.net;*wikibit.ru;*xalifat.ru;",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "BLOCK",
+      "IsEnabled": true,
+      "ProxyConfigId": 0
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "*",
+      "TargetPorts": "80; 21; 23; 25; 110; 143; 53; 161; 162; 6667",
+      "Protocol": "BOTH",
+      "Action": "PROXY",
+      "IsEnabled": true,
+      "ProxyConfigId": 2
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "*.onion;myip.wtf;*.github.com;wtfismyip.com;myip.com;*.wikipedia.org;*.activestate.com;*.twimg.com;*.gitlab.com;*.stackoverflow.com;*.docker.com;*.twitter.com;*.x.com;*.paypal.com;*.spotify.com;*.dropbox.com;*.rutracker*;*.gov;*.t.co;*.t.me;*.telegram.org;*.twitter.com;*shadowsocks.org;*torproject.org;*getoutline.org;*habr.com;*4pda.to;*com.ua;*gelbooru.com;*soundcloud.com;*sndcdn.com;*bing.com;*markdowntoword.io;*soundcloud.cloud;*cookielaw.org;*.xvideos.com;xvideos.com;*.mil;*cloudconvert.com;znanija.com;*rg-adguard.net;ttwstatic.com;*.ttwstatic.com;*blogger.com;ntc.party;onlinetestpad.com;*.onlinetestpad.com;figma.com;*.figma.com;*.sparkfun.com;*.netlify.app;*mega.nz;*.co.nz;*.roboflow.*;notube.net;*.notube.net;suncalc.net;*.pymax.org;*.facefusion.io;sketchfab-prod-media.s3.amazonaws.com;*.ultralytics.com;cdnjs.cloudflare.com;svd360.com;xview2.org;temp-mail.org;temp-mail.io;datasetninja.com;*.datasetninja.com;*.supervisely.com;",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "PROXY",
+      "IsEnabled": true,
+      "ProxyConfigId": 2
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "*.akamai.net;*.akamaiedge.net;*.amazonaws.com;*.cdninstagram.com;*.cloudflare-dns.com;*.cloudflare.com;*.cloudflare.net;*.discord.com;*.discordapp.com;*.doubleclick.net;*.facebook.com;*.facebook.net;*.fastly.net;*.fbcdn.net;*.googlevideo.com;*.gstatic.com;*.instagram.com;*.live.com;*.microsoft.com;*.office.com;*.office365.com;*.redd.it;*.reddit.com;*.whatsapp.com;*.youtu.be;*.youtube-nocookie.com;*.youtube.com;*.ytimg.com;cloudflare-ech.com;encryptedsni.com;cloudflareaccess.com;cloudflareapps.com;cloudflarebolt.com;cloudflareclient.com;cloudflareinsights.com;cloudflareok.com;cloudflarepartners.com;cloudflareportal.com;cloudflarepreview.com;cloudflareresolve.com;cloudflaressl.com;cloudflarestatus.com;cloudflarestorage.com;cloudflarestream.com;cloudflaretest.com;dis.gd;discord-attachments-uploads-prd.storage.googleapis.com;discord.app;discord.co;discord.com;discord.design;discord.dev;discord.gift;discord.gifts;discord.gg;discord.media;discord.new;discord.store;discord.status;discord-activities.com;discordactivities.com;discordapp.com;discordapp.net;discordcdn.com;discordmerch.com;discordpartygames.com;discordsays.com;discordsez.com;frankerfacez.com;ffzap.com;betterttv.net;7tv.app;7tv.io;yt3.ggpht.com;yt4.ggpht.com;yt3.googleusercontent.com;googlevideo.com;jnn-pa.googleapis.com;stable.dl2.discordapp.net;wide-youtube.l.google.com;youtube-nocookie.com;youtube-ui.l.google.com;youtube.com;youtubeembeddedplayer.googleapis.com;youtubekids.com;youtubei.googleapis.com;youtu.be;yt-video-upload.l.google.com;ytimg.com;ytimg.l.google.com;",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "PROXY",
+      "IsEnabled": true,
+      "ProxyConfigId": 1
+    },
+    {
+      "ProcessName": "*",
+      "TargetHosts": "*",
+      "TargetPorts": "*",
+      "Protocol": "BOTH",
+      "Action": "DIRECT",
+      "IsEnabled": true,
+      "ProxyConfigId": 0
+    }
+  ],
+  "LogFilters": []
+}

@@ -24,29 +24,28 @@ def get_app_name():
     """Получает имя приложения"""
     return "ToInet-MAX"
 
-def create_launch_bat():
+def create_launch_bat(target_file="main.pyw"):
     """Создает launch.bat файл если его нет"""
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     launch_bat_path = os.path.join(script_dir, "launch.bat")
     
-    if not os.path.exists(launch_bat_path):
-        try:
-            main_pyw_path = os.path.join(script_dir, "main.pyw")
-            with open(launch_bat_path, 'w', encoding='utf-8') as f:
-                f.write(f'@echo off\n')
-                f.write(f'cd /d "{script_dir}"\n')
-                f.write(f'start /b pythonw "{main_pyw_path}"\n')
-            print(f"[AutoLauncher] Создан файл {launch_bat_path}")
-        except Exception as e:
-            print(f"[AutoLauncher] Ошибка создания launch.bat: {e}")
+    try:
+        main_pyw_path = os.path.join(script_dir, target_file)
+        with open(launch_bat_path, 'w', encoding='utf-8') as f:
+            f.write(f'@echo off\n')
+            f.write(f'cd /d "{script_dir}"\n')
+            f.write(f'start /b pythonw "{main_pyw_path}"\n')
+        print(f"[AutoLauncher] Создан/Обновлен файл {launch_bat_path}")
+    except Exception as e:
+        print(f"[AutoLauncher] Ошибка создания launch.bat: {e}")
     
     return launch_bat_path
 
-def enable_auto_start():
+def enable_auto_start(target_file="main.pyw"):
     """Включает автозапуск приложения через launch.bat"""
     try:
         # Создаем launch.bat если его нет
-        launch_bat_path = create_launch_bat()
+        launch_bat_path = create_launch_bat(target_file)
         
         if not os.path.exists(launch_bat_path):
             print(f"[AutoLauncher] Файл {launch_bat_path} не существует")
@@ -127,6 +126,11 @@ def check_auto_start():
         return False
 
 if __name__ == "__main__":
+    if len(sys.argv) > 1:
+        # Just recreate launch.bat quietly
+        create_launch_bat(sys.argv[1])
+        sys.exit(0)
+
     # Тестовый запуск
     print("=== Auto Launcher Setuper ===")
     print(f"Приложение: {get_app_name()}")

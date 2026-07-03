@@ -14,6 +14,8 @@ DEFAULT_CONFIG = {
     "tgws_port": 1480,
     "tgws_host": "127.0.0.1",
     "tgws_dc_ip": ["2:149.154.167.220", "4:149.154.167.220"],
+    "tgws_secret": os.urandom(16).hex(),
+    "tgws_fake_tls": "vk.com",
     "tgws_verbose": False,
     "mode_type": "inetcpl",
     "auto_start": False,
@@ -26,9 +28,13 @@ def load_config():
         try:
             with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
                 config = json.load(f)
+                changed = False
                 for key, value in DEFAULT_CONFIG.items():
                     if key not in config:
                         config[key] = value
+                        changed = True
+                if changed:
+                    save_config(config)
                 return config
         except:
             pass

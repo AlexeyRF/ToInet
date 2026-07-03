@@ -141,7 +141,10 @@ class TorManager:
             try:
                 # Пытаемся завершить процесс
                 self.tor_process.terminate()
-                time.sleep(1)
+                try:
+                    self.tor_process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    pass
                 if self.tor_process.poll() is None:
                     self.tor_process.kill()
                 self.tor_process = None
@@ -154,7 +157,7 @@ class TorManager:
         return self._run_script(CLOSER_SCRIPT)
 
     def start(self):
-        """Запускает TOR"""
+        """Запуск TOR"""
         if self.tor_running:
             return True
 
@@ -165,16 +168,11 @@ class TorManager:
         if not os.path.exists(TORRC_FILE):
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
         
-        # Пытаемся запустить напрямую через tor.exe
-        if self._start_tor_direct():
-            self.tor_running = True
-            return True
-        
-        # Если прямой запуск не удался, используем старый метод
+        # Только через launcher.pyw, как просил пользователь
         if self._run_script(LAUNCHER_SCRIPT):
             self.tor_running = True
             return True
-            
+
         return False
 
     def stop(self):

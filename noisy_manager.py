@@ -50,7 +50,10 @@ class NoisyManager(QObject):
         if self.process:
             try:
                 self.process.terminate()
-                self.process.wait(timeout=3)
+                try:
+                    self.process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
             except:
                 try:
                     self.process.kill()
@@ -67,20 +70,18 @@ class NoisyManager(QObject):
     def _kill_all_noisy_processes(self):
         killed_count = 0
         try:
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            for proc in psutil.process_iter(['pid', 'name']):
                 try:
-                    cmdline = proc.info.get('cmdline')
-                    if cmdline and any('noisy.py' in arg for arg in cmdline):
-                        p = psutil.Process(proc.info['pid'])
-                        p.terminate()
+                    name = proc.info.get('name')
+                    if name and 'python' in name.lower():
                         try:
-                            p.wait(timeout=3)
-                        except (psutil.TimeoutExpired, psutil.NoSuchProcess):
-                            try:
-                                p.kill()
-                            except:
-                                pass
-                        killed_count += 1
+                            cmdline = proc.cmdline() or []
+                        except psutil.AccessDenied:
+                            cmdline = []
+                        if cmdline and any('noisy.py' in arg for arg in cmdline):
+                            p = psutil.Process(proc.info['pid'])
+                            p.kill()
+                            killed_count += 1
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     continue
         except Exception as e:
