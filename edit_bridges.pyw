@@ -458,7 +458,7 @@ class TorBridgeManager(QMainWindow):
         """Запуск программы maestro.pyw"""
         try:
             if os.path.exists(self.maestro_file):
-                subprocess.Popen(["pythonw", self.maestro_file], shell=True)
+                subprocess.Popen([sys.executable, self.maestro_file], shell=True)
                 self.status_bar.showMessage("Программа maestro.pyw запущена")
                 QMessageBox.information(self, T("Успех", "Success"), "Программа maestro.pyw успешно запущена")
             else:

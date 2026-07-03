@@ -43,20 +43,21 @@ def create_shortcut():
         app_dir = get_app_directory()
         app_name = "ToInet-MAX"
         
-        # Путь к launch.bat
-        bat_path = os.path.join(app_dir, "launch.bat")
+        is_frozen = getattr(sys, 'frozen', False)
+        if is_frozen:
+            bat_path = sys.executable
+        else:
+            bat_path = os.path.join(app_dir, "launch.bat")
+            target_file = sys.argv[1] if len(sys.argv) > 1 else "main.pyw"
+            try:
+                import subprocess
+                subprocess.call([sys.executable, os.path.join(app_dir, "auto_launcher_setuper.py"), target_file])
+            except Exception as e:
+                print(f"[Yarlik] Ошибка обновления launch.bat: {e}")
         
-        # Пересоздаем launch.bat чтобы он указывал на правильный файл
-        target_file = sys.argv[1] if len(sys.argv) > 1 else "main.pyw"
-        try:
-            import subprocess
-            subprocess.call([sys.executable, os.path.join(app_dir, "auto_launcher_setuper.py"), target_file])
-        except Exception as e:
-            print(f"[Yarlik] Ошибка обновления launch.bat: {e}")
-        
-        # Проверяем, существует ли launch.bat
+        # Проверяем, существует ли launch.bat / exe
         if not os.path.exists(bat_path):
-            print(f"[Yarlik] Ошибка: Файл launch.bat не найден по пути: {bat_path}")
+            print(f"[Yarlik] Ошибка: Файл не найден по пути: {bat_path}")
             return False
         
         # Путь к иконке

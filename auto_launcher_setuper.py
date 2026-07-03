@@ -26,6 +26,9 @@ def get_app_name():
 
 def create_launch_bat(target_file="main.pyw"):
     """Создает launch.bat файл если его нет"""
+    if getattr(sys, 'frozen', False):
+        return sys.executable
+
     script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
     launch_bat_path = os.path.join(script_dir, "launch.bat")
     
@@ -44,7 +47,7 @@ def create_launch_bat(target_file="main.pyw"):
 def enable_auto_start(target_file="main.pyw"):
     """Включает автозапуск приложения через launch.bat"""
     try:
-        # Создаем launch.bat если его нет
+        # Создаем launch.bat если его нет (или получаем путь к exe)
         launch_bat_path = create_launch_bat(target_file)
         
         if not os.path.exists(launch_bat_path):
@@ -116,6 +119,8 @@ def check_auto_start():
         try:
             value, _ = winreg.QueryValueEx(key, app_name)
             winreg.CloseKey(key)
+            if getattr(sys, 'frozen', False):
+                return value == sys.executable
             # Проверяем, что значение указывает на launch.bat
             return value.endswith("launch.bat") and os.path.exists(value)
         except FileNotFoundError:

@@ -7,7 +7,7 @@ import shutil
 PROJECT_NAME = "ToInet-MAX"
 
 # Список расширений и конкретных файлов для включения
-EXTENSIONS = ['*.py', '*.pyw', '*.ico', '*.bat']
+EXTENSIONS = ['*.py', '*.pyw', 'tgws/*.py', 'tgws/*.pyw', '*.ico', '*.bat']
 SPECIFIC_FILES = ['bridges.txt']
 
 def build_release_for_arch(arch_name, exe_name, opera_exe):
