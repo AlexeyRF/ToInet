@@ -28,6 +28,8 @@ class OperaProxyManager(QObject):
     def __init__(self, config=None):
         super().__init__()
         self.process = None
+        self.pool_processes = []
+        self.proxy_pool_process = None
         self.running = False
         self.config = config or {}
 
@@ -50,16 +52,64 @@ class OperaProxyManager(QObject):
             return False
             
         params = self.get_params()
-        cmd = [OPERA_PROXY_EXE] + params
+        
+        pool_enabled = self.config.get("opera_pool_enabled", False)
+        pool_size = int(self.config.get("opera_pool_size", 3))
         
         try:
-            print(f"[OperaProxy] Запуск: {' '.join(cmd)}")
-            self.process = subprocess.Popen(
-                cmd,
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
+            if not pool_enabled or pool_size <= 1:
+                print(f"[OperaProxy] Запуск: {' '.join([OPERA_PROXY_EXE] + params)}")
+                self.process = subprocess.Popen(
+                    [OPERA_PROXY_EXE] + params,
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
+            else:
+                # Pool mode
+                self.pool_processes = []
+                # Extract original port
+                original_port = 1785
+                for i, p in enumerate(params):
+                    if p == "-bind-address" and i+1 < len(params):
+                        addr = params[i+1]
+                        if ":" in addr:
+                            original_port = int(addr.split(":")[1])
+                        break
+                        
+                upstream_ports = [original_port + 1000 + i for i in range(pool_size)]
+                
+                print(f"[OperaProxy] Запуск пула из {pool_size} экземпляров...")
+                for i, port in enumerate(upstream_ports):
+                    # Create custom params for each instance
+                    instance_params = list(params)
+                    for j, p in enumerate(instance_params):
+                        if p == "-bind-address" and j+1 < len(instance_params):
+                            addr = instance_params[j+1]
+                            ip = addr.split(":")[0] if ":" in addr else "127.0.0.1"
+                            instance_params[j+1] = f"{ip}:{port}"
+                            break
+                            
+                    proc = subprocess.Popen(
+                        [OPERA_PROXY_EXE] + instance_params,
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                    self.pool_processes.append(proc)
+                    
+                # Start proxy pool
+                pool_script = os.path.join(CURRENT_DIR, "proxy_pool.py")
+                if os.path.exists(pool_script):
+                    self.proxy_pool_process = subprocess.Popen(
+                        [sys.executable, pool_script, "--listen-port", str(original_port), "--upstream-ports", ",".join(map(str, upstream_ports))],
+                        stdout=subprocess.DEVNULL,
+                        stderr=subprocess.DEVNULL,
+                        creationflags=subprocess.CREATE_NO_WINDOW
+                    )
+                else:
+                    print("[OperaProxy] Ошибка: proxy_pool.py не найден")
+                    
             self.running = True
             self.status_changed.emit(True)
             return True
@@ -70,16 +120,41 @@ class OperaProxyManager(QObject):
             return False
 
     def stop(self):
-        if not self.running or not self.process:
+        if not self.running:
             return
             
         try:
             # Terminate main process
-            self.process.terminate()
-            try:
-                self.process.wait(timeout=0.2)
-            except subprocess.TimeoutExpired:
-                self.process.kill()
+            if self.process:
+                self.process.terminate()
+                try:
+                    self.process.wait(timeout=0.2)
+                except subprocess.TimeoutExpired:
+                    self.process.kill()
+                    
+            # Terminate pool processes
+            for proc in self.pool_processes:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=0.2)
+                except:
+                    try:
+                        proc.kill()
+                    except:
+                        pass
+            self.pool_processes = []
+            
+            # Terminate proxy pool
+            if self.proxy_pool_process:
+                try:
+                    self.proxy_pool_process.terminate()
+                    self.proxy_pool_process.wait(timeout=0.2)
+                except:
+                    try:
+                        self.proxy_pool_process.kill()
+                    except:
+                        pass
+                self.proxy_pool_process = None
                 
             # Kill stray processes if any
             exe_name = os.path.basename(OPERA_PROXY_EXE).lower()

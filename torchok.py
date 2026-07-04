@@ -210,37 +210,67 @@ class TorManager:
 
         try:
             import socket
-            s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            s.settimeout(2)
-            s.connect(('127.0.0.1', 9851))
-            
-            s.sendall(b'AUTHENTICATE ""\r\n')
-            resp = s.recv(1024).decode('utf-8')
-            if not resp.startswith('250'):
-                log(f"ControlPort AUTHENTICATE failed: {resp}")
-                s.close()
-                if parent:
-                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"Ошибка аутентификации ControlPort: {resp}")
-                return False
+            import json
+            pool_enabled = False
+            pool_size = 3
+            try:
+                with open(os.path.join(CURRENT_DIR, "config.json"), "r", encoding="utf-8") as f:
+                    config = json.load(f)
+                    pool_enabled = config.get("tor_pool_enabled", False)
+                    pool_size = int(config.get("tor_pool_size", 3))
+            except:
+                pass
                 
-            s.sendall(b'SIGNAL NEWNYM\r\n')
-            resp = s.recv(1024).decode('utf-8')
-            s.close()
+            if pool_enabled and pool_size > 1:
+                socks_port = 9853
+                try:
+                    with open(TORRC_FILE, 'r', encoding='utf-8') as f:
+                        for line in f:
+                            if line.startswith("SocksPort "):
+                                socks_port = int(line.split()[1])
+                except: pass
+                control_ports = [socks_port + 2000 + i for i in range(pool_size)]
+            else:
+                control_ports = [9851]
+                
+            success = True
+            errors = []
+            for cp in control_ports:
+                try:
+                    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    s.settimeout(2)
+                    s.connect(('127.0.0.1', cp))
+                    s.sendall(b'AUTHENTICATE ""\r\n')
+                    resp = s.recv(1024).decode('utf-8')
+                    if not resp.startswith('250'):
+                        errors.append(f"Auth {cp}: {resp}")
+                        success = False
+                    else:
+                        s.sendall(b'SIGNAL NEWNYM\r\n')
+                        resp = s.recv(1024).decode('utf-8')
+                        if not resp.startswith('250'):
+                            errors.append(f"NEWNYM {cp}: {resp}")
+                            success = False
+                    s.close()
+                except Exception as e:
+                    errors.append(f"Port {cp}: {e}")
+                    success = False
             
-            if resp.startswith('250'):
+            if success:
                 log("Успешно запрошена новая цепочка TOR")
                 if parent:
                     QMessageBox.information(parent, "TOR", "Новая цепочка успешно запрошена!")
                 return True
             else:
-                log(f"Ошибка при запросе NEWNYM: {resp}")
+                err_str = "\n".join(errors)
+                log(f"Ошибка при запросе NEWNYM: {err_str}")
                 if parent:
-                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"TOR вернул ошибку при запросе новой цепочки: {resp}")
+                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"Ошибка при запросе новой цепочки:\n{err_str}")
                 return False
         except Exception as e:
-            log(f"Не удалось подключиться к ControlPort: {e}")
+            log(f"Внутренняя ошибка: {e}")
             if parent:
-                QMessageBox.warning(parent, T("Ошибка", "Error"), f"Не удалось подключиться к ControlPort TOR (порт 9851).\nВозможно, он не включен в настройках.\nОшибка: {e}")
+                QMessageBox.warning(parent, T("Ошибка", "Error"), f"Внутренняя ошибка:\n{e}")
             return False
 
     def is_running(self):

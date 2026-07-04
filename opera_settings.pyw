@@ -70,6 +70,22 @@ class OperaSettingsWindow(QMainWindow):
         self.raw_params_input.setPlaceholderText(T("Например: -proxy socks5://127.0.0.1:1780", "Example: -proxy socks5://127.0.0.1:1780"))
         adv_layout.addWidget(self.raw_params_input)
         main_layout.addWidget(adv_group)
+
+        # Proxy Pool
+        from PyQt5.QtWidgets import QCheckBox, QSpinBox
+        pool_group = QGroupBox(T("Пул прокси (Load Balancing)", "Proxy Pool (Load Balancing)"))
+        pool_group.setFont(QFont("Segoe UI", 10))
+        pool_layout = QHBoxLayout(pool_group)
+        self.pool_checkbox = QCheckBox(T("Включить пул (запуск нескольких экземпляров)", "Enable Pool (Run multiple instances)"))
+        self.pool_spinbox = QSpinBox()
+        self.pool_spinbox.setRange(2, 10)
+        self.pool_spinbox.setValue(3)
+        self.pool_spinbox.setEnabled(False)
+        self.pool_checkbox.toggled.connect(self.pool_spinbox.setEnabled)
+        pool_layout.addWidget(self.pool_checkbox)
+        pool_layout.addWidget(QLabel(T("Количество:", "Count:")))
+        pool_layout.addWidget(self.pool_spinbox)
+        main_layout.addWidget(pool_group)
         
         # Buttons
         btn_layout = QHBoxLayout()
@@ -89,6 +105,12 @@ class OperaSettingsWindow(QMainWindow):
         self.load_settings()
         
     def load_settings(self):
+        config = config_manager.load_config()
+        pool_enabled = config.get("opera_pool_enabled", False)
+        pool_size = config.get("opera_pool_size", 3)
+        self.pool_checkbox.setChecked(pool_enabled)
+        self.pool_spinbox.setValue(pool_size)
+
         if not os.path.exists(OPERA_CUSTOM_FILE):
             return
             
@@ -145,6 +167,8 @@ class OperaSettingsWindow(QMainWindow):
             
         config = config_manager.load_config()
         config["opera_params"] = new_params
+        config["opera_pool_enabled"] = self.pool_checkbox.isChecked()
+        config["opera_pool_size"] = self.pool_spinbox.value()
         config_manager.save_config(config)
             
         QMessageBox.information(self, T("Успех", "Success"), T("Настройки сохранены. Если Opera Proxy запущен, пожалуйста, перезапустите его.", "Settings saved. If Opera Proxy is running, please restart it."))
