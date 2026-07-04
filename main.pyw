@@ -213,6 +213,14 @@ def toggle_tester():
         tester_manager.stop()
     update_menu()
 
+def toggle_proxifier():
+    if not mode_mgr.tun_running():
+        mode_mgr.start_tun()
+    else:
+        mode_mgr.stop_tun()
+    update_proxy_status()
+    update_menu()
+
 def toggle_inetcpl_tor():
     if not mode_mgr.inetcpl_tor_active:
         if mode_mgr.inetcpl_bd_active:
@@ -336,6 +344,33 @@ def toggle_auto_connect_last_mode():
     config_manager.save_config(config)
     update_menu()
 
+def restart_app():
+    tor_manager.stop()
+    byedpi_manager.stop()
+    opera_mgr.stop()
+    
+    # Остановка pip-прокси и очистка глобального pip
+    pip_mgr = bdsher.get_pip_manager()
+    pip_mgr.stop()
+    bdsher.clear_pip_proxy()
+    
+    noisy_manager.stop()
+    tester_manager.stop()
+    ext_programs_manager.stop_all()
+    mode_mgr.stop_tun()
+    tgws_mgr.stop()
+    mode_mgr.reset_inetcpl_proxy()
+    log("Restarting...")
+    
+    import subprocess
+    import os
+    if getattr(sys, 'frozen', False):
+        subprocess.Popen([sys.executable] + sys.argv[1:])
+    else:
+        subprocess.Popen([sys.executable, os.path.abspath(__file__)] + sys.argv[1:])
+        
+    app.quit()
+
 def exit_app():
     tor_manager.stop()
     byedpi_manager.stop()
@@ -393,6 +428,7 @@ def update_menu():
         tray_menu.addSeparator()
         
         set_act = QAction(T("Настройки", "Settings"), tray_menu); set_act.triggered.connect(toggle_mode); tray_menu.addAction(set_act)
+        restart_act = QAction(T("Перезапуск", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
         exit_act = QAction(T("Выход", "Exit"), tray_menu); exit_act.triggered.connect(exit_app); tray_menu.addAction(exit_act)
     else:
         # Продвинутый режим
@@ -420,7 +456,11 @@ def update_menu():
             tester_act = QAction(tester_manager.get_status_text(), control_menu); tester_act.triggered.connect(toggle_tester); control_menu.addAction(tester_act)
             tg_act = QAction(T("Ручной запуск TGWS", "Manual Start TGWS") if not tgws_mgr.running else T("Остановить TGWS", "Stop TGWS"), control_menu); tg_act.triggered.connect(toggle_tgws); control_menu.addAction(tg_act)
         
+            
+        tun_status = T("Запустить Проксификатор", "Start Proxifier") if not mode_mgr.tun_running() else T("Остановить Проксификатор", "Stop Proxifier")
+        tun_act = QAction(tun_status, control_menu); tun_act.triggered.connect(toggle_proxifier); control_menu.addAction(tun_act)
         
+        if mode_mgr.tun_running():
             rtun_act = QAction(T("Перезапустить проксификатор", "Restart Proxifier"), control_menu); rtun_act.triggered.connect(mode_mgr.restart_tun); control_menu.addAction(rtun_act)
             
         tray_menu.addMenu(control_menu)
@@ -428,6 +468,10 @@ def update_menu():
         # 2. Настройки Компонентов
         settings_menu = QMenu(T("Настройки компонентов", "Component Settings"), tray_menu)
         settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
+        
+        tor_win_txt = T("Скрывать окно TOR", "Hide TOR Window") if config.get("tor_show_window", False) else T("Показывать окно TOR", "Show TOR Window")
+        tor_win_act = QAction(tor_win_txt, settings_menu); tor_win_act.triggered.connect(toggle_tor_show_window); settings_menu.addAction(tor_win_act)
+        
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
         settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
@@ -554,6 +598,7 @@ def update_menu():
         tray_menu.addSeparator()
         
         m_act = QAction(T("Перейти в простой режим", "Switch to Simple Mode"), tray_menu); m_act.triggered.connect(toggle_mode); tray_menu.addAction(m_act)
+        restart_act = QAction(T("Перезапуск", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
         e_act = QAction(T("Выход", "Exit"), tray_menu); e_act.triggered.connect(exit_app); tray_menu.addAction(e_act)
 
 def create_tray_menu():

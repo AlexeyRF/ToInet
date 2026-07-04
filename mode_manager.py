@@ -91,6 +91,14 @@ class ModeManager:
                 self.log(f"Ошибка остановки TUN процесса: {e}")
             self.tun_process = None
 
+    def tun_running(self):
+        if self.tun_process:
+            if self.tun_process.poll() is None:
+                return True
+            else:
+                self.tun_process = None
+        return False
+
     def restart_tun(self):
         self.stop_tun()
         import time

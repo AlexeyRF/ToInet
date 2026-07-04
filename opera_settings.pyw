@@ -107,7 +107,7 @@ class OperaSettingsWindow(QMainWindow):
                         self.region_combo.setCurrentIndex(2)
                     elif "-country ALL" in params:
                         self.region_combo.setCurrentIndex(3)
-                        
+                    
                     # Parse policy
                     if "-server-selection fastest" in params:
                         self.policy_combo.setCurrentIndex(0)
@@ -115,43 +115,20 @@ class OperaSettingsWindow(QMainWindow):
                         self.policy_combo.setCurrentIndex(1)
                     elif "-server-selection first" in params:
                         self.policy_combo.setCurrentIndex(2)
-                        
-                    # Extract raw params (remove known ones)
-        if True:
-            line = params
-            if line:
-                params = line
-                
-                # Parse region
-                if "-country EU" in params:
-                    self.region_combo.setCurrentIndex(0)
-                elif "-country AM" in params:
-                    self.region_combo.setCurrentIndex(1)
-                elif "-country AS" in params:
-                    self.region_combo.setCurrentIndex(2)
-                elif "-country ALL" in params:
-                    self.region_combo.setCurrentIndex(3)
-                
-                # Parse policy
-                if "-server-selection fastest" in params:
-                    self.policy_combo.setCurrentIndex(0)
-                elif "-server-selection random" in params:
-                    self.policy_combo.setCurrentIndex(1)
-                elif "-server-selection first" in params:
-                    self.policy_combo.setCurrentIndex(2)
-                
-                # Extract advanced args (everything that is not standard)
-                known_args = ["-bind-address 127.0.0.1:1785", "-socks-mode", "-verbosity 20",
-                              "-country EU", "-country AM", "-country AS", "-country ALL",
-                              "-server-selection fastest", "-server-selection random", "-server-selection first"]
-                
-                adv_params = params
-                for known in known_args:
-                    adv_params = adv_params.replace(known, "").strip()
-                
-                # collapse spaces
-                adv_params = " ".join(adv_params.split())
-                self.raw_params_input.setText(adv_params)
+                    
+                    # Extract advanced args (everything that is not standard)
+                    known_args = ["-bind-address 127.0.0.1:1785", "-socks-mode", "-verbosity 20",
+                                  "-country EU", "-country AM", "-country AS", "-country ALL",
+                                  "-server-selection fastest", "-server-selection random", "-server-selection first"]
+                    
+                    adv_params = params
+                    for known in known_args:
+                        adv_params = adv_params.replace(known, "").strip()
+                    
+                    # collapse spaces
+                    adv_params = " ".join(adv_params.split())
+                    self.raw_params_input.setText(adv_params)
+                    break # Only parse the first valid line
 
     def save_settings(self):
         region_map = {0: "EU", 1: "AM", 2: "AS", 3: "ALL"}

@@ -99,7 +99,7 @@ class TorManager:
         
         # Запускаем tor.exe
         try:
-            creation_flags = subprocess.CREATE_NO_WINDOW if not self.show_window else 0
+            creation_flags = subprocess.CREATE_NO_WINDOW if not self.show_window else subprocess.CREATE_NEW_CONSOLE
             
             if self.show_window:
                 # Создаем новое окно консоли
