@@ -9,7 +9,7 @@ PROJECT_NAME = "ToInet-MAX"
 
 # Базовые скрипты, которые идут в python-версию
 PYTHON_EXTENSIONS = ['*.py', '*.pyw', 'tgws/*.py', 'tgws/*.pyw', '*.ico', '*.bat']
-PYTHON_SPECIFIC_FILES = ['bridges.txt', "byedpi_tester_priority_sites.txt", "byedpi_tester_sites.txt", "byedpi_tester_strategies.txt"]
+PYTHON_SPECIFIC_FILES = ['bridges.txt', "byedpi_tester_priority_sites.txt", "byedpi_tester_sites.txt", "byedpi_tester_strategies.txt", "Toinet.pbprofile"]
 
 # Бинарники и ресурсы (общие для python и portable)
 COMMON_RESOURCES_GLOBS = [
@@ -61,12 +61,9 @@ def build_python_zip(arch_name, exe_name, opera_exe):
     print(f"Успешно: {output_zip}")
 
 def compile_exe():
-    print("\nКомпиляция EXE через PyInstaller...")
-    try:
-        import PyInstaller
-    except ImportError:
-        print("Устанавливаем PyInstaller...")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "pyinstaller"])
+    print("Компиляция ToInet.exe через PyInstaller...")
+    if os.path.exists("build"):
+        shutil.rmtree("build")
         
     cmd = [
         sys.executable, "-m", "PyInstaller",
@@ -75,6 +72,10 @@ def compile_exe():
         "--windowed",
         "--icon", "icon.ico",
         "--noconfirm",
+        "--hidden-import", "requests",
+        "--hidden-import", "pythoncom",
+        "--hidden-import", "win32com",
+        "--hidden-import", "win32com.client",
     ]
     
     datas = [

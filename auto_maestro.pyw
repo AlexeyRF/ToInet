@@ -6,8 +6,8 @@ def load_bridges(filename="bridges.txt"):
 def generate_torrc(bridges):
     return [
         f"DataDirectory {Path.cwd() / 'data'}",
-        f"GeoIPFile {Path.cwd()}\data\geoip",
-        f"GeoIPv6File {Path.cwd()}\data\geoip6",
+        f"GeoIPFile {Path.cwd()}\\data\\geoip",
+        f"GeoIPv6File {Path.cwd()}\\data\\geoip6",
         "SocksPort 9853",
         "ControlPort 9851",
         "CookieAuthentication 0",

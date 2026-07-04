@@ -304,7 +304,7 @@ ClientOnly 1
                 else:
                     tar.extractall(path=self.project_folder)
         
-                if not self.archive_path:
+        if not self.archive_path:
             import os
             try: os.remove(local_filename)
             except: pass
