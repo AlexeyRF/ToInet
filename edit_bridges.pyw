@@ -325,6 +325,29 @@ class TorBridgeManager(QMainWindow):
             if line and not line.startswith('#'):  # Игнорируем комментарии и пустые строки
                 bridges.append(line)
         return bridges
+
+    def clear_tor_cache(self):
+        """Очистка кеша Tor (всё в папке data кроме файлов geoip)"""
+        import shutil
+        data_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data")
+        if not os.path.exists(data_dir):
+            return
+            
+        try:
+            for item in os.listdir(data_dir):
+                if item.startswith("geoip"):
+                    continue
+                item_path = os.path.join(data_dir, item)
+                try:
+                    if os.path.isfile(item_path) or os.path.islink(item_path):
+                        os.unlink(item_path)
+                    elif os.path.isdir(item_path):
+                        shutil.rmtree(item_path)
+                except Exception as e:
+                    pass
+        except Exception as e:
+            pass
+
         
     def add_bridges(self):
         """Добавление мостов в файл"""
@@ -363,6 +386,7 @@ class TorBridgeManager(QMainWindow):
             self.changes_made = True
             self.text_edit.clear()
             self.load_existing_bridges()
+            self.clear_tor_cache()
             
             QMessageBox.information(self, T("Успех", "Success"), f"Добавлено {len(new_bridges)} новых мостов")
             self.status_bar.showMessage(f"Добавлено {len(new_bridges)} мостов")
@@ -399,6 +423,7 @@ class TorBridgeManager(QMainWindow):
                 self.changes_made = True
                 self.text_edit.clear()
                 self.load_existing_bridges()
+                self.clear_tor_cache()
                 
                 QMessageBox.information(self, T("Успех", "Success"), f"Содержимое файла успешно заменено. Добавлено {len(bridges)} мостов.")
                 self.status_bar.showMessage(f"Заменено {len(bridges)} мостов")

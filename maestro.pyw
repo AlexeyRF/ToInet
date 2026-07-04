@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QFileDialog, 
                              QMessageBox, QGroupBox, QGridLayout, QComboBox,
-                             QRadioButton, QButtonGroup, QCheckBox, QProgressDialog)
+                             QRadioButton, QButtonGroup, QCheckBox, QProgressDialog, QSpinBox)
 from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 import requests
@@ -712,6 +712,23 @@ class TorrcConfigurator(QMainWindow):
         
         self.load_update_settings()
 
+        # Proxy Pool
+        pool_group = QGroupBox(T("Пул прокси (Load Balancing)", "Proxy Pool (Load Balancing)"))
+        pool_group.setFont(QFont("Segoe UI", 10))
+        pool_layout = QHBoxLayout(pool_group)
+        self.pool_checkbox = QCheckBox(T("Включить пул (запуск нескольких экземпляров)", "Enable Pool (Run multiple instances)"))
+        self.pool_spinbox = QSpinBox()
+        self.pool_spinbox.setRange(2, 10)
+        self.pool_spinbox.setValue(3)
+        self.pool_spinbox.setEnabled(False)
+        self.pool_checkbox.toggled.connect(self.pool_spinbox.setEnabled)
+        pool_layout.addWidget(self.pool_checkbox)
+        pool_layout.addWidget(QLabel(T("Количество:", "Count:")))
+        pool_layout.addWidget(self.pool_spinbox)
+        main_layout.addWidget(pool_group)
+
+        self.load_pool_settings()
+
         # Generate button
         generate_btn = QPushButton(T("Создать конфигурацию", "Generate Configuration"))
         generate_btn.setMinimumHeight(40)
@@ -743,6 +760,20 @@ class TorrcConfigurator(QMainWindow):
                         self.branch_combo.setCurrentIndex(index)
             except:
                 pass
+
+    def load_pool_settings(self):
+        config_path = os.path.join(self.current_dir, "config.json")
+        if os.path.exists(config_path):
+            try:
+                with open(config_path, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+                    pool_enabled = config.get("tor_pool_enabled", False)
+                    pool_size = config.get("tor_pool_size", 3)
+                    self.pool_checkbox.setChecked(pool_enabled)
+                    self.pool_spinbox.setValue(pool_size)
+            except:
+                pass
+
 
     def on_autoupdate_changed(self, state):
         update_info_path = os.path.join(self.current_dir, "update_info.json")
@@ -1131,7 +1162,25 @@ class TorrcConfigurator(QMainWindow):
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(torrc_lines))
             
+            # Save pool settings to config.json
+            config_path = os.path.join(self.current_dir, "config.json")
+            config = {}
+            if os.path.exists(config_path):
+                try:
+                    with open(config_path, 'r', encoding='utf-8') as f:
+                        config = json.load(f)
+                except:
+                    pass
+            config["tor_pool_enabled"] = self.pool_checkbox.isChecked()
+            config["tor_pool_size"] = self.pool_spinbox.value()
+            try:
+                with open(config_path, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, indent=2)
+            except:
+                pass
+            
             # Show success message with mode info
+
             mode_text = ""
             if self.obfs4_mode_rb.isChecked():
                 mode_text = " (obfs4)"
