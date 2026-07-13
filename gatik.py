@@ -198,7 +198,7 @@ async def handle_client(reader, writer):
         if up_writer:
             up_writer.close()
 
-async def main():
+async def main(stop_event=None):
     server = await asyncio.start_server(handle_client, LISTEN_HOST, LISTEN_PORT)
     logging.info(f"=== Telegram SOCKS5 Router запущен на {LISTEN_HOST}:{LISTEN_PORT} ===")
     logging.info(f"TOR (Скачивание): {DOWNLOAD_PROXY_HOST}:{DOWNLOAD_PROXY_PORT}")
@@ -206,7 +206,10 @@ async def main():
     logging.info("Зайдите в Telegram и укажите SOCKS5 прокси: 127.0.0.1 порт 1777 (без пароля)")
     
     async with server:
-        await server.serve_forever()
+        if stop_event:
+            await stop_event.wait()
+        else:
+            await server.serve_forever()
 
 if __name__ == '__main__':
     try:

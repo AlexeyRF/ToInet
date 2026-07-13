@@ -20,7 +20,9 @@ class ModeManager:
         print(f"[MODE] {msg}")
 
     def run_cpller(self, port, action_flag):
-        cmd = [sys.executable, CPLLER_SCRIPT, "--port", str(port), action_flag]
+        config = config_manager.load_config()
+        mode = config.get("inetcpl_mode", "classic")
+        cmd = [sys.executable, CPLLER_SCRIPT, str(port), str(action_flag), mode]
         creationflags = 0
         if os.name == "nt":
             creationflags = subprocess.CREATE_NO_WINDOW

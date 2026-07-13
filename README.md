@@ -1,8 +1,8 @@
 # ToInet - Лаунчер для СОБ (ByeDPI, TGWS, vk-turn и ЛМ)
 
-**ToInet** - это комплексный менеджер для обеспечения свободного веб-доступа в операционной системе Windows. Программа объединяет в едином интерфейсе несколько инструментов обхода: **ByeDPI**, **Tor**, **Telegram WebSocket Proxy**, **vk-turn-proxy**, **Socksreabilitator**, **Умный шлюз-маршрутизатор Gatik** и автоматизированный генератор фонового трафика.
+**ToInet** - это комплексный менеджер для обеспечения свободного веб-доступа в операционной системе Windows (Доступна также [версия для Android](https://github.com/AlexeyRF/ToInet-Mobile)). Программа объединяет в едином интерфейсе несколько инструментов обхода: **ByeDPI**, **Tor**, **Telegram WebSocket Proxy**, **vk-turn-proxy**, **Socksreabilitator**, **Умный шлюз-маршрутизатор Gatik** и автоматизированный генератор фонового трафика.
 
-Приложение позволяет настраивать маршрутизацию - от обычного браузерного проксирования до прозрачного перенаправления всего трафика системы (TUN-режим) через внешние утилиты. 
+
 ---
 
 ## Основные возможности
@@ -23,6 +23,7 @@
 *   **Умный шлюз Gatik для Telegram:**
     *   Собственная разработка представляющая из себя динамический маршрутизатор трафика, объединяющий преимущества Tor и TGWS.
     *   Автоматически анализирует поток данных "на лету" и бесшовно переключает активные соединения на оптимальный прокси-сервер.
+    *   **Новое:** Полностью интегрирован в общий асинхронный цикл программы для максимальной стабильности и производительности.
 *   **Тестер стратегий ByeDPI (`byedpi_tester_gui.pyw`):**
     *   Позволяет автоматически найти стратегию обхода, работающую у вашего провайдера, и сохранить её.
 *   **Генератор сетевого шума Noisy (`noisy.py`):**
@@ -47,7 +48,7 @@
     *   Автоматически прописывает локальный прокси в системные настройки Windows (Internet Options / Свойства браузера) с помощью утилиты `cpller.pyw`.
     *   *Для чего:* Обеспечивает мгновенный доступ к сайтам через браузеры, использующие системные настройки прокси (Chrome, Edge, Opera, Firefox (с настройками по умолчанию)). При отключении прокси настройки автоматически сбрасываются.
 3.  **TUN (Режим полного туннелирования):**
-    *   Использует внешнюю утилиту-проксификатор (например, **Proxifier**) для перенаправления всего трафика операционной системы через запущенные инструменты.
+    *   Использует внешнюю утилиту-проксификатор (например, **Proxybridge**) для перенаправления всего трафика операционной системы через запущенные инструменты.
     *   *Для чего:* Необходим для прозрачного обхода ограничений в играх, лаунчерах и десктопных приложениях (Discord, Spotify, Steam и др.), которые не поддерживают ручную настройку прокси.
     *   *Настройка:* Путь к исполняемому файлу проксификатора должен быть указан в файле `proxification_app.txt`.
 
@@ -59,12 +60,15 @@
 
 | Инструмент / Протокол | Порт | Тип соединения | Описание |
 | :--- | :--- | :--- | :--- |
-| **ByeDPI (Основной)** | `1780` | SOCKS5 | Основной порт обхода блокировок для браузеров |
-| **Tor (Основной)** | `9853` | SOCKS5 | Анонимный доступ через сеть Tor |
-| **Tor Control Port** | `9851` | TCP | Служебный порт для управления Tor (смена цепочек) |
+| **ByeDPI (Главный)** | `1780` | SOCKS5 | Основной прокси-сервер для обхода в браузерах |
+| **ByeDPI (HTTP)** | `1782` | HTTP | HTTP-мост для ByeDPI |
+| **Tor (Главный)** | `9853` | SOCKS5 | Анонимный доступ через сеть Tor |
+| **Tor (HTTP)** | `9854` | HTTP | HTTP-мост для Tor |
+| **Tor Control Port** | `9851` | TCP | Порт управления Tor (смена цепочки) |
 | **Telegram WS Proxy** | `1480` | SOCKS5 & MTPROTO | Прокси, специально для Telegram Desktop |
 | **Gatik Router** |`1777`| SOCKS5 | Роутер для ускорения Telegram |
-| **Opera Proxy** | `1785` | SOCKS5 | Быстрый прокси через VPN инфраструктуру Opera |
+| **Opera Proxy** | `1785` | HTTP | Быстрый прокси через VPN (ОСУЖДАЮ НА ТЕРРИТОРИИ РОССИЙСКОЙ ФЕДЕРАЦИИ) инфраструктуру Opera |
+| **Opera Proxy (SOCKS5)**| `1786` | SOCKS5 | SOCKS5-мост для Opera |
 | **Pip ByeDPI** | `1781` | SOCKS5 | Выделенный прокси-сервер для установки пакетов Python |
 
 ---
@@ -77,23 +81,16 @@
 
 ### Инструкция по установке:
 
-1.  Скачайте релиз или соберите его (нужно поместить всё по схеме ниже)
-2.  Запустите скрипт установки зависимостей **`install.bat`**. Он установит все необходимые библиотеки Python:
-    ```cmd
-    pip install pywin32 pyqt5 pysocks psutil requests cryptography customtkinter Pillow pystray pyperclip
-    ```
+1.  Скачайте релиз
+2.  (Python версия) Запустите скрипт установки зависимостей **`install.bat`**, затем запустите через **`launch.bat`**, в Portable версии достаточно запустить ToInet.exe
 3.  Если вы планируете использовать **TUN режим**:
     *   Установите программу-проксификатор.
     *   Откройте файл `proxification_app.txt` и пропишите абсолютный путь к исполняемому файлу программы. Например:
         ```text
         C:\Program Files\Proxifier\Proxifier.exe
         ```
-
-## Запуск и использование
-
-1.  Запустите программу двойным щелчком по файлу **`launch.bat`** .
-2.  В системном трее Windows (возле часов или в меню на ^) появится иконка **ToInet-MAX**.
-3.  **Первичная настройка трея:**
+4.  В системном трее Windows (возле часов или в меню на ^) появится иконка **ToInet-MAX**.
+5.  **Первичная настройка трея:**
     *   Правой кнопкой мыши нажмите на иконку.
     *   По умолчанию включен **Inetcpl режим** меню, позволяющий быстро запускать/останавливать все сервисы разом и подключаться к TOR или Byedpi через свойства браузера. 
     *   Нажмите **«Настройки»**, чтобы переключиться в **Продвинутый режим**. Здесь вам откроется полный спектр возможностей ручного управления каждым компонентом отдельно, очистка кэша, конфигураторы и утилиты.
@@ -105,6 +102,8 @@
 *   **Создать ярлык на рабочем столе:** автоматически генерирует ярлык.
 *   **Добавить в Telegram:** мгновенная отправка ссылки-настройки прокси напрямую в открытый Telegram.
 *   **Agy Фикс (Agy Fix):** интерактивная консольная утилита для настройки и исправления работы Gemini CLI, разблокировки AIzaSy-ключей и OAuth (исправление региональных блокировок Google).
+*   **Управление DNS:** установка кастомных DNS-серверов (Comms DNS, Xbox DNS с поддержкой IPv4/IPv6) или сброс на системные (требуются права администратора).
+*   **Логи приложения:** окно с выводом системных логов в реальном времени.
 
 ---
 
@@ -152,12 +151,17 @@ https://github.com/AlexeyRF/GeminiFixik - Agy Fix<br><br>
 
 ## ToInet - Bypass Launcher (ByeDPI & TOR)
 
-**ToInet** is a comprehensive manager for bypassing internet censorship and ensuring free web access on Windows OS. The program combines several bypass tools into a single system tray interface (based on PyQt5): **ByeDPI**, **Tor**.
 
-The application allows for fine-tuning routing — from regular browser proxying to transparently redirecting all system traffic (TUN mode) through external utilities.
+**ToInet** is a comprehensive manager for bypassing internet censorship and ensuring free web access on Windows OS (Also available: [Android version](https://github.com/AlexeyRF/ToInet-Mobile)). The program combines several bypass tools into a single system tray interface (based on PyQt5): **ByeDPI**, **Tor**.
+
+The application allows for fine-tuning routing - from regular browser proxying to transparently redirecting all system traffic (TUN mode) through external utilities.
 
 ### Internet Censorship and Blocking in the UK
-Various forms of internet censorship and website blocking have been implemented in the United Kingdom, often mandated by High Court rulings or the Digital Economy Act. Internet service providers (ISPs) in the UK frequently use deep packet inspection (DPI) and DNS blocking to restrict access to certain websites, including file-sharing platforms, streaming sites, truth-telling sites (called "Russian propaganda"), and adult content. These blocks are typically implemented at the network level through SNI (Server Name Indication) analysis or DNS response manipulation to prevent users from accessing desired resources.
+Various forms of internet censorship and website blocking have been implemented in the United Kingdom, often mandated by High Court rulings or the Digital Economy Act. Internet service providers (ISPs) in the UK frequently use deep packet inspection (DPI) and DNS blocking to restrict access to certain websites, including file-sharing platforms, streaming sites, truth-telling sites (so called "Russian propaganda"), and adult content. These blocks are typically implemented at the network level through SNI (Server Name Indication) analysis or DNS response manipulation to prevent users from accessing desired resources.
+
+### Internet Censorship in the European Union
+In addition to the UK, the European Union is pushing legislation to make all interpersonal correspondence readable (breaking end-to-end encryption under the guise of chat control). Furthermore, there are initiatives seeking to block access to social media platforms for people without a government-verified passport or ID.
+
 Remember: Big Brother is watching you, but Big Russian Bratan is in his way.
 
 ### How This Program Works
@@ -186,6 +190,8 @@ ToInet tackles these restrictions by leveraging several interconnected technolog
 *   **Autostart & Convenience:**
     *   Minimizes to the Windows system tray.
     *   Built-in autostart installer and one-click desktop shortcut creator.
+    *   **DNS Management:** Quickly switch to custom DNS (Comms, Xbox) or reset settings (requires Admin).
+    *   **Application Logs:** Built-in viewer for real-time app logs.
 
 ---
 
@@ -212,9 +218,12 @@ The program provides three operational modes:
 | Tool / Protocol | Port | Proxy Type | Description |
 | :--- | :--- | :--- | :--- |
 | **ByeDPI (Main)** | `1780` | SOCKS5 | Main bypass proxy for browsers |
+| **ByeDPI (HTTP)** | `1782` | HTTP | HTTP bridge for ByeDPI |
 | **Tor (Main)** | `9853` | SOCKS5 | Anonymous access via Tor network |
+| **Tor (HTTP)** | `9854` | HTTP | HTTP bridge for Tor |
 | **Tor Control Port** | `9851` | TCP | Control port for Tor (circuit rotation) |
-| **Opera Proxy** | `1785` | SOCKS5 | Fast bypass using Opera VPN infrastructure |
+| **Opera Proxy** | `1785` | HTTP | Fast bypass using Opera VPN infrastructure |
+| **Opera Proxy (SOCKS5)**| `1786` | SOCKS5 | SOCKS5 bridge for Opera (e.g. for Telegram) |
 
 ---
 
@@ -227,7 +236,7 @@ The program provides three operational modes:
 ### Installation Guide:
 
 1.  Download the release or build it according to the folder structure below.
-2.  Run the dependency installation script **`install.bat`**.
+2.  Run the dependency installation script **`install.bat`**. Or use portable version
 3.  If planning to use **TUN mode**:
     *   Install a proxifier.
     *   Open `proxification_app.txt` and write the absolute path to the executable (e.g., `C:\Program Files\Proxifier\Proxifier.exe`).
@@ -236,7 +245,7 @@ The program provides three operational modes:
 
 ## Launch and Usage
 
-1.  Double-click **`launch.bat`**.
+1.  Double-click **`launch.bat`**. \ ToInet.exe
 2.  The **ToInet-MAX** icon will appear in the system tray.
 3.  **Initial Tray Setup:**
     *   Right-click the icon.

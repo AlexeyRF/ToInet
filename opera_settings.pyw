@@ -10,7 +10,7 @@ import config_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 OPERA_CUSTOM_FILE = os.path.join(CURRENT_DIR, "opera_proxy_custom.txt")
-DEFAULT_PARAMS = "-bind-address 127.0.0.1:1785 -socks-mode -verbosity 20 -country EU -server-selection random -proxy socks5://127.0.0.1:1787"
+DEFAULT_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 20 -country EU -server-selection random -proxy socks5://127.0.0.1:1787"
 
 def T(ru_text, en_text):
     return en_text if lang._is_en else ru_text
@@ -161,7 +161,7 @@ class OperaSettingsWindow(QMainWindow):
         
         adv = self.raw_params_input.text().strip()
         
-        new_params = f"-bind-address 127.0.0.1:1785 -socks-mode -verbosity 20 -country {region} -server-selection {policy}"
+        new_params = f"-bind-address 127.0.0.1:1785 -verbosity 20 -country {region} -server-selection {policy}"
         if adv:
             new_params += f" {adv}"
             
