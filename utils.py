@@ -52,6 +52,25 @@ def add_proxy_to_telegram(port):
             QMessageBox.information(None, "Telegram Proxy", 
                                    f"Ссылка для настройки прокси (порт {port}) в Telegram:\n{url}")
 
+def add_http_proxy_to_telegram(port):
+    msg_ru = (f"Данный прокси (порт {port}) работает по протоколу HTTP.\n\n"
+              f"Telegram не поддерживает автоматическое добавление HTTP прокси по ссылке. "
+              f"Пожалуйста, добавьте его вручную:\n\n"
+              f"1. Настройки Telegram -> Продвинутые -> Тип соединения\n"
+              f"2. Использовать собственный прокси -> Добавить\n"
+              f"3. Выберите 'HTTP' (НЕ SOCKS5)\n"
+              f"4. Сервер: 127.0.0.1, Порт: {port}\n"
+              f"5. Сохранить")
+    msg_en = (f"This proxy (port {port}) uses the HTTP protocol.\n\n"
+              f"Telegram does not support automatically adding HTTP proxies via deep links. "
+              f"Please add it manually:\n\n"
+              f"1. Telegram Settings -> Advanced -> Connection type\n"
+              f"2. Use custom proxy -> Add proxy\n"
+              f"3. Select 'HTTP' (NOT SOCKS5)\n"
+              f"4. Server: 127.0.0.1, Port: {port}\n"
+              f"5. Save")
+    QMessageBox.information(None, "Telegram HTTP Proxy", msg_en if lang._is_en else msg_ru)
+
 def add_mtproto_to_telegram(port, secret, fake_tls=None):
     host = "127.0.0.1"
     if fake_tls:

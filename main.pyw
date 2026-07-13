@@ -58,13 +58,68 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton
 from PyQt5.QtGui import QIcon, QPixmap
-from PyQt5.QtCore import Qt, QTimer
+from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
+
+class OutputLogger(QObject):
+    log_signal = pyqtSignal(str)
+    def __init__(self, original_stream):
+        super().__init__()
+        self.original_stream = original_stream
+
+    def write(self, text):
+        if self.original_stream:
+            try:
+                self.original_stream.write(text)
+                self.original_stream.flush()
+            except: pass
+        self.log_signal.emit(text)
+
+    def flush(self):
+        if self.original_stream:
+            try:
+                self.original_stream.flush()
+            except: pass
+
+class AppLogWindow(QDialog):
+    def __init__(self, title="Логи приложения", parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(title)
+        self.resize(700, 500)
+        self.layout = QVBoxLayout(self)
+        self.text_edit = QTextEdit(self)
+        self.text_edit.setReadOnly(True)
+        self.layout.addWidget(self.text_edit)
+        
+        self.clear_btn = QPushButton("Очистить", self)
+        self.clear_btn.clicked.connect(self.text_edit.clear)
+        self.layout.addWidget(self.clear_btn)
+        
+    def append_log(self, text):
+        self.text_edit.moveCursor(self.text_edit.textCursor().End)
+        self.text_edit.insertPlainText(text)
+        self.text_edit.moveCursor(self.text_edit.textCursor().End)
+
+app_log_window = None
+
+def setup_logging():
+    global app_log_window
+    app_log_window = AppLogWindow("Логи приложения")
+    
+    sys.stdout = OutputLogger(sys.stdout)
+    sys.stderr = OutputLogger(sys.stderr)
+    
+    sys.stdout.log_signal.connect(app_log_window.append_log)
+    sys.stderr.log_signal.connect(app_log_window.append_log)
+    
+    print("[LOG] Система логирования инициализирована.")
 
 # Импортируем менеджеры и утилиты
 import config_manager
 from tgws import manager as tgws_manager
+import opera_manager
+import converter_manager
 import mode_manager
 import utils
 from utils import log
@@ -75,7 +130,6 @@ import torchok
 import noisy_manager
 import tester_manager
 import ext_manager
-import opera_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
@@ -89,6 +143,7 @@ tester_manager = tester_manager.get_manager()
 opera_mgr = opera_manager.get_manager()
 ext_programs_manager = ext_manager.get_manager()
 tgws_mgr = tgws_manager.get_manager()
+conv_mgr = converter_manager.get_manager()
 mode_mgr = mode_manager.get_manager()
 
 config = config_manager.load_config()
@@ -312,6 +367,13 @@ def toggle_custom_settings():
     opera_mgr.update_config(config)
     update_menu()
 
+def toggle_inetcpl_mode():
+    global config
+    current = config.get("inetcpl_mode", "classic")
+    config["inetcpl_mode"] = "modern" if current == "classic" else "classic"
+    config_manager.save_config(config)
+    update_menu()
+
 def toggle_tor_show_window():
     config["tor_show_window"] = not config.get("tor_show_window", False)
     config_manager.save_config(config)
@@ -344,6 +406,33 @@ def toggle_auto_connect_last_mode():
     config_manager.save_config(config)
     update_menu()
 
+def set_dns(mode):
+    import ctypes
+    
+    if mode == "comms":
+        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('83.220.169.155', '212.109.195.93')"
+        msg = T("Запрос на установку Comms DNS отправлен. Подтвердите права администратора.", "Request to set Comms DNS sent. Please confirm admin rights.")
+    elif mode == "xbox":
+        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51')"
+        msg = T("Запрос на установку Xbox DNS отправлен. Подтвердите права администратора.", "Request to set Xbox DNS sent. Please confirm admin rights.")
+    elif mode == "xbox_ipv6":
+        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51', '2a00:ab00:1233:26::50', '2a00:ab00:1233:26::51')"
+        msg = T("Запрос на установку Xbox DNS (с IPv6) отправлен. Подтвердите права администратора.", "Request to set Xbox DNS (with IPv6) sent. Please confirm admin rights.")
+    elif mode == "reset":
+        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ResetServerAddresses"
+        msg = T("Запрос на сброс DNS отправлен. Подтвердите права администратора.", "Request to reset DNS sent. Please confirm admin rights.")
+    else:
+        return
+        
+    cmd += "; Clear-DnsClientCache"
+
+    ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", "powershell.exe", f"-NoProfile -WindowStyle Hidden -Command \"{cmd}\"", None, 0)
+    
+    if ret <= 32:
+        QMessageBox.warning(None, T("Ошибка", "Error"), T("Не удалось получить права администратора для изменения DNS.", "Failed to get admin rights to change DNS."))
+    else:
+        QMessageBox.information(None, T("Успех", "Success"), msg)
+
 def restart_app():
     tor_manager.stop()
     byedpi_manager.stop()
@@ -359,6 +448,7 @@ def restart_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
+    conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Restarting...")
     
@@ -386,6 +476,7 @@ def exit_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
+    conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Exiting...")
     app.quit()
@@ -473,10 +564,14 @@ def update_menu():
         tor_win_act = QAction(tor_win_txt, settings_menu); tor_win_act.triggered.connect(toggle_tor_show_window); settings_menu.addAction(tor_win_act)
         
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
-        settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
+        # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
         cust_txt = T("Использовать предустановленные настройки", "Use Preset Settings") if config.get("use_custom_settings", True) else T("Использовать кастомные настройки ByeDPI", "Use Custom ByeDPI Settings")
         cust_act = QAction(cust_txt, settings_menu); cust_act.triggered.connect(toggle_custom_settings); settings_menu.addAction(cust_act)
+        
+        inetcpl_mode = config.get("inetcpl_mode", "classic")
+        inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
+        inetcpl_mode_act = QAction(inetcpl_mode_txt, settings_menu); inetcpl_mode_act.triggered.connect(toggle_inetcpl_mode); settings_menu.addAction(inetcpl_mode_act)
         
         if not lang._is_en or config.get("enable_ru_features", False):
             settings_menu.addAction(T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: utils.run_script("tgws/settings.pyw"))
@@ -512,9 +607,32 @@ def update_menu():
             tg_menu.addAction(T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
-        tg_menu.addAction(T("Добавить Opera Proxy (1785) в Telegram", "Add Opera Proxy (1785) to Telegram"), lambda: utils.add_proxy_to_telegram(1785))
+        tg_menu.addAction(T("Добавить Opera SOCKS5 (1786) в Telegram", "Add Opera SOCKS5 (1786) to Telegram"), lambda: utils.add_proxy_to_telegram(1786))
         tg_menu.addAction(T("Добавить Реаб. SOCKS (1788) в Telegram", "Add Rehab. SOCKS (1788) to Telegram"), lambda: utils.add_proxy_to_telegram(1788))
         tray_menu.addMenu(tg_menu)
+        
+        # Управление DNS
+        dns_menu = QMenu(T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), tray_menu)
+        
+        comms_dns_act = QAction(T("Установить Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
+        comms_dns_act.triggered.connect(lambda: set_dns("comms"))
+        dns_menu.addAction(comms_dns_act)
+
+        xbox_dns_act = QAction(T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
+        xbox_dns_act.triggered.connect(lambda: set_dns("xbox"))
+        dns_menu.addAction(xbox_dns_act)
+        
+        xbox_ipv6_dns_act = QAction(T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
+        xbox_ipv6_dns_act.triggered.connect(lambda: set_dns("xbox_ipv6"))
+        dns_menu.addAction(xbox_ipv6_dns_act)
+
+        dns_menu.addSeparator()
+
+        reset_dns_act = QAction(T("Сбросить DNS (По умолчанию)", "Reset DNS (Default)"), dns_menu)
+        reset_dns_act.triggered.connect(lambda: set_dns("reset"))
+        dns_menu.addAction(reset_dns_act)
+        
+        tray_menu.addMenu(dns_menu)
         
         # 5. Проксирование pip
         pip_menu = QMenu(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"), tray_menu)
@@ -571,6 +689,10 @@ def update_menu():
         # 6. Системные опции
         sys_menu = QMenu(T("Системные опции", "System Options"), tray_menu)
         
+        app_logs_act = QAction(T("Показать логи приложения", "Show Application Logs"), sys_menu)
+        app_logs_act.triggered.connect(lambda: app_log_window.show() if app_log_window else None)
+        sys_menu.addAction(app_logs_act)
+        
         ast_act = QAction(T("Настройки автозапуска", "Autostart Settings"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
@@ -606,6 +728,8 @@ def create_tray_menu():
     
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
+    setup_logging()
+    conv_mgr.start()
     
     tray = QSystemTrayIcon()
     try: tray.setIcon(QIcon("icon.ico"))

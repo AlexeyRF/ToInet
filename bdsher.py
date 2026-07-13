@@ -65,8 +65,7 @@ class ByeDPIManager(QObject):
         try:
             self.process = subprocess.Popen(
                 cmd, 
-                creationflags=subprocess.CREATE_NO_WINDOW, 
-                shell=True
+                creationflags=subprocess.CREATE_NO_WINDOW
             )
             self.running = True
             self.status_changed.emit(True)

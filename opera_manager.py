@@ -19,7 +19,7 @@ def get_opera_proxy_exe():
 
 OPERA_PROXY_EXE = get_opera_proxy_exe()
 OPERA_CUSTOM_FILE = os.path.join(CURRENT_DIR, "opera_proxy_custom.txt")
-DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -socks-mode -verbosity 20 -server-selection random -proxy socks5://127.0.0.1:1787"
+DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 10"
 
 class OperaProxyManager(QObject):
     status_changed = pyqtSignal(bool)
@@ -40,8 +40,8 @@ class OperaProxyManager(QObject):
         return self.running
 
     def get_params(self):
-        params_str = self.config.get("opera_params", DEFAULT_OPERA_PARAMS)
-        return params_str.split()
+        # Ignore custom configs and only use standard image params
+        return DEFAULT_OPERA_PARAMS.split()
 
     def start(self):
         if self.running:

@@ -51,8 +51,16 @@ class TGWSManager:
             fake_tls = self.config.get("tgws_fake_tls", "")
             tgws_config.proxy_config.fake_tls_domain = fake_tls
             
+            tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
+            
+            try:
+                import gatik
+                tasks.append(gatik.main(stop_event=stop_ev))
+            except Exception as e:
+                self.log(f"Failed to load gatik for async loop: {e}")
+                
             loop.run_until_complete(
-                tg_ws_proxy._run(stop_event=stop_ev))
+                tgws_windows._asyncio.gather(*tasks))
         except Exception as exc:
             self.log(f"TG WS Proxy thread crashed: {exc}")
             if "10048" in str(exc) or "Address already in use" in str(exc):
@@ -104,15 +112,7 @@ class TGWSManager:
             except Exception as e:
                 self.log(f"Failed to start reabilitator: {e}")
                 
-            # Start Gatik
-            try:
-                gatik_script = os.path.join(base_dir, "gatik.py")
-                if os.path.exists(gatik_script):
-                    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                    self.gatik_process = subprocess.Popen([sys.executable, gatik_script], creationflags=creationflags)
-                    self.log("Gatik (Telegram Smart Router) запущен в фоне")
-            except Exception as e:
-                self.log(f"Failed to start gatik: {e}")
+            # Start Gatik is now handled in the thread
                 
             return True
         else:
@@ -142,17 +142,7 @@ class TGWSManager:
         except Exception as e:
             self.log(f"Failed to stop reabilitator: {e}")
             
-        if self.gatik_process:
-            try:
-                self.gatik_process.terminate()
-                self.gatik_process.wait(timeout=3)
-            except Exception:
-                try:
-                    self.gatik_process.kill()
-                except:
-                    pass
-            self.gatik_process = None
-            self.log("Gatik (Telegram Smart Router) остановлен")
+        # Gatik (Telegram Smart Router) остановлен вместе с циклом
 
 _manager = TGWSManager()
 

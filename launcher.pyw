@@ -1,8 +1,16 @@
 import subprocess
 import sys
 import json
+import os
 from pathlib import Path
-project_dir = Path(__file__).parent.absolute()
+
+if getattr(sys, 'frozen', False):
+    project_dir = Path(sys.executable).parent.absolute()
+    script_dir = Path(__file__).parent.absolute()
+else:
+    project_dir = Path(__file__).parent.absolute()
+    script_dir = project_dir
+
 tor_exe_path = project_dir / 'tor' / 'tor.exe'
 torrc_path = project_dir / 'torrc'
 if not tor_exe_path.exists(): sys.exit("Tor exe not found")
@@ -69,12 +77,12 @@ else:
         except Exception as e:
             print(f"Failed to start Tor instance {i}: {e}")
             
-    pool_script = project_dir / "proxy_pool.py"
+    pool_script = script_dir / "proxy_pool.py"
     if pool_script.exists():
         try:
             pool_proc = subprocess.Popen([
                 sys.executable,
-                str(project_dir / 'proxy_pool.py'),
+                str(pool_script),
                 '--listen-port', str(socks_port),
                 '--upstream-ports', ','.join(map(str, upstream_ports)),
                 '--control-ports', ','.join(map(str, control_ports))

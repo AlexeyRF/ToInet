@@ -1,0 +1,3 @@
+# Настройки для Opera Proxy
+# Пример:
+# -bind-address 127.0.0.1:1785 -verbosity 20 -server-selection random -proxy socks5://127.0.0.1:1787

@@ -6,9 +6,28 @@ import os
 import ctypes
 import re
 
-def set_proxy(port):
+def set_proxy(port, mode="classic"):
     """Включение прокси на указанном порту"""
-    proxy_server = f"socks=127.0.0.1:{port}"
+    port = str(port)
+    
+    if mode == "modern":
+        if port == "9853":
+            # Tor: HTTP (9854) + SOCKS (9853)
+            proxy_server = "http=127.0.0.1:9854;https=127.0.0.1:9854;socks=127.0.0.1:9853"
+        elif port == "1780":
+            # ByeDPI: HTTP (1782) + SOCKS (1780)
+            proxy_server = "http=127.0.0.1:1782;https=127.0.0.1:1782;socks=127.0.0.1:1780"
+        elif port == "1785":
+            # Opera: HTTP (1785) + SOCKS (1786)
+            proxy_server = "http=127.0.0.1:1785;https=127.0.0.1:1785;socks=127.0.0.1:1786"
+        else:
+            proxy_server = f"socks=127.0.0.1:{port}"
+    else:
+        # Classic mode
+        if port == "1785":
+            proxy_server = f"http=127.0.0.1:{port};https=127.0.0.1:{port}"
+        else:
+            proxy_server = f"socks=127.0.0.1:{port}"
     
     # Включение прокси и установка адреса
     os.system(f'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f')
@@ -73,13 +92,14 @@ def validate_flag(flag):
 
 def main():
     # Проверка аргументов командной строки
-    if len(sys.argv) != 3:
+    if len(sys.argv) < 3:
         print("❌ Ошибка: неверное количество аргументов")
         show_usage()
         sys.exit(1)
     
     port = sys.argv[1]
     flag = sys.argv[2]
+    mode = sys.argv[3] if len(sys.argv) > 3 else "classic"
     
     # Валидация аргументов
     if not validate_port(port):
@@ -90,7 +110,7 @@ def main():
     
     # Выполнение соответствующего действия
     if flag == '1':
-        set_proxy(port)
+        set_proxy(port, mode)
     else:  # flag == '0'
         disable_proxy()
     
