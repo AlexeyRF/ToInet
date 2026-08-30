@@ -24,13 +24,12 @@ class ConverterManager:
             return False
 
         # Configuration:
-        # Opera: SOCKS2HTTP (Listen 1786 -> Upstream 1785)
+        # Opera: SOCKS2HTTP (Listen 1785 -> Upstream 1785)
         # Tor: HTTP2SOCKS (Listen 9854 -> Upstream 9853)
         # ByeDPI: HTTP2SOCKS (Listen 1782 -> Upstream 1780)
         
         args = [
             sys.executable, CONVERTER_SCRIPT,
-            "--socks2http", "1786:1785",
             "--http2socks", "9854:9853",
             "--http2socks", "1782:1780"
         ]
