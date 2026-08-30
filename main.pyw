@@ -599,8 +599,6 @@ def _update_menu_impl_unsafe():
         
         # 3. Инструменты и Утилиты
         tools_menu = QMenu(T("Инструменты и Утилиты", "Tools & Utilities"), tray_menu)
-        if not lang._is_en or config.get("enable_ru_features", False):
-            tools_menu.addAction(T("Тест стратегий TGWS", "TGWS Strategies Tester"), lambda: utils.run_script("tgws/tester_gui.pyw"))
         
         tools_menu.addAction(T("Очистить кэш", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
         tools_menu.addAction(T("Изменить мосты", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
