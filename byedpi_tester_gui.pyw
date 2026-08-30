@@ -634,6 +634,12 @@ class ByeDPITesterGUI(QMainWindow):
         num_layout.addLayout(vbox_delay)
         settings_layout.addLayout(num_layout)
         
+        self.tor_fallback_check = QCheckBox("Использовать Tor для недоступных")
+        if config_manager:
+            self.tor_fallback_check.setChecked(config_manager.load_config().get("byedpi_proxytest_tor_fallback", False))
+        self.tor_fallback_check.toggled.connect(self.on_tor_fallback_toggled)
+        settings_layout.addWidget(self.tor_fallback_check)
+        
         settings_group.setLayout(settings_layout)
         left_layout.addWidget(settings_group)
         
@@ -914,6 +920,14 @@ class ByeDPITesterGUI(QMainWindow):
             QMessageBox.warning(self, "Нет доменов", "Список проверяемых доменов пуст. Добавьте хотя бы один домен.")
             return
 
+        # Forcefully stop ByeDPI from the main app to prevent port conflicts
+        try:
+            import bdsher
+            bdsher.stop_byedpi()
+            bdsher.get_pip_manager().stop()
+        except:
+            pass
+
         # Prepare UI
         self.results_data = []
         self.results_table.setRowCount(0)
@@ -1145,10 +1159,56 @@ class ByeDPITesterGUI(QMainWindow):
             
         self.results_data.sort(key=get_sort_score, reverse=True)
         
+        # Suggest combinations if best is not 100%
+        if self.results_data:
+            best_strat, overall_pct, succ, tot, details = self.results_data[0]
+            if overall_pct < 100.0:
+                domain_strategies = {}
+                for strat, strat_pct, strat_succ, strat_tot, strat_details in self.results_data:
+                    if strat.startswith("{"): continue
+                    for site, (success, msg) in strat_details.items():
+                        if site == "__pip_test__": continue
+                        if success and site not in domain_strategies:
+                            domain_strategies[site] = strat
+                
+                # Assign TOR to any domain that doesn't have a working strategy ONLY if allowed
+                use_tor_fallback = False
+                if config_manager:
+                    config = config_manager.load_config()
+                    use_tor_fallback = config.get("byedpi_proxytest_tor_fallback", False)
+
+                for site in self.domains:
+                    if site not in domain_strategies and use_tor_fallback:
+                        domain_strategies[site] = "TOR"
+                
+                # Check if we should even generate this combo (it must have at least one strategy)
+                if not domain_strategies:
+                    continue
+                
+                combination_json = json.dumps(domain_strategies)
+                if not any(item[0] == combination_json for item in self.results_data):
+                    combo_details = {}
+                    overall_succ = 0
+                    for site in self.domains:
+                        if domain_strategies[site] == "TOR":
+                            combo_details[site] = (True, "Combined from TOR (fallback)")
+                            overall_succ += 1
+                        else:
+                            combo_details[site] = (True, "Combined from " + domain_strategies[site])
+                            overall_succ += 1
+                    combo_details["__pip_test__"] = (False, "Не проверялось для комбинации")
+                    
+                    # We consider the combination 100% successful since it routes unbypassable domains through Tor
+                    self.results_data.insert(0, (combination_json, 100.0, overall_succ, len(self.domains), combo_details))
+
         # Redraw table in sorted order
         self.refresh_results_table()
 
         # Find best strategy (now it is the first one in sorted results_data)
+        if not self.results_data:
+            self.status_desc.setText("Нет результатов.")
+            return
+            
         best_strat, overall_pct, succ, tot, details = self.results_data[0]
         
         # Calculate best priority success %
@@ -1256,6 +1316,11 @@ class ByeDPITesterGUI(QMainWindow):
             if config_manager:
                 config = config_manager.load_config()
                 config["use_custom_settings"] = True
+                
+                if '"TOR"' in final_params and not config.get("tor_enabled", True):
+                    QMessageBox.warning(self, "Внимание", "Выбрана стратегия, использующая маршрутизацию через TOR, "
+                                                          "однако TOR выключен в настройках. Не забудьте включить TOR "
+                                                          "в приложении для работы этой комбинации.")
                 
                 if pip_ok:
                     reply = QMessageBox.question(

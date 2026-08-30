@@ -20,7 +20,8 @@ DEFAULT_CONFIG = {
     "mode_type": "inetcpl",
     "auto_start": False,
     "auto_connect_last_mode": False,
-    "tor_show_window": False
+    "tor_show_window": False,
+    "autostart_tools": ["byedpi", "tor", "opera", "vless", "tgws", "ext"]
 }
 
 def load_config():

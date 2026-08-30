@@ -15,6 +15,7 @@ class ModeManager:
         self.inetcpl_tor_active = False
         self.inetcpl_bd_active = False
         self.inetcpl_opera_active = False
+        self.inetcpl_vless_active = False
 
     def log(self, msg):
         print(f"[MODE] {msg}")
@@ -108,19 +109,48 @@ class ModeManager:
         self.start_tun()
 
     def open_proxifier_config(self):
-        from PyQt5.QtWidgets import QInputDialog
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QFileDialog
+        
         config = config_manager.load_config()
         current_path = config.get("proxification_app", self.get_tun_app_path())
         
-        text, ok = QInputDialog.getText(
-            None, 
-            "Настройка Проксификатора", 
-            "Укажите команду запуска проксификатора (например, путь к ProxyBridge с аргументами):", 
-            text=current_path
-        )
+        dialog = QDialog()
+        dialog.setWindowTitle("Настройка проксификатора")
+        dialog.resize(500, 100)
         
-        if ok:
-            config["proxification_app"] = text.strip()
+        layout = QVBoxLayout(dialog)
+        
+        label = QLabel("Укажите путь до проксификатора (например, путь к ProxyBridge или Proxifier):")
+        layout.addWidget(label)
+        
+        h_layout = QHBoxLayout()
+        line_edit = QLineEdit(current_path)
+        h_layout.addWidget(line_edit)
+        
+        browse_btn = QPushButton("Обзор...")
+        def browse():
+            path, _ = QFileDialog.getOpenFileName(dialog, "Выберите исполняемый файл", "", "Executables (*.exe);;All Files (*)")
+            if path:
+                line_edit.setText(path)
+        browse_btn.clicked.connect(browse)
+        h_layout.addWidget(browse_btn)
+        
+        layout.addLayout(h_layout)
+        
+        btn_layout = QHBoxLayout()
+        ok_btn = QPushButton("ОК")
+        cancel_btn = QPushButton("Отмена")
+        ok_btn.clicked.connect(dialog.accept)
+        cancel_btn.clicked.connect(dialog.reject)
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(ok_btn)
+        btn_layout.addWidget(cancel_btn)
+        
+        layout.addLayout(btn_layout)
+        
+        if dialog.exec_() == QDialog.Accepted:
+            config["proxification_app"] = line_edit.text().strip()
             config_manager.save_config(config)
             QMessageBox.information(None, "Успех", "Настройки сохранены. Перезапустите проксификатор.")
 
@@ -128,15 +158,24 @@ class ModeManager:
         if self.inetcpl_tor_active:
             self.run_cpller(9853, 0)
             self.inetcpl_tor_active = False
-            self.log("Сброшен TOR прокси в inetcpl")
+            self.log("Отключен TOR прокси из inetcpl")
         
         if self.inetcpl_bd_active:
             self.run_cpller(1780, 0)
             self.inetcpl_bd_active = False
-            self.log("Сброшен BD прокси в inetcpl")
+            self.log("Отключен BD прокси из inetcpl")
+            
+        if self.inetcpl_opera_active:
+            self.run_cpller(1785, 0)
+            self.inetcpl_opera_active = False
+            self.log("Отключен Opera прокси из inetcpl")
+            
+        if self.inetcpl_vless_active:
+            self.run_cpller(1790, 0)
+            self.inetcpl_vless_active = False
+            self.log("Отключен VLESS прокси из inetcpl")
 
 _manager = ModeManager()
 
 def get_manager():
     return _manager
-

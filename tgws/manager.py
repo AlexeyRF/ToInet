@@ -50,6 +50,7 @@ class TGWSManager:
                 
             fake_tls = self.config.get("tgws_fake_tls", "")
             tgws_config.proxy_config.fake_tls_domain = fake_tls
+            tgws_config.proxy_config.fronting_sni = self.config.get("tgws_fronting_sni", "")
             
             tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
             

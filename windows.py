@@ -13,7 +13,7 @@ import webbrowser
 import pystray
 import pyperclip
 import asyncio as _asyncio
-import customtkinter as ctk
+
 from pathlib import Path
 from typing import Dict, Optional
 from PIL import Image, ImageDraw, ImageFont
@@ -254,19 +254,24 @@ def _on_edit_config(icon=None, item=None):
 
 
 def _edit_config_dialog():
-    if ctk is None:
-        _show_error("customtkinter не установлен.")
+    try:
+        from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QTextEdit, QCheckBox, QPushButton, QMessageBox
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QFont, QColor, QPalette
+    except ImportError:
+        _show_error("PyQt5 не установлен.")
         return
 
     cfg = dict(_config)
 
-    ctk.set_appearance_mode("light")
-    ctk.set_default_color_theme("blue")
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
 
-    root = ctk.CTk()
-    root.title("TG WS Proxy — Настройки")
-    root.resizable(False, False)
-    root.attributes("-topmost", True)
+    dialog = QDialog()
+    dialog.setWindowTitle("TG WS Proxy — Настройки")
+    dialog.setFixedSize(420, 480)
+    dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowStaysOnTopHint)
 
     TG_BLUE = "#3390ec"
     TG_BLUE_HOVER = "#2b7cd4"
@@ -277,65 +282,77 @@ def _edit_config_dialog():
     TEXT_SECONDARY = "#707579"
     FONT_FAMILY = "Segoe UI"
 
-    w, h = 420, 480
-    sw = root.winfo_screenwidth()
-    sh = root.winfo_screenheight()
-    root.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
-    root.configure(fg_color=BG)
+    palette = dialog.palette()
+    palette.setColor(QPalette.Window, QColor(BG))
+    dialog.setPalette(palette)
+    dialog.setAutoFillBackground(True)
 
-    frame = ctk.CTkFrame(root, fg_color=BG, corner_radius=0)
-    frame.pack(fill="both", expand=True, padx=24, pady=20)
+    layout = QVBoxLayout(dialog)
+    layout.setContentsMargins(24, 20, 24, 20)
+    layout.setSpacing(12)
 
-    # Host
-    ctk.CTkLabel(frame, text="IP-адрес прокси",
-                 font=(FONT_FAMILY, 13), text_color=TEXT_PRIMARY,
-                 anchor="w").pack(anchor="w", pady=(0, 4))
-    host_var = ctk.StringVar(value=cfg.get("host", "127.0.0.1"))
-    host_entry = ctk.CTkEntry(frame, textvariable=host_var, width=200, height=36,
-                              font=(FONT_FAMILY, 13), corner_radius=10,
-                              fg_color=FIELD_BG, border_color=FIELD_BORDER,
-                              border_width=1, text_color=TEXT_PRIMARY)
-    host_entry.pack(anchor="w", pady=(0, 12))
+    font_normal = QFont(FONT_FAMILY, 10)
+    font_small = QFont(FONT_FAMILY, 9)
+    font_bold = QFont(FONT_FAMILY, 10, QFont.Bold)
 
-    # Port
-    ctk.CTkLabel(frame, text="Порт прокси",
-                 font=(FONT_FAMILY, 13), text_color=TEXT_PRIMARY,
-                 anchor="w").pack(anchor="w", pady=(0, 4))
-    port_var = ctk.StringVar(value=str(cfg.get("port", 1480)))
-    port_entry = ctk.CTkEntry(frame, textvariable=port_var, width=120, height=36,
-                              font=(FONT_FAMILY, 13), corner_radius=10,
-                              fg_color=FIELD_BG, border_color=FIELD_BORDER,
-                              border_width=1, text_color=TEXT_PRIMARY)
-    port_entry.pack(anchor="w", pady=(0, 12))
+    def create_label(text, font, color=TEXT_PRIMARY):
+        lbl = QLabel(text)
+        lbl.setFont(font)
+        lbl.setStyleSheet(f"color: {color};")
+        return lbl
 
-    # DC-IP mappings
-    ctk.CTkLabel(frame, text="DC → IP маппинги (по одному на строку, формат DC:IP)",
-                 font=(FONT_FAMILY, 13), text_color=TEXT_PRIMARY,
-                 anchor="w").pack(anchor="w", pady=(0, 4))
-    dc_textbox = ctk.CTkTextbox(frame, width=370, height=120,
-                                font=("Consolas", 12), corner_radius=10,
-                                fg_color=FIELD_BG, border_color=FIELD_BORDER,
-                                border_width=1, text_color=TEXT_PRIMARY)
-    dc_textbox.pack(anchor="w", pady=(0, 12))
-    dc_textbox.insert("1.0", "\n".join(cfg.get("dc_ip", DEFAULT_CONFIG["dc_ip"])))
+    layout.addWidget(create_label("IP-адрес прокси", font_normal))
+    host_entry = QLineEdit(cfg.get("host", "127.0.0.1"))
+    host_entry.setFont(font_normal)
+    host_entry.setStyleSheet(f"background-color: {FIELD_BG}; border: 1px solid {FIELD_BORDER}; border-radius: 5px; padding: 5px; color: {TEXT_PRIMARY};")
+    layout.addWidget(host_entry)
 
-    # Verbose
-    verbose_var = ctk.BooleanVar(value=cfg.get("verbose", False))
-    ctk.CTkCheckBox(frame, text="Подробное логирование (verbose)",
-                    variable=verbose_var, font=(FONT_FAMILY, 13),
-                    text_color=TEXT_PRIMARY,
-                    fg_color=TG_BLUE, hover_color=TG_BLUE_HOVER,
-                    corner_radius=6, border_width=2,
-                    border_color=FIELD_BORDER).pack(anchor="w", pady=(0, 8))
+    layout.addWidget(create_label("Порт прокси", font_normal))
+    port_entry = QLineEdit(str(cfg.get("port", 1480)))
+    port_entry.setFont(font_normal)
+    port_entry.setStyleSheet(f"background-color: {FIELD_BG}; border: 1px solid {FIELD_BORDER}; border-radius: 5px; padding: 5px; color: {TEXT_PRIMARY};")
+    port_entry.setFixedWidth(120)
+    layout.addWidget(port_entry)
 
-    # Info label
-    ctk.CTkLabel(frame, text="Изменения вступят в силу после перезапуска прокси.",
-                 font=(FONT_FAMILY, 11), text_color=TEXT_SECONDARY,
-                 anchor="w").pack(anchor="w", pady=(0, 16))
+    layout.addWidget(create_label("DC → IP маппинги (по одному на строку, формат DC:IP)", font_normal))
+    dc_textbox = QTextEdit()
+    dc_textbox.setFont(QFont("Consolas", 10))
+    dc_textbox.setStyleSheet(f"background-color: {FIELD_BG}; border: 1px solid {FIELD_BORDER}; border-radius: 5px; padding: 5px; color: {TEXT_PRIMARY};")
+    dc_textbox.setFixedHeight(120)
+    dc_textbox.setPlainText("\n".join(cfg.get("dc_ip", DEFAULT_CONFIG["dc_ip"])))
+    layout.addWidget(dc_textbox)
+
+    verbose_var = QCheckBox("Подробное логирование (verbose)")
+    verbose_var.setFont(font_normal)
+    verbose_var.setStyleSheet(f"color: {TEXT_PRIMARY};")
+    verbose_var.setChecked(cfg.get("verbose", False))
+    layout.addWidget(verbose_var)
+
+    layout.addWidget(create_label("Изменения вступят в силу после перезапуска прокси.", font_small, TEXT_SECONDARY))
+    
+    layout.addStretch()
+
+    btn_layout = QHBoxLayout()
+    
+    btn_save = QPushButton(T("Сохранить", "Save") if 'T' in globals() else "Сохранить")
+    btn_save.setFont(font_bold)
+    btn_save.setFixedSize(140, 38)
+    btn_save.setStyleSheet(f"QPushButton {{ background-color: {TG_BLUE}; color: white; border-radius: 5px; }} QPushButton:hover {{ background-color: {TG_BLUE_HOVER}; }}")
+    
+    btn_cancel = QPushButton(T("Отмена", "Cancel") if 'T' in globals() else "Отмена")
+    btn_cancel.setFont(font_normal)
+    btn_cancel.setFixedSize(140, 38)
+    btn_cancel.setStyleSheet(f"QPushButton {{ background-color: {FIELD_BG}; color: {TEXT_PRIMARY}; border: 1px solid {FIELD_BORDER}; border-radius: 5px; }} QPushButton:hover {{ border: 1px solid #b0b0b0; }}")
+
+    btn_layout.addWidget(btn_save)
+    btn_layout.addWidget(btn_cancel)
+    btn_layout.addStretch()
+    
+    layout.addLayout(btn_layout)
 
     def on_save():
         import socket as _sock
-        host_val = host_var.get().strip()
+        host_val = host_entry.text().strip()
         try:
             _sock.inet_aton(host_val)
         except OSError:
@@ -343,15 +360,14 @@ def _edit_config_dialog():
             return
 
         try:
-            port_val = int(port_var.get().strip())
+            port_val = int(port_entry.text().strip())
             if not (1 <= port_val <= 65535):
                 raise ValueError
         except ValueError:
             _show_error("Порт должен быть числом 1-65535")
             return
 
-        lines = [l.strip() for l in dc_textbox.get("1.0", "end").strip().splitlines()
-                 if l.strip()]
+        lines = [l.strip() for l in dc_textbox.toPlainText().strip().splitlines() if l.strip()]
         try:
             tgws_config.parse_dc_ip_list(lines)
         except ValueError as e:
@@ -362,7 +378,7 @@ def _edit_config_dialog():
             "host": host_val,
             "port": port_val,
             "dc_ip": lines,
-            "verbose": verbose_var.get(),
+            "verbose": verbose_var.isChecked(),
         }
         save_config(new_cfg)
         _config.update(new_cfg)
@@ -370,34 +386,19 @@ def _edit_config_dialog():
 
         _tray_icon.menu = _build_menu()
 
-        from tkinter import messagebox
-        if messagebox.askyesno("Перезапустить?",
-                               "Настройки сохранены.\n\n"
-                               "Перезапустить прокси сейчас?",
-                               parent=root):
-            root.destroy()
+        reply = QMessageBox.question(dialog, "Перезапустить?", 
+                                     "Настройки сохранены.\n\nПерезапустить прокси сейчас?",
+                                     QMessageBox.Yes | QMessageBox.No)
+        if reply == QMessageBox.Yes:
+            dialog.accept()
             restart_proxy()
         else:
-            root.destroy()
+            dialog.accept()
 
-    def on_cancel():
-        root.destroy()
+    btn_save.clicked.connect(on_save)
+    btn_cancel.clicked.connect(dialog.reject)
 
-    btn_frame = ctk.CTkFrame(frame, fg_color="transparent")
-    btn_frame.pack(fill="x")
-    ctk.CTkButton(btn_frame, text=T("Сохранить", "Save"), width=140, height=38,
-                  font=(FONT_FAMILY, 14, "bold"), corner_radius=10,
-                  fg_color=TG_BLUE, hover_color=TG_BLUE_HOVER,
-                  text_color="#ffffff",
-                  command=on_save).pack(side="left", padx=(0, 10))
-    ctk.CTkButton(btn_frame, text=T("Отмена", "Cancel"), width=140, height=38,
-                  font=(FONT_FAMILY, 14), corner_radius=10,
-                  fg_color=FIELD_BG, hover_color=FIELD_BORDER,
-                  text_color=TEXT_PRIMARY, border_width=1,
-                  border_color=FIELD_BORDER,
-                  command=on_cancel).pack(side="left")
-
-    root.mainloop()
+    dialog.exec_()
 
 
 def _on_open_logs(icon=None, item=None):
@@ -435,12 +436,22 @@ def _show_first_run():
     port = _config.get("port", DEFAULT_CONFIG["port"])
     tg_url = f"tg://socks?server={host}&port={port}"
 
-    if ctk is None:
+    try:
+        from PyQt5.QtWidgets import QApplication, QDialog, QVBoxLayout, QHBoxLayout, QLabel, QCheckBox, QPushButton, QFrame
+        from PyQt5.QtCore import Qt
+        from PyQt5.QtGui import QFont, QColor, QPalette
+    except ImportError:
         FIRST_RUN_MARKER.touch()
         return
 
-    ctk.set_appearance_mode("light")
-    ctk.set_default_color_theme("blue")
+    app = QApplication.instance()
+    if app is None:
+        app = QApplication(sys.argv)
+
+    dialog = QDialog()
+    dialog.setWindowTitle("TG WS Proxy")
+    dialog.setFixedSize(520, 440)
+    dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowStaysOnTopHint)
 
     TG_BLUE = "#3390ec"
     TG_BLUE_HOVER = "#2b7cd4"
@@ -451,33 +462,31 @@ def _show_first_run():
     TEXT_SECONDARY = "#707579"
     FONT_FAMILY = "Segoe UI"
 
-    root = ctk.CTk()
-    root.title("TG WS Proxy")
-    root.resizable(False, False)
-    root.attributes("-topmost", True)
+    palette = dialog.palette()
+    palette.setColor(QPalette.Window, QColor(BG))
+    dialog.setPalette(palette)
+    dialog.setAutoFillBackground(True)
 
-    w, h = 520, 440
-    sw = root.winfo_screenwidth()
-    sh = root.winfo_screenheight()
-    root.geometry(f"{w}x{h}+{(sw-w)//2}+{(sh-h)//2}")
-    root.configure(fg_color=BG)
+    layout = QVBoxLayout(dialog)
+    layout.setContentsMargins(28, 24, 28, 24)
+    layout.setSpacing(1)
 
-    frame = ctk.CTkFrame(root, fg_color=BG, corner_radius=0)
-    frame.pack(fill="both", expand=True, padx=28, pady=24)
+    title_layout = QHBoxLayout()
+    title_layout.setContentsMargins(0, 0, 0, 16)
+    
+    accent_bar = QFrame()
+    accent_bar.setFixedSize(4, 32)
+    accent_bar.setStyleSheet(f"background-color: {TG_BLUE}; border-radius: 2px;")
+    title_layout.addWidget(accent_bar)
+    
+    title_lbl = QLabel("Прокси запущен и работает в системном трее")
+    title_lbl.setFont(QFont(FONT_FAMILY, 13, QFont.Bold))
+    title_lbl.setStyleSheet(f"color: {TEXT_PRIMARY}; margin-left: 12px;")
+    title_layout.addWidget(title_lbl)
+    title_layout.addStretch()
+    
+    layout.addLayout(title_layout)
 
-    title_frame = ctk.CTkFrame(frame, fg_color="transparent")
-    title_frame.pack(anchor="w", pady=(0, 16), fill="x")
-
-    # Blue accent bar
-    accent_bar = ctk.CTkFrame(title_frame, fg_color=TG_BLUE,
-                              width=4, height=32, corner_radius=2)
-    accent_bar.pack(side="left", padx=(0, 12))
-
-    ctk.CTkLabel(title_frame, text="Прокси запущен и работает в системном трее",
-                 font=(FONT_FAMILY, 17, "bold"),
-                 text_color=TEXT_PRIMARY).pack(side="left")
-
-    # Info sections
     sections = [
         ("Как подключить Telegram Desktop:", True),
         ("  Автоматически:", True),
@@ -489,43 +498,53 @@ def _show_first_run():
     ]
 
     for text, bold in sections:
-        weight = "bold" if bold else "normal"
-        ctk.CTkLabel(frame, text=text,
-                     font=(FONT_FAMILY, 13, weight),
-                     text_color=TEXT_PRIMARY,
-                     anchor="w", justify="left").pack(anchor="w", pady=1)
+        lbl = QLabel(text)
+        font = QFont(FONT_FAMILY, 10)
+        if bold:
+            font.setBold(True)
+        lbl.setFont(font)
+        lbl.setStyleSheet(f"color: {TEXT_PRIMARY};")
+        layout.addWidget(lbl)
 
-    # Spacer
-    ctk.CTkFrame(frame, fg_color="transparent", height=16).pack()
+    layout.addSpacing(16)
 
-    # Separator
-    ctk.CTkFrame(frame, fg_color=FIELD_BORDER, height=1,
-                 corner_radius=0).pack(fill="x", pady=(0, 12))
+    separator = QFrame()
+    separator.setFixedHeight(1)
+    separator.setStyleSheet(f"background-color: {FIELD_BORDER};")
+    layout.addWidget(separator)
+    
+    layout.addSpacing(12)
 
-    # Checkbox
-    auto_var = ctk.BooleanVar(value=True)
-    ctk.CTkCheckBox(frame, text="Открыть прокси в Telegram сейчас",
-                    variable=auto_var, font=(FONT_FAMILY, 13),
-                    text_color=TEXT_PRIMARY,
-                    fg_color=TG_BLUE, hover_color=TG_BLUE_HOVER,
-                    corner_radius=6, border_width=2,
-                    border_color=FIELD_BORDER).pack(anchor="w", pady=(0, 16))
-
+    auto_var = QCheckBox("Открыть прокси в Telegram сейчас")
+    auto_var.setFont(QFont(FONT_FAMILY, 10))
+    auto_var.setStyleSheet(f"color: {TEXT_PRIMARY};")
+    auto_var.setChecked(True)
+    layout.addWidget(auto_var)
+    
+    layout.addSpacing(16)
+    
     def on_ok():
         FIRST_RUN_MARKER.touch()
-        open_tg = auto_var.get()
-        root.destroy()
+        open_tg = auto_var.isChecked()
+        dialog.accept()
         if open_tg:
             _on_open_in_telegram()
 
-    ctk.CTkButton(frame, text="Начать", width=180, height=42,
-                  font=(FONT_FAMILY, 15, "bold"), corner_radius=10,
-                  fg_color=TG_BLUE, hover_color=TG_BLUE_HOVER,
-                  text_color="#ffffff",
-                  command=on_ok).pack(pady=(0, 0))
+    btn_layout = QHBoxLayout()
+    btn_ok = QPushButton("Начать")
+    btn_ok.setFont(QFont(FONT_FAMILY, 11, QFont.Bold))
+    btn_ok.setFixedSize(180, 42)
+    btn_ok.setStyleSheet(f"QPushButton {{ background-color: {TG_BLUE}; color: white; border-radius: 5px; }} QPushButton:hover {{ background-color: {TG_BLUE_HOVER}; }}")
+    btn_ok.clicked.connect(on_ok)
+    
+    btn_layout.addStretch()
+    btn_layout.addWidget(btn_ok)
+    btn_layout.addStretch()
+    
+    layout.addLayout(btn_layout)
 
-    root.protocol("WM_DELETE_WINDOW", on_ok)
-    root.mainloop()
+    dialog.finished.connect(lambda: FIRST_RUN_MARKER.touch())
+    dialog.exec_()
 
 
 def _build_menu():

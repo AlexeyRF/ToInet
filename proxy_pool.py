@@ -54,7 +54,7 @@ class TorMonitor(threading.Thread):
     def check_status(self):
         try:
             with socket.create_connection(('127.0.0.1', self.control_port), timeout=2) as s:
-                s.sendall(b'AUTHENTICATE ""\r\n')
+                s.sendall(b'AUTHENTICATE "toinet"\r\n')
                 resp = s.recv(1024)
                 if b'250 OK' not in resp:
                     return False

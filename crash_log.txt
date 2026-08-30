@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<string>", line 11, in <module>
+    main.update_menu()
+    ~~~~~~~~~~~~~~~~^^
+  File "D:\Documents\ToInet-MAX\main.pyw", line 631, in update_menu
+    vless_wa = create_service_action(
+               ^^^^^^^^^^^^^^^^^^^^^
+NameError: name 'create_service_action' is not defined
