@@ -1,8 +1,11 @@
 import os
 import sys
 def safe_print(*args, **kwargs):
-    with open('wl_vless.log', 'a') as f:
-        f.write(' '.join(map(str, args)) + '\n')
+    try:
+        with open('wl_vless.log', 'a', encoding='utf-8') as f:
+            f.write(' '.join(map(str, args)) + '\n')
+    except:
+        pass
     try:
         __builtins__.print(*args, **kwargs)
     except:
