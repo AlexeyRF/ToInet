@@ -750,6 +750,21 @@ class TorrcConfigurator(QMainWindow):
         # Initialize bridge UI state
         self.on_bridge_mode_changed()
 
+        # Extra tools layout
+        tools_layout = QHBoxLayout()
+        
+        edit_bridges_btn = QPushButton(T("Смена мостов", "Edit Bridges"))
+        edit_bridges_btn.clicked.connect(lambda: self.run_edit_bridges())
+        edit_bridges_btn.setStyleSheet("background-color: #555; font-size: 11px;")
+        tools_layout.addWidget(edit_bridges_btn)
+        
+        delete_config_btn = QPushButton(T("Удаление конфигурации TOR", "Delete TOR Config"))
+        delete_config_btn.clicked.connect(lambda: self.delete_tor_config())
+        delete_config_btn.setStyleSheet("background-color: #d32f2f; font-size: 11px;")
+        tools_layout.addWidget(delete_config_btn)
+        
+        main_layout.addLayout(tools_layout)
+
         # Generate button
         generate_btn = QPushButton(T("Создать конфигурацию", "Generate Configuration"))
         generate_btn.setMinimumHeight(40)
@@ -781,6 +796,28 @@ class TorrcConfigurator(QMainWindow):
                         self.branch_combo.setCurrentIndex(index)
             except:
                 pass
+
+    def run_edit_bridges(self):
+        import subprocess, sys
+        script_path = os.path.join(self.current_dir, "edit_bridges.pyw")
+        if os.path.exists(script_path):
+            subprocess.Popen([sys.executable, script_path], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+
+    def delete_tor_config(self):
+        reply = QMessageBox.question(self, T("Подтверждение", "Confirm"), 
+            T("Вы уверены, что хотите удалить конфигурацию TOR?", "Are you sure you want to delete TOR config?"), 
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+        
+        if reply == QMessageBox.Yes:
+            import shutil
+            for f in ["torrc", "update_bridges_torrc.pyw"]:
+                p = os.path.join(self.current_dir, f)
+                if os.path.exists(p):
+                    try:
+                        os.remove(p)
+                    except:
+                        pass
+            QMessageBox.information(self, T("Готово", "Done"), T("Конфигурация TOR удалена", "TOR Config deleted"))
 
     def load_pool_settings(self):
         config_path = os.path.join(self.current_dir, "config.json")
