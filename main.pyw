@@ -589,9 +589,7 @@ def _update_menu_impl_unsafe():
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
         
-        inetcpl_mode = config.get("inetcpl_mode", "classic")
-        inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
-        inetcpl_mode_act = QAction(inetcpl_mode_txt, settings_menu); inetcpl_mode_act.triggered.connect(toggle_inetcpl_mode); settings_menu.addAction(inetcpl_mode_act)
+
         
         if not lang._is_en or config.get("enable_ru_features", False):
             settings_menu.addAction(T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: utils.run_script("tgws/settings.pyw"))
@@ -705,6 +703,25 @@ def _update_menu_impl_unsafe():
         # 6. Системные опции
         log('[Menu] Building sys_menu')
         sys_menu = QMenu(T("Системные опции", "System Options"), tray_menu)
+        sys_menu.addSeparator()
+        
+        tor_cpl2 = QAction(T("Подключиться к TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not mode_mgr.inetcpl_tor_active else T("Отключиться от TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), sys_menu)
+        tor_cpl2.triggered.connect(toggle_inetcpl_tor)
+        sys_menu.addAction(tor_cpl2)
+        
+        bd_cpl2 = QAction(T("Подключиться к BD (Inetcpl)", "Connect to BD (Inetcpl)") if not mode_mgr.inetcpl_bd_active else T("Отключиться от BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), sys_menu)
+        bd_cpl2.triggered.connect(toggle_inetcpl_bd)
+        sys_menu.addAction(bd_cpl2)
+        
+        opera_cpl2 = QAction(T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), sys_menu)
+        opera_cpl2.triggered.connect(toggle_inetcpl_opera)
+        sys_menu.addAction(opera_cpl2)
+
+        inetcpl_mode = config.get("inetcpl_mode", "classic")
+        inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
+        inetcpl_mode_act = QAction(inetcpl_mode_txt, sys_menu); inetcpl_mode_act.triggered.connect(toggle_inetcpl_mode); sys_menu.addAction(inetcpl_mode_act)
+
+        sys_menu.addSeparator()
         
         app_logs_act = QAction(T("Показать логи приложения", "Show Application Logs"), sys_menu)
         app_logs_act.triggered.connect(lambda: app_log_window.show() if app_log_window else None)
