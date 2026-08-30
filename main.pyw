@@ -735,7 +735,11 @@ def _update_menu_impl_unsafe():
         
         # 2. Настройки Компонентов
         settings_menu = QMenu(T("Настройки компонентов", "Component Settings"), tray_menu)
-        settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
+        tor_settings_menu = QMenu(T("Настройки TOR", "TOR Settings"), settings_menu)
+        tor_settings_menu.addAction(T("Открыть конфигуратор", "Open Configurator"), tor_manager.open_settings)
+        tor_settings_menu.addAction(T("Смена мостов", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
+        tor_settings_menu.addAction(T("Удаление конфигурации TOR", "Delete TOR Config"), tor_manager.delete_config)
+        settings_menu.addMenu(tor_settings_menu)
         
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
@@ -750,13 +754,6 @@ def _update_menu_impl_unsafe():
         settings_menu.addAction(T("Настройка доп. программ", "Configure Ext. Programs"), ext_programs_manager.open_config)
         tray_menu.addMenu(settings_menu)
         
-        # 3. Инструменты и Утилиты
-        tools_menu = QMenu(T("Инструменты и Утилиты", "Tools & Utilities"), tray_menu)
-        
-        tools_menu.addAction(T("Очистить кэш", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
-        tools_menu.addAction(T("Изменить мосты", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
-        tools_menu.addAction(T("Удалить конфигурацию TOR", "Delete TOR Config"), tor_manager.delete_config)
-        tray_menu.addMenu(tools_menu)
         
         # 4. Добавить в Telegram
         tg_menu = QMenu(T("Добавить в Telegram", "Telegram Integration"), tray_menu)
@@ -870,6 +867,7 @@ def _update_menu_impl_unsafe():
         ast_act = QAction(T("Настройки автозапуска", "Autostart Settings"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
+        sys_menu.addAction(T("Очистка кеша", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
         sys_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
         sys_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
         sys_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
