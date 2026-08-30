@@ -58,7 +58,7 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidgetAction, QHBoxLayout, QLabel, QSizePolicy
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidgetAction, QHBoxLayout, QLabel, QSizePolicy, QWidget
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
