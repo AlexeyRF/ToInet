@@ -184,30 +184,54 @@ class ByeDPIManager(QObject):
     def open_settings(self):
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton
         import config_manager
+        import os
+        import subprocess
+        import sys
         
         dialog = QDialog()
         dialog.setWindowTitle("Настройки ByeDPI")
-        dialog.resize(600, 150)
+        dialog.resize(600, 180)
+        
+        # Dark Theme
+        dialog.setStyleSheet("""
+            QDialog { background-color: #2b2b2b; color: white; }
+            QLabel { color: white; }
+            QLineEdit { background-color: #3d3d3d; color: white; border: 1px solid #555; padding: 5px; }
+            QCheckBox { color: white; }
+            QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; padding: 5px 15px; }
+            QPushButton:hover { background-color: #4d4d4d; }
+            QPushButton:pressed { background-color: #1d1d1d; }
+        """)
         
         layout = QVBoxLayout(dialog)
         
         use_custom = self.config.get("use_custom_settings", True)
         current_params = self.config.get(self.config_key, "")
-        if not current_params:
-            current_params = DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else ""
-            
-        layout.addWidget(QLabel("Аргументы ByeDPI:"))
+        preset_params = DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else ""
         
-        edit = QLineEdit(current_params)
+        if not current_params:
+            current_params = preset_params
+            
+        layout.addWidget(QLabel("Параметры ByeDPI:"))
+        
+        edit = QLineEdit(preset_params if not use_custom else current_params)
         layout.addWidget(edit)
         
         cb_preset = QCheckBox("Использовать предустановленные настройки")
         cb_preset.setChecked(not use_custom)
         
+        # Cache to store custom settings when checking the box
+        self._custom_config_cache = current_params if current_params != preset_params else ""
+        
         def on_toggle(checked):
             edit.setEnabled(not checked)
             if checked:
-                edit.setText(DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else "")
+                # Save current custom text to cache if it's not the preset
+                if edit.text() != preset_params:
+                    self._custom_config_cache = edit.text()
+                edit.setText(preset_params)
+            else:
+                edit.setText(self._custom_config_cache)
         
         cb_preset.toggled.connect(on_toggle)
         on_toggle(not use_custom)
@@ -215,27 +239,43 @@ class ByeDPIManager(QObject):
         layout.addWidget(cb_preset)
         
         btn_layout = QHBoxLayout()
+        
+        # Tester Button
+        tester_btn = QPushButton("Запустить Тестер (byedpi_tester_gui.pyw)")
+        def run_tester():
+            subprocess.Popen([sys.executable, "byedpi_tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        tester_btn.clicked.connect(run_tester)
+        
         save_btn = QPushButton("Сохранить")
         save_btn.clicked.connect(dialog.accept)
+        
+        btn_layout.addWidget(tester_btn)
         btn_layout.addStretch()
         btn_layout.addWidget(save_btn)
         layout.addLayout(btn_layout)
         
         if dialog.exec_():
             self.config["use_custom_settings"] = not cb_preset.isChecked()
-            self.config[self.config_key] = edit.text().strip()
+            # Always update the actual config key so we keep custom text if unchecked, OR if checked, we just don't touch the custom key?
+            # If checked (use preset), the edit.text() is the preset. If we save it, we lose the custom cache!
+            # We should save `edit.text().strip()` IF custom. If preset, we just let it be.
+            if not cb_preset.isChecked():
+                self.config[self.config_key] = edit.text().strip()
+            # If they check the box, we can preserve the hidden custom config by setting it to cache!
+            else:
+                self.config[self.config_key] = self._custom_config_cache
+                
             config_manager.save_config(self.config)
             
-            # If the main module has update_menu, call it to reflect changes (optional, but good)
             try:
-                import sys
                 main_mod = sys.modules.get('__main__')
                 if main_mod and hasattr(main_mod, 'update_menu'):
                     main_mod.update_menu()
             except:
                 pass
-            QMessageBox.information(None, "Успех", "Настройки сохранены. Пожалуйста, перезапустите обход.")
-    
+            from PyQt5.QtWidgets import QMessageBox
+            QMessageBox.information(None, "Успех", "Настройки ByeDPI сохранены.")
+
     def get_status_text(self):
         if self.running:
             return f"Остановить BD ({self.default_port})"
