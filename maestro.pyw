@@ -1106,7 +1106,7 @@ class TorrcConfigurator(QMainWindow):
             f"GeoIPv6File {self.geoipv6_edit.text()}",
             "SocksPort 9853",
             "ControlPort 9851",
-            "CookieAuthentication 0",
+            "HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1",
         ]
         
         # Add ExitNodes if countries are selected

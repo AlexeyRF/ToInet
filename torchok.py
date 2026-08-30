@@ -13,6 +13,7 @@ RECREATE_TORRC_FILE = os.path.join(CURRENT_DIR, "recreate_torrc.txt")
 LAUNCHER_SCRIPT = os.path.join(CURRENT_DIR, "launcher.pyw")
 CLOSER_SCRIPT = os.path.join(CURRENT_DIR, "closer.pyw")
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
+UPDATE_BRIDGES_SCRIPT = os.path.join(CURRENT_DIR, "update_bridges_torrc.pyw")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "maestro.pyw")
 TOR_EXE = os.path.join(CURRENT_DIR, "tor", "tor.exe")
 
@@ -164,6 +165,8 @@ class TorManager:
         if self.recreate_torrc:
             self._delete_torrc_files()
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
+        else:
+            self._run_script_blocking(UPDATE_BRIDGES_SCRIPT)
 
         if not os.path.exists(TORRC_FILE):
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
@@ -240,7 +243,7 @@ class TorManager:
                     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                     s.settimeout(2)
                     s.connect(('127.0.0.1', cp))
-                    s.sendall(b'AUTHENTICATE ""\r\n')
+                    s.sendall(b'AUTHENTICATE "toinet"\r\n')
                     resp = s.recv(1024).decode('utf-8')
                     if not resp.startswith('250'):
                         errors.append(f"Auth {cp}: {resp}")

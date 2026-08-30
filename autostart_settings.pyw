@@ -11,10 +11,10 @@ class AutostartSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings"))
-        self.setFixedSize(550, 450)
+        self.setFixedSize(600, 550)
         
         self.config = config_manager.load_config()
-        self.autostart_tools = self.config.get("autostart_tools", ["byedpi", "tor", "opera", "tgws", "ext"])
+        self.autostart_tools = self.config.get("autostart_tools", ["byedpi", "tor", "opera", "vless", "tgws", "ext"])
         
         self.initUI()
         
@@ -39,12 +39,17 @@ class AutostartSettingsWindow(QMainWindow):
         self.cb_opera.setChecked("opera" in self.autostart_tools)
         layout.addWidget(self.cb_opera)
         
+        self.cb_vless = QCheckBox(T("VLESS Proxy", "VLESS Proxy"))
+        self.cb_vless.setChecked("vless" in self.autostart_tools)
+        layout.addWidget(self.cb_vless)
+        
         self.cb_socks = QCheckBox(T("SOCKS Reabilitator", "SOCKS Reabilitator"))
         self.cb_socks.setChecked("socks" in self.autostart_tools)
         layout.addWidget(self.cb_socks)
         
         self.cb_tgws = QCheckBox(T("Telegram WS Proxy", "Telegram WS Proxy"))
         self.cb_tgws.setChecked("tgws" in self.autostart_tools)
+        self.cb_tgws.toggled.connect(self.on_tgws_toggled)
         layout.addWidget(self.cb_tgws)
         
         self.cb_proxifier = QCheckBox(T("Проксификатор (TUN / ProxyBridge)", "Proxifier (TUN / ProxyBridge)"))
@@ -68,11 +73,23 @@ class AutostartSettingsWindow(QMainWindow):
         save_btn.clicked.connect(self.save_settings)
         layout.addWidget(save_btn)
         
+    def on_tgws_toggled(self, checked):
+        if checked:
+            reply = QMessageBox.warning(self, T("Внимание", "Warning"),
+                T("Павел Дуров признан в России экстремистом и не известно какие меры будут приняты в отношении телеграмма, поэтому вместо tgws стоит использовать tor или opera proxy. Включить автозапуск tgws?",
+                  "Pavel Durov is recognized as an extremist in Russia and it is unknown what measures will be taken against Telegram, so instead of tgws you should use tor or opera proxy. Enable tgws autostart?"),
+                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+            if reply == QMessageBox.No:
+                self.cb_tgws.blockSignals(True)
+                self.cb_tgws.setChecked(False)
+                self.cb_tgws.blockSignals(False)
+
     def save_settings(self):
         tools = []
         if self.cb_byedpi.isChecked(): tools.append("byedpi")
         if self.cb_tor.isChecked(): tools.append("tor")
         if self.cb_opera.isChecked(): tools.append("opera")
+        if self.cb_vless.isChecked(): tools.append("vless")
         if self.cb_socks.isChecked(): tools.append("socks")
         if self.cb_tgws.isChecked(): tools.append("tgws")
         if self.cb_proxifier.isChecked(): tools.append("proxifier")

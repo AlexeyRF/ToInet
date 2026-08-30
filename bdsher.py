@@ -29,9 +29,14 @@ class ByeDPIManager(QObject):
         return self.running
     
     def get_params(self):
-        params_str = self.config.get(self.config_key, "")
+        use_custom = self.config.get("use_custom_settings", True)
+        params_str = self.config.get(self.config_key, "") if use_custom else ""
         if not params_str:
             params_str = DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else ""
+            
+        if params_str.strip().startswith("{"):
+            return params_str.strip()
+            
         params = params_str.split()
         
         # Ensure SOCKS5 port is auto-added if no port is defined
@@ -53,13 +58,35 @@ class ByeDPIManager(QObject):
         if self.running:
             return True
             
+        params = self.get_params()
+        if isinstance(params, str) and params.startswith("{"):
+            router_script = os.path.join(CURRENT_DIR, "byedpi_router.py")
+            if not os.path.exists(router_script):
+                error_msg = f"Файл маршрутизатора не найден:\n{router_script}"
+                self.error_occurred.emit(error_msg)
+                return False
+                
+            cmd = [sys.executable, router_script, str(self.default_port), params]
+            try:
+                self.process = subprocess.Popen(
+                    cmd, 
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                )
+                self.running = True
+                self.status_changed.emit(True)
+                print(f"[ByeDPI Router {self.default_port}] Запущен маршрутизатор.")
+                return True
+            except Exception as e:
+                error_msg = f"Не удалось запустить маршрутизатор ({self.default_port}):\n{e}"
+                self.error_occurred.emit(error_msg)
+                return False
+
         if not os.path.exists(BYEDPI_EXE):
             error_msg = f"Файл Byedpi не найден:\n{BYEDPI_EXE}"
             self.error_occurred.emit(error_msg)
             QMessageBox.critical(None, T("Ошибка", "Error"), error_msg)
             return False
         
-        params = self.get_params()
         cmd = [BYEDPI_EXE] + params
         
         try:
@@ -99,6 +126,17 @@ class ByeDPIManager(QObject):
     def _kill_all_byedpi_processes(self):
         killed_count = 0
         port_str = str(self.default_port)
+        
+        router_pids = []
+        if self.process:
+            router_pids.append(self.process.pid)
+            try:
+                parent = psutil.Process(self.process.pid)
+                for child in parent.children(recursive=True):
+                    router_pids.append(child.pid)
+            except:
+                pass
+
         try:
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
@@ -109,7 +147,7 @@ class ByeDPIManager(QObject):
                         except psutil.AccessDenied:
                             cmdline = []
                         is_our_process = False
-                        if self.process and proc.info['pid'] == self.process.pid:
+                        if proc.info['pid'] in router_pids:
                             is_our_process = True
                         else:
                             for i, arg in enumerate(cmdline):
@@ -144,17 +182,58 @@ class ByeDPIManager(QObject):
         self.config = config
     
     def open_settings(self):
-        from PyQt5.QtWidgets import QInputDialog
+        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton
         import config_manager
         
+        dialog = QDialog()
+        dialog.setWindowTitle("Настройки ByeDPI")
+        dialog.resize(600, 150)
+        
+        layout = QVBoxLayout(dialog)
+        
+        use_custom = self.config.get("use_custom_settings", True)
         current_params = self.config.get(self.config_key, "")
         if not current_params:
             current_params = DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else ""
             
-        text, ok = QInputDialog.getText(None, "Настройки ByeDPI", "Параметры запуска ByeDPI:", text=current_params)
-        if ok:
-            self.config[self.config_key] = text
+        layout.addWidget(QLabel("Аргументы ByeDPI:"))
+        
+        edit = QLineEdit(current_params)
+        layout.addWidget(edit)
+        
+        cb_preset = QCheckBox("Использовать предустановленные настройки")
+        cb_preset.setChecked(not use_custom)
+        
+        def on_toggle(checked):
+            edit.setEnabled(not checked)
+            if checked:
+                edit.setText(DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else "")
+        
+        cb_preset.toggled.connect(on_toggle)
+        on_toggle(not use_custom)
+        
+        layout.addWidget(cb_preset)
+        
+        btn_layout = QHBoxLayout()
+        save_btn = QPushButton("Сохранить")
+        save_btn.clicked.connect(dialog.accept)
+        btn_layout.addStretch()
+        btn_layout.addWidget(save_btn)
+        layout.addLayout(btn_layout)
+        
+        if dialog.exec_():
+            self.config["use_custom_settings"] = not cb_preset.isChecked()
+            self.config[self.config_key] = edit.text().strip()
             config_manager.save_config(self.config)
+            
+            # If the main module has update_menu, call it to reflect changes (optional, but good)
+            try:
+                import sys
+                main_mod = sys.modules.get('__main__')
+                if main_mod and hasattr(main_mod, 'update_menu'):
+                    main_mod.update_menu()
+            except:
+                pass
             QMessageBox.information(None, "Успех", "Настройки сохранены. Пожалуйста, перезапустите обход.")
     
     def get_status_text(self):

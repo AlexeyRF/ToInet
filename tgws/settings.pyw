@@ -61,6 +61,12 @@ class TGWSSettingsDialog(QDialog):
         self.fake_tls_edit = QLineEdit(self.config.get("tgws_fake_tls", ""))
         layout.addWidget(self.fake_tls_edit)
         
+        layout.addWidget(QLabel(T("Domain Fronting SNI (Устарело):", "Domain Fronting SNI (Obsolete):")))
+        self.fronting_edit = QLineEdit(self.config.get("tgws_fronting_sni", ""))
+        self.fronting_edit.setPlaceholderText("Например: sprinthost.ru")
+        self.fronting_edit.setToolTip(T("Включить старый фоллбэк с подменой SNI. Оставьте пустым для отключения.", "Enable old fallback with SNI masking. Leave empty to disable."))
+        layout.addWidget(self.fronting_edit)
+        
         # Verbose логирование
         self.verbose_check = QCheckBox("Подробное логирование (verbose)")
         self.verbose_check.setChecked(self.config.get("tgws_verbose", False))
@@ -132,6 +138,7 @@ class TGWSSettingsDialog(QDialog):
         self.config["tgws_dc_ip"] = lines
         self.config["tgws_secret"] = secret
         self.config["tgws_fake_tls"] = self.fake_tls_edit.text().strip()
+        self.config["tgws_fronting_sni"] = self.fronting_edit.text().strip()
         self.config["tgws_verbose"] = self.verbose_check.isChecked()
 
         config_manager.save_config(self.config)

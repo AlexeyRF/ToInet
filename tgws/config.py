@@ -72,6 +72,8 @@ class ProxyConfig:
     cfproxy_worker_domains: List[str] = field(default_factory=list)
     fake_tls_domain: str = ''
     proxy_protocol: bool = False
+    force_test_dc: bool = False
+    fronting_sni: str = ''
 
 
 proxy_config = ProxyConfig()
@@ -102,11 +104,17 @@ def coerce_domain_list(value) -> List[str]:
 
 
 def _fetch_cfproxy_domain_list() -> List[str]:
+    import os
+    cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'cfproxy_domains_cache.txt')
     try:
         req = Request(CFPROXY_DOMAINS_URL + "?" + "".join(random.choices(string.ascii_letters, k=7)),
                        headers={'User-Agent': 'tg-ws-proxy'})
         with build_github_opener().open(req, timeout=10) as resp:
             text = resp.read().decode('utf-8', errors='replace')
+            
+        with open(cache_file, 'w', encoding='utf-8') as f:
+            f.write(text)
+            
         encoded = [
             line.strip() for line in text.splitlines()
             if line.strip() and not line.startswith('#')
@@ -114,6 +122,18 @@ def _fetch_cfproxy_domain_list() -> List[str]:
         return [_dd(d) for d in encoded]
     except Exception as exc:
         log.warning("Failed to fetch CF proxy domain list: %s", repr(exc))
+        if os.path.exists(cache_file):
+            try:
+                log.info("Loading CF proxy domain list from local cache...")
+                with open(cache_file, 'r', encoding='utf-8') as f:
+                    text = f.read()
+                encoded = [
+                    line.strip() for line in text.splitlines()
+                    if line.strip() and not line.startswith('#')
+                ]
+                return [_dd(d) for d in encoded]
+            except Exception as cache_exc:
+                log.warning("Failed to load from cache: %s", repr(cache_exc))
         return []
 
 
@@ -208,11 +228,11 @@ def parse_dc_ip_list(dc_ip_list: List[str]) -> Dict[int, str]:
         dc_s, ip_s = entry.split(':', 1)
         try:
             dc_n = int(dc_s)
-            _socket.inet_aton(ip_s)
+            _socket.inet_pton(_socket.AF_INET, ip_s)
         except (ValueError, OSError):
             err = ValueError(f"Invalid --dc-ip {entry!r}")
             err.entry = entry
             err.kind = "invalid"
-            raise err
+            raise err from None
         dc_redirects[dc_n] = ip_s
     return dc_redirects

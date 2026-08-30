@@ -101,7 +101,7 @@
 *   **Автозапуск приложения:** включает или выключает автоматический старт ToInet-MAX при загрузке Windows.
 *   **Создать ярлык на рабочем столе:** автоматически генерирует ярлык.
 *   **Добавить в Telegram:** мгновенная отправка ссылки-настройки прокси напрямую в открытый Telegram.
-*   **Agy Фикс (Agy Fix):** интерактивная консольная утилита для настройки и исправления работы Gemini CLI, разблокировки AIzaSy-ключей и OAuth (исправление региональных блокировок Google).
+*   **Agy Фикс (Agy Fix):** вызов утилиты от создателей xbox-dns для разблокировки Antigravity в РФ
 *   **Управление DNS:** установка кастомных DNS-серверов (Comms DNS, Xbox DNS с поддержкой IPv4/IPv6) или сброс на системные (требуются права администратора).
 *   **Логи приложения:** окно с выводом системных логов в реальном времени.
 
@@ -135,7 +135,7 @@ https://github.com/Flowseal/tg-ws-proxy - TgWS Proxy<br>
 https://github.com/romanvht/ByeByeDPI - оригинальный подбор стратегий<br>
 https://github.com/cacggghp/vk-turn-proxy - маршрутизация через VK<br>
 https://github.com/Alexey71/opera-proxy - opera proxy<br>
-https://github.com/AlexeyRF/GeminiFixik - Agy Fix<br><br>
+https://xbox-dns.ru/ - Agy Fix + dns<br><br>
 ---
 В случае расследования какой-либо федеральной структуры или подобного, я не имею никакого отношения к этой группе или к людям в ней, я не знаю, как я здесь оказался, возможно, добавлен третьей стороной, я не поддерживаю никаких действий членов этой группы.
 ---
@@ -187,6 +187,11 @@ ToInet tackles these restrictions by leveraging several interconnected technolog
 *   **Opera Proxy (`opera-proxy`):**
     *   A local SOCKS5 proxy server wrapping Opera's built-in VPN infrastructure.
     *   Allows fast and easy bypass without complex configurations.
+*   **VLESS Proxy (`sing-box.exe`):**
+    *   A powerful proxy protocol allowing connections to remote VLESS servers.
+    *   Includes **Auto-Rotation (wl_torred_vless)**: Automatically fetches VLESS links from subscriptions (via `subs.txt`), dedupes, checks latency, and dynamically rotates servers every N-seconds.
+*   **TGWS Proxy:**
+    *   Dedicated MTProto/SOCKS5 proxy designed primarily for Telegram, allowing rapid connection bypassing DPI.
 *   **Autostart & Convenience:**
     *   Minimizes to the Windows system tray.
     *   Built-in autostart installer and one-click desktop shortcut creator.
@@ -224,6 +229,9 @@ The program provides three operational modes:
 | **Tor Control Port** | `9851` | TCP | Control port for Tor (circuit rotation) |
 | **Opera Proxy** | `1785` | HTTP | Fast bypass using Opera VPN infrastructure |
 | **Opera Proxy (SOCKS5)**| `1786` | SOCKS5 | SOCKS5 bridge for Opera (e.g. for Telegram) |
+| **VLESS Proxy** | `1790` | SOCKS5 | SOCKS5 proxy routed through VLESS servers |
+| **TGWS Proxy** | `1480` | MTProto/SOCKS | MTProto and SOCKS proxy for Telegram |
+| **SOCKS Rehabilitator**| `1788` | SOCKS5 | Utility port for SOCKS recovery |
 
 ---
 

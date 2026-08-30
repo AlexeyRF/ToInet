@@ -40,7 +40,17 @@ class OperaProxyManager(QObject):
         return self.running
 
     def get_params(self):
-        # Ignore custom configs and only use standard image params
+        if "opera_params" in self.config and self.config["opera_params"]:
+            return self.config["opera_params"].split()
+        if os.path.exists(OPERA_CUSTOM_FILE):
+            try:
+                with open(OPERA_CUSTOM_FILE, 'r', encoding='utf-8') as f:
+                    for line in f:
+                        line = line.strip()
+                        if line and not line.startswith('#'):
+                            return line.split()
+            except Exception:
+                pass
         return DEFAULT_OPERA_PARAMS.split()
 
     def start(self):

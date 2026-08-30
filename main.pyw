@@ -484,12 +484,41 @@ def exit_app():
 tray = None
 tray_menu = None
 
+def run_agy_fix():
+    try:
+        import utils
+        utils.run_script("agy_fix.pyw")
+    except:
+        pass
+
+class MenuUpdater(QObject):
+    update_signal = pyqtSignal()
+
+menu_updater = MenuUpdater()
+
+def _safe_update():
+    QTimer.singleShot(0, _update_menu_impl)
+
+menu_updater.update_signal.connect(_safe_update, Qt.QueuedConnection)
+
 def update_menu():
+    menu_updater.update_signal.emit()
+
+def _update_menu_impl():
+    try:
+        _update_menu_impl_unsafe()
+    except Exception as e:
+        log(f"[Menu] FATAL ERROR in menu generation: {e}")
+        import traceback
+        traceback.print_exc()
+
+def _update_menu_impl_unsafe():
     global tray_menu
     if tray_menu is None: return
     tray_menu.clear()
     
     if simple_mode:
+        log('[Menu] Building simple mode menu')
         all_act = QAction(T("Запуск", "Start") if not proxy_enabled else T("Остановить всё", "Stop All"), tray_menu)
         all_act.triggered.connect(toggle_all)
         tray_menu.addAction(all_act)
@@ -522,6 +551,7 @@ def update_menu():
         restart_act = QAction(T("Перезапуск", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
         exit_act = QAction(T("Выход", "Exit"), tray_menu); exit_act.triggered.connect(exit_app); tray_menu.addAction(exit_act)
     else:
+        log('[Menu] Building advanced mode menu')
         # Продвинутый режим
         
         # 1. Управление компонентами
@@ -582,12 +612,10 @@ def update_menu():
         
         # 3. Инструменты и Утилиты
         tools_menu = QMenu(T("Инструменты и Утилиты", "Tools & Utilities"), tray_menu)
-        tools_menu.addAction(T("Agy Фикс (Agy Fix)", "Agy Fix"), lambda: utils.run_console_script("gemini_fixik.py"))
         tools_menu.addAction(T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
         if not lang._is_en or config.get("enable_ru_features", False):
             tools_menu.addAction(T("Тест стратегий ByeDPI", "ByeDPI Strategies Tester"), lambda: utils.run_script("byedpi_tester_gui.pyw"))
             tools_menu.addAction(T("Тест стратегий TGWS", "TGWS Strategies Tester"), lambda: utils.run_script("tgws/tester_gui.pyw"))
-            tools_menu.addAction(T("VK Turn Proxy", "VK Turn Proxy Launcher"), lambda: utils.run_script("vk_turn_proxy_gui.pyw"))
         
         tools_menu.addAction(T("Очистить кэш", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
         tools_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
@@ -684,9 +712,9 @@ def update_menu():
         pip_menu.addAction(pip_enabled_act)
         pip_menu.addAction(pip_use_tor_act)
         pip_menu.addAction(T("Настройки ByeDPI для pip", "ByeDPI Settings for pip"), lambda: bdsher.get_pip_manager(config).open_settings())
-        tray_menu.addMenu(pip_menu)
         
         # 6. Системные опции
+        log('[Menu] Building sys_menu')
         sys_menu = QMenu(T("Системные опции", "System Options"), tray_menu)
         
         app_logs_act = QAction(T("Показать логи приложения", "Show Application Logs"), sys_menu)
