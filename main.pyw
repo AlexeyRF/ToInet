@@ -283,6 +283,8 @@ def toggle_all():
         
         mode_mgr.inetcpl_tor_active = False
         mode_mgr.inetcpl_bd_active = False
+        mode_mgr.inetcpl_opera_active = False
+        mode_mgr.inetcpl_vless_active = False
         
         if mode_type == "tun":
             mode_mgr.start_tun()
@@ -305,6 +307,12 @@ def toggle_all():
         if mode_mgr.inetcpl_bd_active:
             mode_mgr.run_cpller(1780, 0)
             mode_mgr.inetcpl_bd_active = False
+        if mode_mgr.inetcpl_opera_active:
+            mode_mgr.run_cpller(1785, 0)
+            mode_mgr.inetcpl_opera_active = False
+        if mode_mgr.inetcpl_vless_active:
+            mode_mgr.run_cpller(1790, 0)
+            mode_mgr.inetcpl_vless_active = False
         
         if mode_type == "tun":
             mode_mgr.stop_tun()
@@ -377,6 +385,10 @@ def toggle_proxifier():
 
 def toggle_inetcpl_tor():
     if not mode_mgr.inetcpl_tor_active:
+
+        if mode_mgr.inetcpl_vless_active:
+            if mode_mgr.run_cpller(1790, 0):
+                mode_mgr.inetcpl_vless_active = False
         if mode_mgr.inetcpl_bd_active:
             if mode_mgr.run_cpller(1780, 0):
                 mode_mgr.inetcpl_bd_active = False
@@ -395,6 +407,10 @@ def toggle_inetcpl_tor():
 
 def toggle_inetcpl_bd():
     if not mode_mgr.inetcpl_bd_active:
+
+        if mode_mgr.inetcpl_vless_active:
+            if mode_mgr.run_cpller(1790, 0):
+                mode_mgr.inetcpl_vless_active = False
         if mode_mgr.inetcpl_tor_active:
             if mode_mgr.run_cpller(9853, 0):
                 mode_mgr.inetcpl_tor_active = False
@@ -411,8 +427,33 @@ def toggle_inetcpl_bd():
     update_proxy_status()
     update_menu()
 
+def toggle_inetcpl_vless():
+    if not mode_mgr.inetcpl_vless_active:
+        if mode_mgr.inetcpl_tor_active:
+            if mode_mgr.run_cpller(9853, 0):
+                mode_mgr.inetcpl_tor_active = False
+        if mode_mgr.inetcpl_bd_active:
+            if mode_mgr.run_cpller(1780, 0):
+                mode_mgr.inetcpl_bd_active = False
+        if mode_mgr.inetcpl_opera_active:
+            if mode_mgr.run_cpller(1785, 0):
+                mode_mgr.inetcpl_opera_active = False
+        
+        if mode_mgr.run_cpller(1790, 1):
+            mode_mgr.inetcpl_vless_active = True
+    else:
+        if mode_mgr.run_cpller(1790, 0):
+            mode_mgr.inetcpl_vless_active = False
+    
+    update_proxy_status()
+    update_menu()
+
 def toggle_inetcpl_opera():
     if not mode_mgr.inetcpl_opera_active:
+
+        if mode_mgr.inetcpl_vless_active:
+            if mode_mgr.run_cpller(1790, 0):
+                mode_mgr.inetcpl_vless_active = False
         if mode_mgr.inetcpl_tor_active:
             if mode_mgr.run_cpller(9853, 0):
                 mode_mgr.inetcpl_tor_active = False
@@ -698,7 +739,10 @@ def _update_menu_impl_unsafe():
             
             opera_cpl = QAction(T("Подключиться к Opera", "Connect to Opera") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera", "Disconnect from Opera"), tray_menu)
             opera_cpl.triggered.connect(toggle_inetcpl_opera)
-            tray_menu.addAction(opera_cpl)
+            tray_menu.addAction(opera_cpl)            
+            vless_cpl = QAction(T("Подключиться к VLESS", "Connect to VLESS") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS", "Disconnect from VLESS"), tray_menu)
+            vless_cpl.triggered.connect(toggle_inetcpl_vless)
+            tray_menu.addAction(vless_cpl)
        
         tray_menu.addSeparator()
         mode_m = QMenu(T("Режим", "Mode"), tray_menu)
@@ -776,6 +820,7 @@ def _update_menu_impl_unsafe():
             tg_menu.addAction(T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
+        tg_menu.addAction(T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: utils.add_proxy_to_telegram(1790))
         tray_menu.addMenu(tg_menu)
         
 
@@ -863,7 +908,10 @@ def _update_menu_impl_unsafe():
         
         opera_cpl2 = QAction(T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), inetcpl_sub)
         opera_cpl2.triggered.connect(toggle_inetcpl_opera)
-        inetcpl_sub.addAction(opera_cpl2)
+        inetcpl_sub.addAction(opera_cpl2)        
+        vless_cpl2 = QAction(T("Подключиться к VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
+        vless_cpl2.triggered.connect(toggle_inetcpl_vless)
+        inetcpl_sub.addAction(vless_cpl2)
 
         inetcpl_mode = config.get("inetcpl_mode", "classic")
         inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
