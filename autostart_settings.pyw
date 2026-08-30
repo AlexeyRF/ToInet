@@ -1,6 +1,6 @@
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel
+from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
 import config_manager
 import lang
 
@@ -62,7 +62,40 @@ class AutostartSettingsWindow(QMainWindow):
         
         # Adding a master checkbox for app autostart itself
         layout.addSpacing(15)
-        self.cb_app_autostart = QCheckBox(T("Запускать саму программу при старте Windows", "Start application on Windows startup"))
+        
+        self.cb_auto_last = QCheckBox(T("Подключать последний режим при запуске", "Connect Last Mode on Start"))
+        self.cb_auto_last.setChecked(self.config.get("auto_connect_last_mode", False))
+        layout.addWidget(self.cb_auto_last)
+        
+        layout.addSpacing(10)
+        torrc_layout = QHBoxLayout()
+        torrc_label = QLabel(T("Действие с torrc при запуске:", "Action with torrc on start:"))
+        torrc_label.setStyleSheet("padding-bottom: 0px;")
+        self.torrc_combo = QComboBox()
+        self.torrc_combo.addItem(T("Не трогать (None)", "Do nothing (None)"), "none")
+        self.torrc_combo.addItem(T("Обновлять мосты (Bridges Only)", "Update bridges (Bridges Only)"), "bridges")
+        self.torrc_combo.addItem(T("Полное пересоздание (Full)", "Full recreation (Full)"), "full")
+        
+        # Read current state
+        try:
+            import sys
+            cdir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+            with open(os.path.join(cdir, "recreate_torrc.txt"), "r") as f:
+                val = f.read().strip().lower()
+                if val == "true" or val == "full": self.torrc_combo.setCurrentIndex(2)
+                elif val == "false" or val == "bridges": self.torrc_combo.setCurrentIndex(1)
+                elif val == "none": self.torrc_combo.setCurrentIndex(0)
+                else: self.torrc_combo.setCurrentIndex(1)
+        except Exception:
+            self.torrc_combo.setCurrentIndex(1)
+            
+        torrc_layout.addWidget(torrc_label)
+        torrc_layout.addWidget(self.torrc_combo)
+        torrc_layout.addStretch()
+        layout.addLayout(torrc_layout)
+        
+        layout.addSpacing(15)
+        self.cb_app_autostart = QCheckBox(T("Запускать приложение при старте Windows", "Start application on Windows startup"))
         self.cb_app_autostart.setChecked(self.config.get("auto_start", False))
         layout.addWidget(self.cb_app_autostart)
         
@@ -98,6 +131,17 @@ class AutostartSettingsWindow(QMainWindow):
         self.config["autostart_tools"] = tools
         
         # Handle app autostart
+        self.config["auto_connect_last_mode"] = self.cb_auto_last.isChecked()
+        
+        mode = self.torrc_combo.currentData()
+        try:
+            import sys
+            cdir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+            with open(os.path.join(cdir, "recreate_torrc.txt"), "w") as f:
+                f.write(mode)
+        except:
+            pass
+            
         app_autostart = self.cb_app_autostart.isChecked()
         current_app_autostart = self.config.get("auto_start", False)
         
@@ -152,6 +196,22 @@ if __name__ == "__main__":
             background-color: #4CAF50;
             border: 2px solid #4CAF50;
             image: url(check.png); /* PyQt5 usually renders a check automatically if styled properly or without image, but we rely on its default check behavior by just coloring the background */
+        }
+        QComboBox {
+            background-color: #2d2d2d;
+            border: 1px solid #555;
+            border-radius: 4px;
+            padding: 5px;
+            color: white;
+            min-width: 250px;
+        }
+        QComboBox::drop-down {
+            border: none;
+        }
+        QComboBox QAbstractItemView {
+            background-color: #2d2d2d;
+            color: white;
+            selection-background-color: #4CAF50;
         }
         QPushButton { 
             background-color: #4CAF50; 
