@@ -1,6 +1,8 @@
 import os
 import sys
 def safe_print(*args, **kwargs):
+    with open('wl_vless.log', 'a') as f:
+        f.write(' '.join(map(str, args)) + '\n')
     try:
         __builtins__.print(*args, **kwargs)
     except:
@@ -158,7 +160,8 @@ def generate_config(server_info):
             "flow": "xtls-rprx-vision" if server_info["security"] == "reality" else "",
             "tls": {
                 "enabled": server_info["security"] in ["tls", "reality"],
-                "server_name": server_info["sni"],
+                "server_name": server_info["sni"] if server_info["sni"] else server_info["host"],
+                "insecure": not bool(server_info["sni"]),
                 "utls": {"enabled": True, "fingerprint": "chrome"}
             }
         }]
