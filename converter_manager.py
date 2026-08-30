@@ -17,32 +17,8 @@ class ConverterManager:
         self.process = None
 
     def start(self):
-        if self.process and self.process.poll() is None:
-            return True
-
-        if not os.path.exists(CONVERTER_SCRIPT):
-            return False
-
-        # Configuration:
-        # Opera: SOCKS2HTTP (Listen 1785 -> Upstream 1785)
-        # Tor: HTTP2SOCKS (Listen 9854 -> Upstream 9853)
-        # ByeDPI: HTTP2SOCKS (Listen 1782 -> Upstream 1780)
-        
-        args = [
-            sys.executable, CONVERTER_SCRIPT,
-            "--http2socks", "9854:9853",
-            "--http2socks", "1782:1780"
-        ]
-
-        creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        self.process = subprocess.Popen(
-            args,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            creationflags=creationflags
-        )
-        print("[Converter] Слой конвертации прокси запущен (SOCKS/HTTP мосты)")
-        return True
+        # [Converter] Disabled by user request
+        return False
 
     def stop(self):
         if self.process:

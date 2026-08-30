@@ -88,6 +88,17 @@ class AppLogWindow(QDialog):
         self.setWindowTitle(title)
         self.resize(700, 500)
         
+        # Dark Title Bar for Windows
+        try:
+            import ctypes
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            set_window_attribute = ctypes.windll.dwmapi.DwmSetWindowAttribute
+            hwnd = int(self.winId())
+            rendering_policy = ctypes.c_int(1)
+            set_window_attribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(rendering_policy), ctypes.sizeof(rendering_policy))
+        except:
+            pass
+        
         # Dark Theme
         self.setStyleSheet("""
             QDialog {
@@ -101,14 +112,14 @@ class AppLogWindow(QDialog):
                 font-family: Consolas, monospace;
             }
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #005FB8;
                 color: white;
                 border: none;
                 border-radius: 4px;
                 padding: 6px;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #0078D4;
             }
             QCheckBox {
                 color: #e0e0e0;
@@ -120,6 +131,9 @@ class AppLogWindow(QDialog):
         # Checkboxes for categories
         self.filter_layout = QHBoxLayout()
         self.categories = {}
+        # Pre-populate known categories
+        for pre_cat in ["LOG", "TOR Manager", "ByeDPI", "OperaProxy", "TGWS", "MODE"]:
+            self._add_category_checkbox(pre_cat)
         self.layout.addLayout(self.filter_layout)
         
         self.text_edit = QTextEdit(self)
@@ -509,7 +523,7 @@ def restart_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
-    conv_mgr.stop()
+    # conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Restarting...")
     
@@ -537,7 +551,7 @@ def exit_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
-    conv_mgr.stop()
+    # conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Exiting...")
     app.quit()
@@ -908,7 +922,7 @@ def create_tray_menu():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     setup_logging()
-    conv_mgr.start()
+    # conv_mgr.start()
     
     tray = QSystemTrayIcon()
     try: tray.setIcon(QIcon("icon.ico"))
