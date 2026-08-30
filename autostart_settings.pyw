@@ -11,7 +11,7 @@ class AutostartSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings"))
-        self.setFixedSize(600, 550)
+        self.resize(600, 650)
         
         # Dark Title Bar for Windows
         try:
