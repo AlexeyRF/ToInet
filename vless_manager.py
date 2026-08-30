@@ -147,7 +147,7 @@ class VlessManager(QObject):
             self.status_changed.emit(True)
             return True
         except Exception as e:
-            with open('vless_manager_error.log', 'w') as f:
+            with open('vless_manager_error.log', 'w', encoding='utf-8') as f:
                 f.write(str(e))
             self.error_occurred.emit(str(e))
             self.running = False
