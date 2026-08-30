@@ -359,14 +359,6 @@ def set_mode_type(mode):
     update_proxy_status()
     update_menu()
 
-def toggle_custom_settings():
-    global config
-    config["use_custom_settings"] = not config.get("use_custom_settings", True)
-    config_manager.save_config(config)
-    byedpi_manager.update_config(config)
-    opera_mgr.update_config(config)
-    update_menu()
-
 def toggle_inetcpl_mode():
     global config
     current = config.get("inetcpl_mode", "classic")
@@ -596,8 +588,6 @@ def _update_menu_impl_unsafe():
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
-        cust_txt = T("Использовать предустановленные настройки", "Use Preset Settings") if config.get("use_custom_settings", True) else T("Использовать кастомные настройки ByeDPI", "Use Custom ByeDPI Settings")
-        cust_act = QAction(cust_txt, settings_menu); cust_act.triggered.connect(toggle_custom_settings); settings_menu.addAction(cust_act)
         
         inetcpl_mode = config.get("inetcpl_mode", "classic")
         inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
@@ -614,7 +604,6 @@ def _update_menu_impl_unsafe():
         tools_menu = QMenu(T("Инструменты и Утилиты", "Tools & Utilities"), tray_menu)
         tools_menu.addAction(T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
         if not lang._is_en or config.get("enable_ru_features", False):
-            tools_menu.addAction(T("Тест стратегий ByeDPI", "ByeDPI Strategies Tester"), lambda: utils.run_script("byedpi_tester_gui.pyw"))
             tools_menu.addAction(T("Тест стратегий TGWS", "TGWS Strategies Tester"), lambda: utils.run_script("tgws/tester_gui.pyw"))
         
         tools_menu.addAction(T("Очистить кэш", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
