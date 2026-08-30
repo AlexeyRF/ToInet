@@ -205,10 +205,15 @@ async def main(stop_event=None):
     logging.info(f"TGWS (Загрузка):  {UPLOAD_PROXY_HOST}:{UPLOAD_PROXY_PORT}")
     logging.info("Зайдите в Telegram и укажите SOCKS5 прокси: 127.0.0.1 порт 1777 (без пароля)")
     
-    async with server:
-        if stop_event:
-            await stop_event.wait()
-        else:
+    if stop_event:
+        await stop_event.wait()
+        server.close()
+        try:
+            await asyncio.wait_for(server.wait_closed(), timeout=1.0)
+        except Exception:
+            pass
+    else:
+        async with server:
             await server.serve_forever()
 
 if __name__ == '__main__':

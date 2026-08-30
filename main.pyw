@@ -506,29 +506,32 @@ def _update_menu_impl():
 
 
 class MenuServiceWidget(QWidget):
-    def __init__(self, toggle_func):
+    def __init__(self, toggle_func, menu):
         super().__init__()
         self.toggle_func = toggle_func
+        self.menu = menu
     def mouseReleaseEvent(self, event):
         if event.button() == Qt.LeftButton:
             child = self.childAt(event.pos())
             if not isinstance(child, QPushButton):
+                self.menu.hide()
                 self.toggle_func()
                 update_menu()
         super().mouseReleaseEvent(event)
 
 def create_service_action(menu, name, is_running, toggle_func, restart_func=None, is_tor=False):
     wa = QWidgetAction(menu)
-    w = MenuServiceWidget(toggle_func)
+    w = MenuServiceWidget(toggle_func, menu)
     w.setStyleSheet("""
         QWidget { background: transparent; }
         QWidget:hover { background: rgba(255, 255, 255, 0.05); }
-        QLabel { padding-left: 5px; font-size: 14px; }
+        QLabel { padding-left: 5px; font-size: 14px; color: white; }
         QPushButton { 
             background: transparent; 
             border: none; 
             font-size: 16px; 
             font-weight: bold;
+            color: white;
         }
         QPushButton:hover { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
     """)
@@ -548,6 +551,7 @@ def create_service_action(menu, name, is_running, toggle_func, restart_func=None
         btn.setFixedSize(24, 24)
         btn.setCursor(Qt.PointingHandCursor)
         def on_click():
+            menu.hide()
             callback()
             update_menu()
         btn.clicked.connect(on_click)

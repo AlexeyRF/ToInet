@@ -601,7 +601,7 @@ async def _run(stop_event: Optional[asyncio.Event] = None):
                 await _quiet_cancel(watchdog_task)
                 await _quiet_cancel(serve_task)
                 server.close()
-                await server.wait_closed()
+                await asyncio.wait_for(server.wait_closed(), timeout=1.0)
                 break
 
             await _quiet_cancel(watchdog_task)
@@ -610,7 +610,7 @@ async def _run(stop_event: Optional[asyncio.Event] = None):
                 "Listening socket died, restarting server")
             server.close()
             try:
-                await server.wait_closed()
+                await asyncio.wait_for(server.wait_closed(), timeout=1.0)
             except Exception:
                 pass
             await asyncio.sleep(LISTENER_RESTART_DELAY)
@@ -637,7 +637,7 @@ async def _run(stop_event: Optional[asyncio.Event] = None):
             pass
         try:
             server.close()
-            await server.wait_closed()
+            await asyncio.wait_for(server.wait_closed(), timeout=1.0)
         except Exception:
             pass
     _server_instance = None

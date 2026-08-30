@@ -68,7 +68,18 @@ class TGWSManager:
                 QMessageBox.critical(None, "Ошибка TG WS Proxy", 
                                    f"Не удалось запустить TG WS Proxy:\nПорт {port} уже используется другим приложением.")
         finally:
-            loop.close()
+            try:
+                pending = tgws_windows._asyncio.all_tasks(loop)
+                for task in pending:
+                    task.cancel()
+                if pending:
+                    loop.run_until_complete(tgws_windows._asyncio.gather(*pending, return_exceptions=True))
+            except Exception:
+                pass
+            try:
+                loop.close()
+            except Exception:
+                pass
             self.stop_event = None
 
     def start(self):
