@@ -58,7 +58,7 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidgetAction, QHBoxLayout, QLabel, QSizePolicy, QWidget
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidget, QWidgetAction, QHBoxLayout, QLabel, QCheckBox
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
@@ -87,19 +87,93 @@ class AppLogWindow(QDialog):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(700, 500)
+        
+        # Dark Theme
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #1e1e1e;
+                color: #e0e0e0;
+            }
+            QTextEdit {
+                background-color: #2d2d2d;
+                color: #e0e0e0;
+                border: 1px solid #555;
+                font-family: Consolas, monospace;
+            }
+            QPushButton {
+                background-color: #4CAF50;
+                color: white;
+                border: none;
+                border-radius: 4px;
+                padding: 6px;
+            }
+            QPushButton:hover {
+                background-color: #45a049;
+            }
+            QCheckBox {
+                color: #e0e0e0;
+            }
+        """)
+        
         self.layout = QVBoxLayout(self)
+        
+        # Checkboxes for categories
+        self.filter_layout = QHBoxLayout()
+        self.categories = {}
+        self.layout.addLayout(self.filter_layout)
+        
         self.text_edit = QTextEdit(self)
         self.text_edit.setReadOnly(True)
         self.layout.addWidget(self.text_edit)
         
-        self.clear_btn = QPushButton("Очистить", self)
-        self.clear_btn.clicked.connect(self.text_edit.clear)
+        self.clear_btn = QPushButton(T("Очистить", "Clear"), self)
+        self.clear_btn.clicked.connect(self.clear_logs)
         self.layout.addWidget(self.clear_btn)
         
+        self.all_logs = []  # Store raw tuples of (category, text)
+        self.current_category = "Other"
+
+    def clear_logs(self):
+        self.all_logs = []
+        self.text_edit.clear()
+        
+    def _get_category(self, text):
+        import re
+        match = re.search(r'^\[(.*?)\]', text.strip())
+        if match:
+            return match.group(1)
+        return None
+
+    def _add_category_checkbox(self, cat):
+        if cat not in self.categories:
+            cb = QCheckBox(cat)
+            cb.setChecked(True)
+            cb.stateChanged.connect(self.refresh_logs)
+            self.filter_layout.addWidget(cb)
+            self.categories[cat] = cb
+
+    def refresh_logs(self):
+        self.text_edit.clear()
+        for cat, text in self.all_logs:
+            if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
+                self.text_edit.insertPlainText(text)
+        self.text_edit.moveCursor(self.text_edit.textCursor().End)
+
     def append_log(self, text):
-        self.text_edit.moveCursor(self.text_edit.textCursor().End)
-        self.text_edit.insertPlainText(text)
-        self.text_edit.moveCursor(self.text_edit.textCursor().End)
+        cat = self._get_category(text)
+        if cat:
+            self.current_category = cat
+            self._add_category_checkbox(cat)
+        else:
+            cat = self.current_category
+            
+        self.all_logs.append((cat, text))
+        
+        # If the category is checked (or it's "Other"), append to text edit
+        if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
+            self.text_edit.moveCursor(self.text_edit.textCursor().End)
+            self.text_edit.insertPlainText(text)
+            self.text_edit.moveCursor(self.text_edit.textCursor().End)
 
 app_log_window = None
 
@@ -366,11 +440,6 @@ def toggle_inetcpl_mode():
     config_manager.save_config(config)
     update_menu()
 
-def toggle_tor_show_window():
-    config["tor_show_window"] = not config.get("tor_show_window", False)
-    config_manager.save_config(config)
-    tor_manager.update_config(config)
-    update_menu()
 
 def toggle_mode():
     global simple_mode
@@ -654,9 +723,6 @@ def _update_menu_impl_unsafe():
         settings_menu = QMenu(T("Настройки компонентов", "Component Settings"), tray_menu)
         settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
         
-        tor_win_txt = T("Скрывать окно TOR", "Hide TOR Window") if config.get("tor_show_window", False) else T("Показывать окно TOR", "Show TOR Window")
-        tor_win_act = QAction(tor_win_txt, settings_menu); tor_win_act.triggered.connect(toggle_tor_show_window); settings_menu.addAction(tor_win_act)
-        
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
@@ -790,8 +856,6 @@ def _update_menu_impl_unsafe():
         ast_act = QAction(T("Настройки автозапуска", "Autostart Settings"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
-        
-        tshow_act = QAction(T("Показывать окно TOR при запуске", "Show TOR Window on Start"), sys_menu); tshow_act.setCheckable(True); tshow_act.setChecked(config.get("tor_show_window", False)); tshow_act.triggered.connect(toggle_tor_show_window); sys_menu.addAction(tshow_act)
         sys_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
         sys_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
         sys_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
