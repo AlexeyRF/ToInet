@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QFileDialog, 
                              QMessageBox, QGroupBox, QGridLayout, QComboBox,
-                             QRadioButton, QButtonGroup, QCheckBox, QProgressDialog, QSpinBox)
+                             QRadioButton, QButtonGroup, QCheckBox, QProgressDialog, QSpinBox, QScrollArea)
 from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
 from PyQt5.QtGui import QFont, QPixmap, QIcon
 import requests
@@ -349,8 +349,19 @@ ClientOnly 1
 class TorrcConfigurator(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("Конфигуратор")
-        self.setMinimumSize(800, 950)
+        self.setWindowTitle("Конфигуратор" if not lang._is_en else "Tor Configurator")
+        self.resize(800, 700)
+        
+        # Dark Title Bar for Windows
+        try:
+            import ctypes
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            set_window_attribute = ctypes.windll.dwmapi.DwmSetWindowAttribute
+            hwnd = int(self.winId())
+            rendering_policy = ctypes.c_int(1)
+            set_window_attribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(rendering_policy), ctypes.sizeof(rendering_policy))
+        except:
+            pass
         self.setStyleSheet("""
             QMainWindow {
                 background-color: #2b2b2b;
@@ -368,7 +379,7 @@ class TorrcConfigurator(QMainWindow):
                 subcontrol-origin: margin;
                 left: 10px;
                 padding: 0 5px 0 5px;
-                color: #4CAF50;
+                color: #005FB8;
             }
             QLabel {
                 color: #e0e0e0;
@@ -383,10 +394,10 @@ class TorrcConfigurator(QMainWindow):
                 font-size: 11px;
             }
             QLineEdit:focus {
-                border-color: #4CAF50;
+                border-color: #005FB8;
             }
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #005FB8;
                 border: none;
                 padding: 8px 16px;
                 border-radius: 4px;
@@ -395,7 +406,7 @@ class TorrcConfigurator(QMainWindow):
                 font-size: 11px;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #0078D4;
             }
             QPushButton:pressed {
                 background-color: #3d8b40;
@@ -416,7 +427,7 @@ class TorrcConfigurator(QMainWindow):
                 outline: none;
             }
             QListWidget::item:selected {
-                background-color: #4CAF50;
+                background-color: #005FB8;
                 color: white;
             }
             QListWidget::item:hover {
@@ -451,9 +462,9 @@ class TorrcConfigurator(QMainWindow):
                 background-color: #3c3c3c;
             }
             QRadioButton::indicator:checked {
-                border: 1px solid #4CAF50;
+                border: 1px solid #005FB8;
                 border-radius: 7px;
-                background-color: #4CAF50;
+                background-color: #005FB8;
             }
             QComboBox {
                 padding: 5px;
@@ -474,7 +485,7 @@ class TorrcConfigurator(QMainWindow):
                 margin-right: 5px;
             }
             QComboBox:hover {
-                border-color: #4CAF50;
+                border-color: #005FB8;
             }
         """)
         
@@ -504,8 +515,14 @@ class TorrcConfigurator(QMainWindow):
         
     def init_ui(self):
         """Initialize the user interface"""
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("QScrollArea { border: none; background-color: #2b2b2b; }")
+        
         central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        scroll.setWidget(central_widget)
+        self.setCentralWidget(scroll)
+        
         main_layout = QVBoxLayout(central_widget)
         main_layout.setSpacing(15)
         main_layout.setContentsMargins(20, 20, 20, 20)
@@ -525,7 +542,7 @@ class TorrcConfigurator(QMainWindow):
         
         # Selected countries display
         self.selected_label = QLabel(T("Выбрано: Ничего", "Selected: None"))
-        self.selected_label.setStyleSheet("color: #4CAF50; font-weight: bold;")
+        self.selected_label.setStyleSheet("color: #005FB8; font-weight: bold;")
         self.selected_label.setAlignment(Qt.AlignCenter)
         self.country_list.itemSelectionChanged.connect(self.update_selected_label)
         countries_layout.addWidget(self.selected_label)
@@ -734,12 +751,12 @@ class TorrcConfigurator(QMainWindow):
         generate_btn.setMinimumHeight(40)
         generate_btn.setStyleSheet("""
             QPushButton {
-                background-color: #4CAF50;
+                background-color: #005FB8;
                 font-size: 14px;
                 font-weight: bold;
             }
             QPushButton:hover {
-                background-color: #45a049;
+                background-color: #0078D4;
             }
         """)
         generate_btn.clicked.connect(self.generate_torrc)
@@ -854,7 +871,7 @@ class TorrcConfigurator(QMainWindow):
                 text-align: center;
             }
             QProgressBar::chunk {
-                background-color: #4CAF50;
+                background-color: #005FB8;
             }
         """)
         self.progress_dialog.show()
