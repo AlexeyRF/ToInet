@@ -771,7 +771,34 @@ def _update_menu_impl_unsafe():
         bd_wa = create_service_action(control_menu, "ByeDPI", byedpi_manager.is_running(), toggle_byedpi, lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start()))
         control_menu.addAction(bd_wa)
         
-        vless_wa = create_service_action(control_menu, "VLESS Proxy", vless_mgr.is_running(), toggle_vless, lambda: (vless_mgr.stop(), time.sleep(1), vless_mgr.start()))
+        def vless_restart_handler():
+            mods = QApplication.keyboardModifiers()
+            if mods & Qt.ControlModifier:
+                vless_mgr.rot_cmd = "keep"
+            elif mods & Qt.ShiftModifier:
+                vless_mgr.rot_cmd = "prev"
+            else:
+                vless_mgr.rot_cmd = "next"
+            vless_mgr.stop()
+            time.sleep(1)
+            vless_mgr.start()
+            
+        def vless_toggle_handler():
+            mods = QApplication.keyboardModifiers()
+            if not vless_mgr.is_running():
+                if mods & Qt.ControlModifier:
+                    vless_mgr.rot_cmd = "keep"
+                elif mods & Qt.ShiftModifier:
+                    vless_mgr.rot_cmd = "prev"
+                else:
+                    vless_mgr.rot_cmd = "next"
+                vless_mgr.start()
+            else:
+                vless_mgr.stop()
+            update_proxy_status()
+            update_menu()
+
+        vless_wa = create_service_action(control_menu, "VLESS Proxy", vless_mgr.is_running(), vless_toggle_handler, vless_restart_handler)
         control_menu.addAction(vless_wa)
         
         opera_wa = create_service_action(control_menu, "Opera Proxy", opera_mgr.is_running(), toggle_opera, lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start()))

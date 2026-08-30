@@ -136,12 +136,33 @@ class VlessManager(QObject):
                 )
             else:
                 script_path = os.path.join(CURRENT_DIR, "wl_torred_vless.py")
+                
+                # Support passing arguments like "next", "prev", "keep"
+                args = [sys.executable, script_path]
+                if getattr(self, "rot_cmd", None):
+                    args.append(self.rot_cmd)
+                    self.rot_cmd = None
+                
+                env = os.environ.copy()
+                env["PYTHONIOENCODING"] = "utf-8"
                 self.process = subprocess.Popen(
-                    [sys.executable, script_path],
-                    stdout=subprocess.DEVNULL,
-                    stderr=subprocess.DEVNULL,
-                    creationflags=subprocess.CREATE_NO_WINDOW
+                    args,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    creationflags=subprocess.CREATE_NO_WINDOW,
+                    text=True,
+                    bufsize=1,
+                    encoding='utf-8',
+                    env=env
                 )
+                import threading
+                def read_logs():
+                    try:
+                        for line in self.process.stdout:
+                            print(line, end='')
+                    except:
+                        pass
+                threading.Thread(target=read_logs, daemon=True).start()
                 
             self.running = True
             self.status_changed.emit(True)

@@ -209,11 +209,27 @@ def main():
         safe_print("[VLESS-Rot] No servers found. Exiting.")
         return
         
+    cmd = sys.argv[1] if len(sys.argv) > 1 else "next"
+    state_file = os.path.join(CURRENT_DIR, "vless_state.json")
     server_idx = 0
+    if os.path.exists(state_file):
+        try:
+            with open(state_file, "r") as f:
+                server_idx = json.load(f).get("server_idx", 0)
+        except: pass
+
+    if cmd == "prev":
+        server_idx = max(0, server_idx - 2)
+    elif cmd == "keep":
+        server_idx = max(0, server_idx - 1)
+        
     proc = None
     
     try:
         while True:
+            with open(state_file, "w") as f:
+                json.dump({"server_idx": server_idx + 1}, f)
+                
             srv = servers[server_idx % len(servers)]
             server_idx += 1
             
