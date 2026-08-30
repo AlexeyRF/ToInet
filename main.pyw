@@ -791,11 +791,6 @@ def _update_menu_impl_unsafe():
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
         
-        acl_act = QAction(T("Запускать обход при старте приложения", "Connect Last Mode on Start"), sys_menu); acl_act.setCheckable(True); acl_act.setChecked(config.get("auto_connect_last_mode", False)); acl_act.triggered.connect(toggle_auto_connect_last_mode); sys_menu.addAction(acl_act)
-        
-        rec_act = QAction(T("Отключить пересоздание torrc", "Disable torrc Recreation") if tor_manager.get_recreate_status() else T("Включить пересоздание torrc", "Enable torrc Recreation"), sys_menu)
-        rec_act.triggered.connect(lambda: (tor_manager.toggle_recreate(), update_menu())); sys_menu.addAction(rec_act)
-        
         tshow_act = QAction(T("Показывать окно TOR при запуске", "Show TOR Window on Start"), sys_menu); tshow_act.setCheckable(True); tshow_act.setChecked(config.get("tor_show_window", False)); tshow_act.triggered.connect(toggle_tor_show_window); sys_menu.addAction(tshow_act)
         sys_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
         sys_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))

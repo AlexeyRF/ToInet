@@ -162,11 +162,12 @@ class TorManager:
         if self.tor_running:
             return True
 
-        if self.recreate_torrc:
+        if self.recreate_torrc == "full":
             self._delete_torrc_files()
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
-        else:
+        elif self.recreate_torrc == "bridges":
             self._run_script_blocking(UPDATE_BRIDGES_SCRIPT)
+        # if "none", do nothing
 
         if not os.path.exists(TORRC_FILE):
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
@@ -285,11 +286,13 @@ class TorManager:
         return self.tor_running
 
     def toggle_recreate(self):
-        """Переключает флаг пересоздания torrc"""
-        self.recreate_torrc = not self.recreate_torrc
+        """Цикличное переключение режима пересоздания torrc"""
+        if self.recreate_torrc == "full": self.recreate_torrc = "bridges"
+        elif self.recreate_torrc == "bridges": self.recreate_torrc = "none"
+        else: self.recreate_torrc = "full"
         self._write_recreate_torrc(self.recreate_torrc)
 
-    def get_recreate_status(self):
+    def get_recreate_mode(self):
         """Возвращает статус флага пересоздания torrc"""
         return self.recreate_torrc
 
