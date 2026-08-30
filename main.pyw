@@ -565,8 +565,6 @@ def _update_menu_impl_unsafe():
             ro_act = QAction(T("Перезапуск Opera Proxy", "Restart Opera Proxy"), control_menu); ro_act.triggered.connect(lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start())); control_menu.addAction(ro_act)
         
         if not lang._is_en or config.get("enable_ru_features", False):
-            noisy_act = QAction(noisy_manager.get_status_text(), control_menu); noisy_act.triggered.connect(toggle_noisy); control_menu.addAction(noisy_act)
-            tester_act = QAction(tester_manager.get_status_text(), control_menu); tester_act.triggered.connect(toggle_tester); control_menu.addAction(tester_act)
             tg_act = QAction(T("Ручной запуск TGWS", "Manual Start TGWS") if not tgws_mgr.running else T("Остановить TGWS", "Stop TGWS"), control_menu); tg_act.triggered.connect(toggle_tgws); control_menu.addAction(tg_act)
         
             
@@ -601,16 +599,12 @@ def _update_menu_impl_unsafe():
         
         # 3. Инструменты и Утилиты
         tools_menu = QMenu(T("Инструменты и Утилиты", "Tools & Utilities"), tray_menu)
-        tools_menu.addAction(T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
         if not lang._is_en or config.get("enable_ru_features", False):
             tools_menu.addAction(T("Тест стратегий TGWS", "TGWS Strategies Tester"), lambda: utils.run_script("tgws/tester_gui.pyw"))
         
         tools_menu.addAction(T("Очистить кэш", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
-        tools_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
-        tools_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
         tools_menu.addAction(T("Изменить мосты", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
         tools_menu.addAction(T("Удалить конфигурацию TOR", "Delete TOR Config"), tor_manager.delete_config)
-        tools_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
         tray_menu.addMenu(tools_menu)
         
         # 4. Добавить в Telegram
@@ -622,31 +616,9 @@ def _update_menu_impl_unsafe():
         tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
         tg_menu.addAction(T("Добавить Opera SOCKS5 (1786) в Telegram", "Add Opera SOCKS5 (1786) to Telegram"), lambda: utils.add_proxy_to_telegram(1786))
-        tg_menu.addAction(T("Добавить Реаб. SOCKS (1788) в Telegram", "Add Rehab. SOCKS (1788) to Telegram"), lambda: utils.add_proxy_to_telegram(1788))
         tray_menu.addMenu(tg_menu)
         
-        # Управление DNS
-        dns_menu = QMenu(T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), tray_menu)
-        
-        comms_dns_act = QAction(T("Установить Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
-        comms_dns_act.triggered.connect(lambda: set_dns("comms"))
-        dns_menu.addAction(comms_dns_act)
 
-        xbox_dns_act = QAction(T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
-        xbox_dns_act.triggered.connect(lambda: set_dns("xbox"))
-        dns_menu.addAction(xbox_dns_act)
-        
-        xbox_ipv6_dns_act = QAction(T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
-        xbox_ipv6_dns_act.triggered.connect(lambda: set_dns("xbox_ipv6"))
-        dns_menu.addAction(xbox_ipv6_dns_act)
-
-        dns_menu.addSeparator()
-
-        reset_dns_act = QAction(T("Сбросить DNS (По умолчанию)", "Reset DNS (Default)"), dns_menu)
-        reset_dns_act.triggered.connect(lambda: set_dns("reset"))
-        dns_menu.addAction(reset_dns_act)
-        
-        tray_menu.addMenu(dns_menu)
         
         # 5. Проксирование pip
         pip_menu = QMenu(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"), tray_menu)
@@ -700,6 +672,21 @@ def _update_menu_impl_unsafe():
         pip_menu.addAction(T("Настройки ByeDPI для pip", "ByeDPI Settings for pip"), lambda: bdsher.get_pip_manager(config).open_settings())
         
         # 6. Системные опции
+
+        # Узконаправленное
+        log('[Menu] Building narrow_menu')
+        narrow_menu = QMenu(T("Узконаправленное", "Narrow-focused"), tray_menu)
+
+        narrow_menu.addAction(T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
+
+        if not lang._is_en or config.get("enable_ru_features", False):
+
+            noisy_act = QAction(noisy_manager.get_status_text(), narrow_menu); noisy_act.triggered.connect(toggle_noisy); narrow_menu.addAction(noisy_act)
+
+            tester_act = QAction(tester_manager.get_status_text(), narrow_menu); tester_act.triggered.connect(toggle_tester); narrow_menu.addAction(tester_act)
+
+        tray_menu.addMenu(narrow_menu)
+
         log('[Menu] Building sys_menu')
         sys_menu = QMenu(T("Системные опции", "System Options"), tray_menu)
         sys_menu.addSeparator()
@@ -736,6 +723,32 @@ def _update_menu_impl_unsafe():
         rec_act.triggered.connect(lambda: (tor_manager.toggle_recreate(), update_menu())); sys_menu.addAction(rec_act)
         
         tshow_act = QAction(T("Показывать окно TOR при запуске", "Show TOR Window on Start"), sys_menu); tshow_act.setCheckable(True); tshow_act.setChecked(config.get("tor_show_window", False)); tshow_act.triggered.connect(toggle_tor_show_window); sys_menu.addAction(tshow_act)
+        sys_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
+        sys_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
+        sys_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
+        # Управление DNS
+        dns_menu = QMenu(T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), sys_menu)
+        
+        comms_dns_act = QAction(T("Установить Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
+        comms_dns_act.triggered.connect(lambda: set_dns("comms"))
+        dns_menu.addAction(comms_dns_act)
+
+        xbox_dns_act = QAction(T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
+        xbox_dns_act.triggered.connect(lambda: set_dns("xbox"))
+        dns_menu.addAction(xbox_dns_act)
+        
+        xbox_ipv6_dns_act = QAction(T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
+        xbox_ipv6_dns_act.triggered.connect(lambda: set_dns("xbox_ipv6"))
+        dns_menu.addAction(xbox_ipv6_dns_act)
+
+        dns_menu.addSeparator()
+
+        reset_dns_act = QAction(T("Сбросить DNS (По умолчанию)", "Reset DNS (Default)"), dns_menu)
+        reset_dns_act.triggered.connect(lambda: set_dns("reset"))
+        dns_menu.addAction(reset_dns_act)
+        
+        sys_menu.addMenu(dns_menu)
+
         
         if lang._is_en:
             ru_feat_act = QAction("Enable unsupported features (for RU region)", sys_menu)
