@@ -518,8 +518,9 @@ class TorrcConfigurator(QMainWindow):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setStyleSheet("QScrollArea { border: none; background-color: #2b2b2b; }")
-        
         central_widget = QWidget()
+        central_widget.setObjectName("scrollContent")
+        central_widget.setStyleSheet("QWidget#scrollContent { background-color: #2b2b2b; }")
         scroll.setWidget(central_widget)
         self.setCentralWidget(scroll)
         
@@ -745,6 +746,9 @@ class TorrcConfigurator(QMainWindow):
         main_layout.addWidget(pool_group)
 
         self.load_pool_settings()
+        
+        # Initialize bridge UI state
+        self.on_bridge_mode_changed()
 
         # Generate button
         generate_btn = QPushButton(T("Создать конфигурацию", "Generate Configuration"))
@@ -956,9 +960,9 @@ class TorrcConfigurator(QMainWindow):
     def on_bridge_mode_changed(self):
         """Handle bridge mode change"""
         if self.normal_mode_rb.isChecked():
-            self.bridges_file_group.setEnabled(True)
+            self.bridges_file_group.setVisible(True)
         else:
-            self.bridges_file_group.setEnabled(False)
+            self.bridges_file_group.setVisible(False)
                 
     def update_selected_label(self):
         """Update the selected countries label"""
