@@ -13,6 +13,17 @@ class AutostartSettingsWindow(QMainWindow):
         self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings"))
         self.setFixedSize(600, 550)
         
+        # Dark Title Bar for Windows
+        try:
+            import ctypes
+            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
+            set_window_attribute = ctypes.windll.dwmapi.DwmSetWindowAttribute
+            hwnd = int(self.winId())
+            rendering_policy = ctypes.c_int(1)
+            set_window_attribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(rendering_policy), ctypes.sizeof(rendering_policy))
+        except:
+            pass
+        
         self.config = config_manager.load_config()
         self.autostart_tools = self.config.get("autostart_tools", ["byedpi", "tor", "opera", "vless", "tgws", "ext"])
         
@@ -170,10 +181,10 @@ if __name__ == "__main__":
             background-color: #1e1e1e; 
             color: #e0e0e0; 
             font-family: 'Segoe UI', 'Inter', sans-serif;
-            font-size: 15px; 
+            font-size: 13px; 
         }
         QLabel {
-            font-size: 16px;
+            font-size: 14px;
             font-weight: 500;
             padding-bottom: 10px;
             color: #ffffff;
@@ -193,8 +204,8 @@ if __name__ == "__main__":
             border: 2px solid #777;
         }
         QCheckBox::indicator:checked {
-            background-color: #4CAF50;
-            border: 2px solid #4CAF50;
+            background-color: #005FB8;
+            border: 2px solid #005FB8;
             image: url(check.png); /* PyQt5 usually renders a check automatically if styled properly or without image, but we rely on its default check behavior by just coloring the background */
         }
         QComboBox {
@@ -211,20 +222,20 @@ if __name__ == "__main__":
         QComboBox QAbstractItemView {
             background-color: #2d2d2d;
             color: white;
-            selection-background-color: #4CAF50;
+            selection-background-color: #005FB8;
         }
         QPushButton { 
-            background-color: #4CAF50; 
+            background-color: #005FB8; 
             color: white; 
             border: none; 
             border-radius: 6px; 
             font-weight: bold; 
-            font-size: 16px;
+            font-size: 14px;
             padding: 10px;
             margin-top: 10px;
         }
         QPushButton:hover { 
-            background-color: #45a049; 
+            background-color: #0078D4; 
         }
         QPushButton:pressed {
             background-color: #3d8b40;
