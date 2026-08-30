@@ -58,7 +58,7 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton
+from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QFileDialog, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidgetAction, QHBoxLayout, QLabel, QSizePolicy
 from PyQt5.QtGui import QIcon, QPixmap
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
@@ -504,6 +504,78 @@ def _update_menu_impl():
         import traceback
         traceback.print_exc()
 
+
+class MenuServiceWidget(QWidget):
+    def __init__(self, toggle_func):
+        super().__init__()
+        self.toggle_func = toggle_func
+    def mouseReleaseEvent(self, event):
+        if event.button() == Qt.LeftButton:
+            child = self.childAt(event.pos())
+            if not isinstance(child, QPushButton):
+                self.toggle_func()
+                update_menu()
+        super().mouseReleaseEvent(event)
+
+def create_service_action(menu, name, is_running, toggle_func, restart_func=None, is_tor=False):
+    wa = QWidgetAction(menu)
+    w = MenuServiceWidget(toggle_func)
+    w.setStyleSheet("""
+        QWidget { background: transparent; }
+        QWidget:hover { background: rgba(255, 255, 255, 0.05); }
+        QLabel { padding-left: 5px; font-size: 14px; }
+        QPushButton { 
+            background: transparent; 
+            border: none; 
+            font-size: 16px; 
+            font-weight: bold;
+        }
+        QPushButton:hover { background: rgba(255, 255, 255, 0.1); border-radius: 3px; }
+    """)
+    
+    l = QHBoxLayout(w)
+    l.setContentsMargins(5, 2, 5, 2)
+    l.setSpacing(5)
+    
+    lbl = QLabel(name)
+    l.addWidget(lbl)
+    
+    l.addStretch()
+    
+    def make_btn(text, tooltip, callback):
+        btn = QPushButton(text)
+        btn.setToolTip(tooltip)
+        btn.setFixedSize(24, 24)
+        btn.setCursor(Qt.PointingHandCursor)
+        def on_click():
+            callback()
+            update_menu()
+        btn.clicked.connect(on_click)
+        return btn
+
+    if is_running and restart_func:
+        if is_tor:
+            def tor_restart_handler():
+                mods = QApplication.keyboardModifiers()
+                if mods & Qt.ControlModifier:
+                    tor_manager.new_circuit()
+                else:
+                    restart_func()
+            btn_restart = make_btn("↻", T("Перезапуск (Ctrl + Клик = Новая цепь)", "Restart (Ctrl + Click = New Circuit)"), tor_restart_handler)
+        else:
+            btn_restart = make_btn("↻", T("Перезапустить", "Restart"), restart_func)
+        l.addWidget(btn_restart)
+        
+    play_stop_text = "■" if is_running else "▶"
+    play_stop_color = "#ff5555" if is_running else "#55ff55"
+    
+    btn_play = make_btn(play_stop_text, T("Остановить", "Stop") if is_running else T("Запустить", "Start"), toggle_func)
+    btn_play.setStyleSheet(f"QPushButton {{ color: {play_stop_color}; }} QPushButton:hover {{ background: rgba(255, 255, 255, 0.1); }}")
+    l.addWidget(btn_play)
+    
+    wa.setDefaultWidget(w)
+    return wa
+
 def _update_menu_impl_unsafe():
     global tray_menu
     if tray_menu is None: return
@@ -549,32 +621,29 @@ def _update_menu_impl_unsafe():
         # 1. Управление компонентами
         control_menu = QMenu(T("Управление компонентами", "Service Control"), tray_menu)
         
-        tor_act = QAction(T("Ручной запуск TOR", "Manual Start TOR") if not tor_manager.is_running() else T("Остановить TOR", "Stop TOR"), control_menu)
-        tor_act.triggered.connect(toggle_tor); control_menu.addAction(tor_act)
+        tor_wa = create_service_action(control_menu, "TOR", tor_manager.is_running(), toggle_tor, tor_manager.restart, is_tor=True)
+        control_menu.addAction(tor_wa)
         
-        if tor_manager.is_running():
-            nc_act = QAction(T("Запросить новую цепочку TOR", "Request New TOR Circuit"), control_menu); nc_act.triggered.connect(tor_manager.new_circuit); control_menu.addAction(nc_act)
-            rt_act = QAction(T("Перезапустить TOR", "Restart TOR"), control_menu); rt_act.triggered.connect(tor_manager.restart); control_menu.addAction(rt_act)
+        bd_wa = create_service_action(control_menu, "ByeDPI", byedpi_manager.is_running(), toggle_byedpi, lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start()))
+        control_menu.addAction(bd_wa)
         
-        bd_act = QAction(byedpi_manager.get_status_text(), control_menu); bd_act.triggered.connect(toggle_byedpi); control_menu.addAction(bd_act)
-        if byedpi_manager.is_running():
-            rb_act = QAction(T("Перезапуск ByeDPI", "Restart ByeDPI"), control_menu); rb_act.triggered.connect(lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start())); control_menu.addAction(rb_act)
-            
-        opera_act = QAction(opera_mgr.get_status_text(), control_menu); opera_act.triggered.connect(toggle_opera); control_menu.addAction(opera_act)
-        if opera_mgr.is_running():
-            ro_act = QAction(T("Перезапуск Opera Proxy", "Restart Opera Proxy"), control_menu); ro_act.triggered.connect(lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start())); control_menu.addAction(ro_act)
+        opera_wa = create_service_action(control_menu, "Opera Proxy", opera_mgr.is_running(), toggle_opera, lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start()))
+        control_menu.addAction(opera_wa)
         
         if not lang._is_en or config.get("enable_ru_features", False):
-            tg_act = QAction(T("Ручной запуск TGWS", "Manual Start TGWS") if not tgws_mgr.running else T("Остановить TGWS", "Stop TGWS"), control_menu); tg_act.triggered.connect(toggle_tgws); control_menu.addAction(tg_act)
-        
+            tg_wa = create_service_action(control_menu, "TGWS", tgws_mgr.running, toggle_tgws, lambda: (tgws_mgr.stop(), time.sleep(1), tgws_mgr.start()))
+            control_menu.addAction(tg_wa)
             
-        tun_status = T("Запустить Проксификатор", "Start Proxifier") if not mode_mgr.tun_running() else T("Остановить Проксификатор", "Stop Proxifier")
-        tun_act = QAction(tun_status, control_menu); tun_act.triggered.connect(toggle_proxifier); control_menu.addAction(tun_act)
+        tun_wa = create_service_action(control_menu, T("Проксификатор", "Proxifier"), mode_mgr.tun_running(), toggle_proxifier, mode_mgr.restart_tun)
+        control_menu.addAction(tun_wa)
         
-        if mode_mgr.tun_running():
-            rtun_act = QAction(T("Перезапустить проксификатор", "Restart Proxifier"), control_menu); rtun_act.triggered.connect(mode_mgr.restart_tun); control_menu.addAction(rtun_act)
-            
-        control_menu.addAction(T("Перезапустить Доп. Программы", "Restart Ext. Programs"), ext_programs_manager.restart_all)
+        def toggle_ext():
+            if ext_programs_manager.is_running():
+                ext_programs_manager.stop_all()
+            else:
+                ext_programs_manager.start_all()
+        ext_wa = create_service_action(control_menu, T("Доп. Программы", "Ext. Programs"), ext_programs_manager.is_running(), toggle_ext, ext_programs_manager.restart_all)
+        control_menu.addAction(ext_wa)
         tray_menu.addMenu(control_menu)
         
         # 2. Настройки Компонентов
