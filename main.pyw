@@ -740,9 +740,9 @@ def _update_menu_impl_unsafe():
             opera_cpl = QAction(T("Подключиться к Opera", "Connect to Opera") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera", "Disconnect from Opera"), tray_menu)
             opera_cpl.triggered.connect(toggle_inetcpl_opera)
             tray_menu.addAction(opera_cpl)            
-            vless_cpl = QAction(T("Подключиться к VLESS", "Connect to VLESS") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS", "Disconnect from VLESS"), tray_menu)
-            vless_cpl.triggered.connect(toggle_inetcpl_vless)
-            tray_menu.addAction(vless_cpl)
+            # vless_cpl = QAction(T("Подключиться к VLESS", "Connect to VLESS") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS", "Disconnect from VLESS"), tray_menu)
+            # vless_cpl.triggered.connect(toggle_inetcpl_vless)
+            # tray_menu.addAction(vless_cpl)
        
         tray_menu.addSeparator()
         mode_m = QMenu(T("Режим", "Mode"), tray_menu)
@@ -771,35 +771,35 @@ def _update_menu_impl_unsafe():
         bd_wa = create_service_action(control_menu, "ByeDPI", byedpi_manager.is_running(), toggle_byedpi, lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start()))
         control_menu.addAction(bd_wa)
         
-        def vless_restart_handler():
-            mods = QApplication.keyboardModifiers()
-            if mods & Qt.ControlModifier:
-                vless_mgr.rot_cmd = "keep"
-            elif mods & Qt.ShiftModifier:
-                vless_mgr.rot_cmd = "prev"
-            else:
-                vless_mgr.rot_cmd = "next"
-            vless_mgr.stop()
-            time.sleep(1)
-            vless_mgr.start()
-            
-        def vless_toggle_handler():
-            mods = QApplication.keyboardModifiers()
-            if not vless_mgr.is_running():
-                if mods & Qt.ControlModifier:
-                    vless_mgr.rot_cmd = "keep"
-                elif mods & Qt.ShiftModifier:
-                    vless_mgr.rot_cmd = "prev"
-                else:
-                    vless_mgr.rot_cmd = "next"
-                vless_mgr.start()
-            else:
-                vless_mgr.stop()
-            update_proxy_status()
-            update_menu()
-
-        vless_wa = create_service_action(control_menu, "VLESS Proxy", vless_mgr.is_running(), vless_toggle_handler, vless_restart_handler)
-        control_menu.addAction(vless_wa)
+        # def vless_restart_handler():
+        #     mods = QApplication.keyboardModifiers()
+        #     if mods & Qt.ControlModifier:
+        #         vless_mgr.rot_cmd = "keep"
+        #     elif mods & Qt.ShiftModifier:
+        #         vless_mgr.rot_cmd = "prev"
+        #     else:
+        #         vless_mgr.rot_cmd = "next"
+        #     vless_mgr.stop()
+        #     time.sleep(1)
+        #     vless_mgr.start()
+        #     
+        # def vless_toggle_handler():
+        #     mods = QApplication.keyboardModifiers()
+        #     if not vless_mgr.is_running():
+        #         if mods & Qt.ControlModifier:
+        #             vless_mgr.rot_cmd = "keep"
+        #         elif mods & Qt.ShiftModifier:
+        #             vless_mgr.rot_cmd = "prev"
+        #         else:
+        #             vless_mgr.rot_cmd = "next"
+        #         vless_mgr.start()
+        #     else:
+        #         vless_mgr.stop()
+        #     update_proxy_status()
+        #     update_menu()
+        # 
+        # vless_wa = create_service_action(control_menu, "VLESS Proxy", vless_mgr.is_running(), vless_toggle_handler, vless_restart_handler)
+        # control_menu.addAction(vless_wa)
         
         opera_wa = create_service_action(control_menu, "Opera Proxy", opera_mgr.is_running(), toggle_opera, lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start()))
         control_menu.addAction(opera_wa)
@@ -825,7 +825,7 @@ def _update_menu_impl_unsafe():
         settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
         
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
-        settings_menu.addAction(T("Настройки VLESS", "VLESS Settings"), lambda: utils.run_script("vless_settings.pyw"))
+        # settings_menu.addAction(T("Настройки VLESS", "VLESS Settings"), lambda: utils.run_script("vless_settings.pyw"))
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
         
@@ -847,7 +847,7 @@ def _update_menu_impl_unsafe():
             tg_menu.addAction(T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
-        tg_menu.addAction(T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: utils.add_proxy_to_telegram(1790))
+        # tg_menu.addAction(T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: utils.add_proxy_to_telegram(1790))
         tray_menu.addMenu(tg_menu)
         
 
@@ -936,9 +936,9 @@ def _update_menu_impl_unsafe():
         opera_cpl2 = QAction(T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), inetcpl_sub)
         opera_cpl2.triggered.connect(toggle_inetcpl_opera)
         inetcpl_sub.addAction(opera_cpl2)        
-        vless_cpl2 = QAction(T("Подключиться к VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
-        vless_cpl2.triggered.connect(toggle_inetcpl_vless)
-        inetcpl_sub.addAction(vless_cpl2)
+        # vless_cpl2 = QAction(T("Подключиться к VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
+        # vless_cpl2.triggered.connect(toggle_inetcpl_vless)
+        # inetcpl_sub.addAction(vless_cpl2)
 
         inetcpl_mode = config.get("inetcpl_mode", "classic")
         inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")

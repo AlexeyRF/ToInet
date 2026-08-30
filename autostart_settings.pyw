@@ -50,9 +50,9 @@ class AutostartSettingsWindow(QMainWindow):
         self.cb_opera.setChecked("opera" in self.autostart_tools)
         layout.addWidget(self.cb_opera)
         
-        self.cb_vless = QCheckBox(T("VLESS Proxy", "VLESS Proxy"))
-        self.cb_vless.setChecked("vless" in self.autostart_tools)
-        layout.addWidget(self.cb_vless)
+        # self.cb_vless = QCheckBox(T("VLESS Proxy", "VLESS Proxy"))
+        # self.cb_vless.setChecked("vless" in self.autostart_tools)
+        # layout.addWidget(self.cb_vless)
         
         self.cb_socks = QCheckBox(T("SOCKS Reabilitator", "SOCKS Reabilitator"))
         self.cb_socks.setChecked("socks" in self.autostart_tools)
@@ -133,7 +133,7 @@ class AutostartSettingsWindow(QMainWindow):
         if self.cb_byedpi.isChecked(): tools.append("byedpi")
         if self.cb_tor.isChecked(): tools.append("tor")
         if self.cb_opera.isChecked(): tools.append("opera")
-        if self.cb_vless.isChecked(): tools.append("vless")
+        # if self.cb_vless.isChecked(): tools.append("vless")
         if self.cb_socks.isChecked(): tools.append("socks")
         if self.cb_tgws.isChecked(): tools.append("tgws")
         if self.cb_proxifier.isChecked(): tools.append("proxifier")
