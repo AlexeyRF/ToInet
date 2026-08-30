@@ -18,8 +18,8 @@ def set_proxy(port, mode="classic"):
             # ByeDPI: HTTP (1782) + SOCKS (1780)
             proxy_server = "http=127.0.0.1:1782;https=127.0.0.1:1782;socks=127.0.0.1:1780"
         elif port == "1785":
-            # Opera: HTTP (1785) + SOCKS (1786)
-            proxy_server = "http=127.0.0.1:1785;https=127.0.0.1:1785;socks=127.0.0.1:1786"
+            # Opera: HTTP (1785) + SOCKS (1785)
+            proxy_server = "http=127.0.0.1:1785;https=127.0.0.1:1785;socks=127.0.0.1:1785"
         else:
             proxy_server = f"socks=127.0.0.1:{port}"
     else:

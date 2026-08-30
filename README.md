@@ -68,7 +68,7 @@
 | **Telegram WS Proxy** | `1480` | SOCKS5 & MTPROTO | Прокси, специально для Telegram Desktop |
 | **Gatik Router** |`1777`| SOCKS5 | Роутер для ускорения Telegram |
 | **Opera Proxy** | `1785` | HTTP | Быстрый прокси через VPN (ОСУЖДАЮ НА ТЕРРИТОРИИ РОССИЙСКОЙ ФЕДЕРАЦИИ) инфраструктуру Opera |
-| **Opera Proxy (SOCKS5)**| `1786` | SOCKS5 | SOCKS5-мост для Opera |
+| **Opera Proxy (SOCKS5)**| `1785` | SOCKS5 | SOCKS5-мост для Opera |
 | **Pip ByeDPI** | `1781` | SOCKS5 | Выделенный прокси-сервер для установки пакетов Python |
 
 ---
@@ -228,7 +228,7 @@ The program provides three operational modes:
 | **Tor (HTTP)** | `9854` | HTTP | HTTP bridge for Tor |
 | **Tor Control Port** | `9851` | TCP | Control port for Tor (circuit rotation) |
 | **Opera Proxy** | `1785` | HTTP | Fast bypass using Opera VPN infrastructure |
-| **Opera Proxy (SOCKS5)**| `1786` | SOCKS5 | SOCKS5 bridge for Opera (e.g. for Telegram) |
+| **Opera Proxy (SOCKS5)**| `1785` | SOCKS5 | SOCKS5 bridge for Opera (e.g. for Telegram) |
 | **VLESS Proxy** | `1790` | SOCKS5 | SOCKS5 proxy routed through VLESS servers |
 | **TGWS Proxy** | `1480` | MTProto/SOCKS | MTProto and SOCKS proxy for Telegram |
 | **SOCKS Rehabilitator**| `1788` | SOCKS5 | Utility port for SOCKS recovery |

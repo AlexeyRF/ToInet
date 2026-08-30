@@ -686,7 +686,6 @@ def _update_menu_impl_unsafe():
             tg_menu.addAction(T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
-        tg_menu.addAction(T("Добавить Opera SOCKS5 (1786) в Telegram", "Add Opera SOCKS5 (1786) to Telegram"), lambda: utils.add_proxy_to_telegram(1786))
         tray_menu.addMenu(tg_menu)
         
 
