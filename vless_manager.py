@@ -117,6 +117,8 @@ class VlessManager(QObject):
         if not self.extract_sing_box():
             return False
             
+        import config_manager
+        self.config = config_manager.load_config()
         mode = self.config.get("vless_mode", "standard")
         
         try:

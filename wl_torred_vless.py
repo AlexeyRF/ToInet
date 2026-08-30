@@ -1,5 +1,11 @@
 import os
 import sys
+def safe_print(*args, **kwargs):
+    try:
+        __builtins__.print(*args, **kwargs)
+    except:
+        pass
+
 import time
 import json
 import socket
@@ -64,7 +70,7 @@ def fetch_subs():
             content = cache_data[url].get("content", "")
         else:
             try:
-                print(f"[VLESS-Rot] Fetching {url}")
+                safe_print(f"[VLESS-Rot] Fetching {url}")
                 req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
                 with urllib.request.urlopen(req, timeout=10) as response:
                     content = response.read().decode('utf-8', errors='ignore')
@@ -73,7 +79,7 @@ def fetch_subs():
                     content = b64decode_padding(content)
                 cache_data[url] = {"time": time.time(), "content": content}
             except Exception as e:
-                print(f"[VLESS-Rot] Error fetching {url}: {e}")
+                safe_print(f"[VLESS-Rot] Error fetching {url}: {e}")
                 if url in cache_data:
                     content = cache_data[url].get("content", "")
                     
@@ -191,10 +197,10 @@ def main():
         if s:
             servers.append(s)
             
-    print(f"[VLESS-Rot] Loaded {len(servers)} servers")
+    safe_print(f"[VLESS-Rot] Loaded {len(servers)} servers")
     
     if not servers:
-        print("[VLESS-Rot] No servers found. Exiting.")
+        safe_print("[VLESS-Rot] No servers found. Exiting.")
         return
         
     server_idx = 0
@@ -205,13 +211,13 @@ def main():
             srv = servers[server_idx % len(servers)]
             server_idx += 1
             
-            print(f"[VLESS-Rot] Testing server: {srv['host']}:{srv['port']} {srv['name']}")
+            safe_print(f"[VLESS-Rot] Testing server: {srv['host']}:{srv['port']} {srv['name']}")
             if not check_tcp(srv["host"], srv["port"]):
-                print("[VLESS-Rot] Server offline, skipping...")
+                safe_print("[VLESS-Rot] Server offline, skipping...")
                 time.sleep(1)
                 continue
                 
-            print(f"[VLESS-Rot] Starting sing-box on server {srv['host']}")
+            safe_print(f"[VLESS-Rot] Starting sing-box on server {srv['host']}")
             kill_singbox()
             
             cfg_path = generate_config(srv)
@@ -227,7 +233,7 @@ def main():
     except KeyboardInterrupt:
         pass
     except Exception as e:
-        print(f"[VLESS-Rot] Error: {e}")
+        safe_print(f"[VLESS-Rot] Error: {e}")
     finally:
         kill_singbox()
 
