@@ -576,6 +576,7 @@ def _update_menu_impl_unsafe():
         if mode_mgr.tun_running():
             rtun_act = QAction(T("Перезапустить проксификатор", "Restart Proxifier"), control_menu); rtun_act.triggered.connect(mode_mgr.restart_tun); control_menu.addAction(rtun_act)
             
+        control_menu.addAction(T("Перезапустить Доп. Программы", "Restart Ext. Programs"), ext_programs_manager.restart_all)
         tray_menu.addMenu(control_menu)
         
         # 2. Настройки Компонентов
@@ -609,8 +610,6 @@ def _update_menu_impl_unsafe():
         tools_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
         tools_menu.addAction(T("Изменить мосты", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
         tools_menu.addAction(T("Удалить конфигурацию TOR", "Delete TOR Config"), tor_manager.delete_config)
-        tools_menu.addAction(T("Перезапустить Проксификатор", "Restart Proxifier"), mode_mgr.restart_tun)
-        tools_menu.addAction(T("Перезапустить доп. программы", "Restart Ext. Programs"), ext_programs_manager.restart_all)
         tools_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
         tray_menu.addMenu(tools_menu)
         
