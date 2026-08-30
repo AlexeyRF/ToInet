@@ -6,7 +6,7 @@ import sys
 import os
 import time
 import json
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QCheckBox, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QProgressBar, QSpinBox, QDoubleSpinBox, 
@@ -539,6 +539,15 @@ class ByeDPITesterGUI(QMainWindow):
                     f.write(f"{site}\n")
         except Exception as e:
             print(f"Ошибка сохранения приоритетных сайтов: {e}")
+
+    def on_tor_fallback_toggled(self, checked):
+        try:
+            import config_manager
+            config = config_manager.load_config()
+            config["byedpi_proxytest_tor_fallback"] = checked
+            config_manager.save_config(config)
+        except Exception as e:
+            print("Failed to save tor_fallback state:", e)
 
     def init_ui(self):
         self.setWindowTitle(T("Тестер стратегий ByeDPI", "ByeDPI Strategies Tester"))
