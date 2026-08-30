@@ -90,20 +90,23 @@ class VlessManager(QObject):
                 "server": server,
                 "server_port": port,
                 "uuid": uuid,
-                "flow": "xtls-rprx-vision",
+                "flow": "xtls-rprx-vision" if pbk else "",
                 "tls": {
                     "enabled": True,
-                    "server_name": sni,
-                    "utls": {"enabled": True, "fingerprint": "chrome"},
-                    "reality": {
-                        "enabled": True,
-                        "public_key": pbk,
-                        "short_id": sid
-                    }
+                    "server_name": sni if sni else server,
+                    "insecure": not bool(sni),
+                    "utls": {"enabled": True, "fingerprint": "chrome"}
                 }
             }]
         }
         
+        if pbk:
+            cfg["outbounds"][0]["tls"]["reality"] = {
+                "enabled": True,
+                "public_key": pbk,
+                "short_id": sid
+            }
+
         config_path = os.path.join(SING_BOX_DIR, "config.json")
         with open(config_path, "w", encoding="utf-8") as f:
             json.dump(cfg, f, indent=2)
@@ -144,6 +147,8 @@ class VlessManager(QObject):
             self.status_changed.emit(True)
             return True
         except Exception as e:
+            with open('vless_manager_error.log', 'w') as f:
+                f.write(str(e))
             self.error_occurred.emit(str(e))
             self.running = False
             return False
