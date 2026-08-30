@@ -207,6 +207,7 @@ def setup_logging():
 import config_manager
 from tgws import manager as tgws_manager
 import opera_manager
+import vless_manager
 import converter_manager
 import mode_manager
 import utils
@@ -235,6 +236,7 @@ conv_mgr = converter_manager.get_manager()
 mode_mgr = mode_manager.get_manager()
 
 config = config_manager.load_config()
+vless_mgr = vless_manager.get_manager(config)
 proxy_enabled = False
 simple_mode = True  
 mode_type = config.get("mode_type", "inetcpl")
@@ -290,6 +292,7 @@ def toggle_all():
         tor_manager.stop()
         byedpi_manager.stop()
         opera_mgr.stop()
+        vless_mgr.stop()
         tgws_mgr.stop()
         
         # Остановка pip-прокси и очистка глобального pip
@@ -326,6 +329,14 @@ def toggle_byedpi():
     update_proxy_status()
     update_menu()
 
+def toggle_vless():
+    if not vless_mgr.is_running():
+        vless_mgr.start()
+    else:
+        vless_mgr.stop()
+    update_proxy_status()
+    update_menu()
+    
 def toggle_opera():
     if not opera_mgr.is_running():
         opera_mgr.start()
@@ -512,6 +523,7 @@ def restart_app():
     tor_manager.stop()
     byedpi_manager.stop()
     opera_mgr.stop()
+    vless_mgr.stop()
     
     # Остановка pip-прокси и очистка глобального pip
     pip_mgr = bdsher.get_pip_manager()
@@ -540,6 +552,7 @@ def exit_app():
     tor_manager.stop()
     byedpi_manager.stop()
     opera_mgr.stop()
+    vless_mgr.stop()
     
     # Остановка pip-прокси и очистка глобального pip
     pip_mgr = bdsher.get_pip_manager()
@@ -714,6 +727,9 @@ def _update_menu_impl_unsafe():
         bd_wa = create_service_action(control_menu, "ByeDPI", byedpi_manager.is_running(), toggle_byedpi, lambda: (byedpi_manager.stop(), time.sleep(1), byedpi_manager.start()))
         control_menu.addAction(bd_wa)
         
+        vless_wa = create_service_action(control_menu, "VLESS Proxy", vless_mgr.is_running(), toggle_vless, lambda: (vless_mgr.stop(), time.sleep(1), vless_mgr.start()))
+        control_menu.addAction(vless_wa)
+        
         opera_wa = create_service_action(control_menu, "Opera Proxy", opera_mgr.is_running(), toggle_opera, lambda: (opera_mgr.stop(), time.sleep(1), opera_mgr.start()))
         control_menu.addAction(opera_wa)
         
@@ -735,13 +751,10 @@ def _update_menu_impl_unsafe():
         
         # 2. Настройки Компонентов
         settings_menu = QMenu(T("Настройки компонентов", "Component Settings"), tray_menu)
-        tor_settings_menu = QMenu(T("Настройки TOR", "TOR Settings"), settings_menu)
-        tor_settings_menu.addAction(T("Открыть конфигуратор", "Open Configurator"), tor_manager.open_settings)
-        tor_settings_menu.addAction(T("Смена мостов", "Edit Bridges"), lambda: utils.run_script("edit_bridges.pyw"))
-        tor_settings_menu.addAction(T("Удаление конфигурации TOR", "Delete TOR Config"), tor_manager.delete_config)
-        settings_menu.addMenu(tor_settings_menu)
+        settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
         
         settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
+        settings_menu.addAction(T("Настройки VLESS", "VLESS Settings"), lambda: utils.run_script("vless_settings.pyw"))
         # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
         
@@ -953,6 +966,9 @@ def create_tray_menu():
         
         if "tor" in tools:
             tor_manager.start()
+            
+        if "vless" in tools:
+            vless_mgr.start()
             
         if "opera" in tools:
             opera_mgr.start()
