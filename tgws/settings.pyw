@@ -31,6 +31,15 @@ class TGWSSettingsDialog(QDialog):
         self.setWindowTitle(T("Настройки TGWS Proxy", "TGWS Proxy Settings"))
         self.setMinimumWidth(500)
         self.setMinimumHeight(400)
+        self.setStyleSheet("""
+            QDialog { background-color: #2b2b2b; color: white; }
+            QLabel { color: white; }
+            QLineEdit, QTextEdit { background-color: #3d3d3d; color: white; border: 1px solid #555; padding: 5px; }
+            QCheckBox { color: white; }
+            QPushButton { background-color: #3d3d3d; color: white; border: 1px solid #555; padding: 5px 15px; }
+            QPushButton:hover { background-color: #4d4d4d; }
+            QPushButton:pressed { background-color: #1d1d1d; }
+        """)
         
         layout = QVBoxLayout()
         
@@ -86,6 +95,15 @@ class TGWSSettingsDialog(QDialog):
         layout.addWidget(info_label)
         
         # Кнопки
+        
+        # Кнопка для теста стратегий временно закомментирована, так как пока нет необходимости
+        # self.tester_btn = QPushButton("Тест стратегий TGWS")
+        # def run_tester():
+        #     import subprocess, sys, os
+        #     subprocess.Popen([sys.executable, "tgws/tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        # self.tester_btn.clicked.connect(run_tester)
+        # layout.addWidget(self.tester_btn)
+
         btn_layout = QHBoxLayout()
         self.save_btn = QPushButton(T("Сохранить", "Save"))
         self.cancel_btn = QPushButton(T("Отмена", "Cancel"))
