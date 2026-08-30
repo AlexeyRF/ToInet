@@ -1182,24 +1182,24 @@ class ByeDPITesterGUI(QMainWindow):
                         domain_strategies[site] = "TOR"
                 
                 # Check if we should even generate this combo (it must have at least one strategy)
-                if not domain_strategies:
-                    continue
+                if domain_strategies:
+
                 
-                combination_json = json.dumps(domain_strategies)
-                if not any(item[0] == combination_json for item in self.results_data):
-                    combo_details = {}
-                    overall_succ = 0
-                    for site in self.domains:
-                        if domain_strategies[site] == "TOR":
-                            combo_details[site] = (True, "Combined from TOR (fallback)")
-                            overall_succ += 1
-                        else:
-                            combo_details[site] = (True, "Combined from " + domain_strategies[site])
-                            overall_succ += 1
-                    combo_details["__pip_test__"] = (False, "Не проверялось для комбинации")
+                    combination_json = json.dumps(domain_strategies)
+                    if not any(item[0] == combination_json for item in self.results_data):
+                        combo_details = {}
+                        overall_succ = 0
+                        for site in self.domains:
+                            if domain_strategies[site] == "TOR":
+                                combo_details[site] = (True, "Combined from TOR (fallback)")
+                                overall_succ += 1
+                            else:
+                                combo_details[site] = (True, "Combined from " + domain_strategies[site])
+                                overall_succ += 1
+                        combo_details["__pip_test__"] = (False, "Не проверялось для комбинации")
                     
-                    # We consider the combination 100% successful since it routes unbypassable domains through Tor
-                    self.results_data.insert(0, (combination_json, 100.0, overall_succ, len(self.domains), combo_details))
+                        # We consider the combination 100% successful since it routes unbypassable domains through Tor
+                        self.results_data.insert(0, (combination_json, 100.0, overall_succ, len(self.domains), combo_details))
 
         # Redraw table in sorted order
         self.refresh_results_table()
