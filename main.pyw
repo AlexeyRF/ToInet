@@ -1,4 +1,4 @@
-import lang
+﻿import system_utils as lang
 import sys
 import os
 def _ensure_dependencies():
@@ -93,16 +93,15 @@ from managers import config_manager
 from tgws import manager as tgws_manager
 from managers import opera_manager
 from managers import vless_manager
-from managers import converter_manager
 from managers import mode_manager
 import utils
 from utils import log
-from lang import T
+from system_utils import T
 import subprocess
 from managers import bdsher
 from managers import torchok
-from managers import noisy_manager
-from managers import tester_manager
+from small_actions import noisy_manager
+from small_actions import tester_manager
 from managers import ext_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -117,12 +116,11 @@ tester_manager = tester_manager.get_manager()
 opera_mgr = opera_manager.get_manager()
 ext_programs_manager = ext_manager.get_manager()
 tgws_mgr = tgws_manager.get_manager()
-conv_mgr = converter_manager.get_manager()
 mode_mgr = mode_manager.get_manager()
 
 from managers import evpn_manager
 evpn_mgr = evpn_manager.get_manager()
-import window_ui
+import ui.window_ui as window_ui
 main_window = None
 
 config = config_manager.load_config()
@@ -596,7 +594,7 @@ def create_tray_menu():
     tray.show()
     
     global main_window
-    import window_ui
+    import ui.window_ui as window_ui
     import ui.window_ui as window_ui
     
     def on_tray_activated(reason):
@@ -640,7 +638,7 @@ def create_tray_menu():
             
         if "socks" in tools:
             import subprocess
-            subprocess.Popen([sys.executable, "socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             tgws_mgr.start()
@@ -662,7 +660,7 @@ def create_tray_menu():
             QTimer.singleShot(2000, lambda: tgws_mgr.start() if not tgws_mgr.running else None)
         if "socks" in tools:
             import subprocess
-            subprocess.Popen([sys.executable, "socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         if "proxifier" in tools and mode_type != "evpn":
             mode_mgr.start_tun()
         if "ext" in tools:
@@ -673,5 +671,7 @@ def create_tray_menu():
 if __name__ == "__main__":
     app = create_tray_menu()
     sys.exit(app.exec_())
+
+
 
 

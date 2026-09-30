@@ -1,5 +1,5 @@
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-import lang
+﻿import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import system_utils as lang
 import os
 import subprocess
 import json
@@ -243,7 +243,7 @@ class ByeDPIManager(QObject):
         # Tester Button
         tester_btn = QPushButton("Запустить Тестер (byedpi_tester_gui.pyw)")
         def run_tester():
-            subprocess.Popen([sys.executable, os.path.join("byedpi", "byedpi_tester_gui.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            subprocess.Popen([sys.executable, os.path.join("ui", "byedpi_tester_gui.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         tester_btn.clicked.connect(run_tester)
         
         save_btn = QPushButton("Сохранить")

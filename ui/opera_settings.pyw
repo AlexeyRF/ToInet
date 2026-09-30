@@ -1,3 +1,6 @@
+﻿import sys
+
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import sys
 import os
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
@@ -5,7 +8,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QMessageBox, QGroupBox, QComboBox)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
-import lang
+import system_utils as lang
 from managers import config_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -172,4 +175,5 @@ if __name__ == "__main__":
     window = OperaSettingsWindow()
     window.show()
     sys.exit(app.exec_())
+
 

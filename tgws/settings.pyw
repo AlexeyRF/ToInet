@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 import os
 
 # Добавляем родительскую директорию в sys.path
@@ -7,7 +7,7 @@ PARENT_DIR = os.path.dirname(CURRENT_DIR)
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-import lang
+import system_utils as lang
 import json
 import socket
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt
 
 from tgws import config as tgws_config
 
-from lang import T
+from system_utils import T
 
 from managers import config_manager
 
@@ -100,7 +100,7 @@ class TGWSSettingsDialog(QDialog):
         # self.tester_btn = QPushButton("Тест стратегий TGWS")
         # def run_tester():
         #     import subprocess, sys, os
-        #     subprocess.Popen([sys.executable, "tgws/tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        #     subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         # self.tester_btn.clicked.connect(run_tester)
         # layout.addWidget(self.tester_btn)
 

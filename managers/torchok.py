@@ -1,4 +1,4 @@
-import lang
+﻿import system_utils as lang
 import sys
 import os
 import subprocess
@@ -10,10 +10,9 @@ from PyQt5.QtWidgets import QMessageBox
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TORRC_FILE = os.path.join(CURRENT_DIR, "torrc")
 LAUNCHER_SCRIPT = os.path.join(CURRENT_DIR, "launcher.pyw")
-CLOSER_SCRIPT = os.path.join(CURRENT_DIR, "closer.pyw")
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
 UPDATE_BRIDGES_SCRIPT = os.path.join(CURRENT_DIR, "update_bridges_torrc.pyw")
-MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "maestro.pyw")
+MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
 TOR_EXE = os.path.join(CURRENT_DIR, "tor", "tor.exe")
 
 class TorManager:
@@ -153,9 +152,25 @@ class TorManager:
                 return True
             except Exception as e:
                 log(f"Ошибка остановки TOR процесса: {e}")
-        
-        # Если не получилось через процесс, используем closer.pyw
-        return self._run_script(CLOSER_SCRIPT)
+        # Если не получилось через процесс, ищем и убиваем процесс tor.exe
+        tor_path = os.path.normcase(os.path.normpath(TOR_EXE))
+        killed = False
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    if proc.info['name'] and 'tor' in proc.info['name'].lower():
+                        exe_path = proc.exe()
+                        if exe_path and os.path.normcase(os.path.normpath(exe_path)) == tor_path:
+                            proc.kill()
+                            killed = True
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+            if killed:
+                log("TOR процесс остановлен через поиск процессов")
+            return killed
+        except Exception as e:
+            log(f"Ошибка при поиске и остановке TOR: {e}")
+            return False
 
     def start(self):
         """Запуск TOR"""
@@ -335,6 +350,7 @@ def log(msg):
 def get_manager():
     """Возвращает экземпляр менеджера TOR"""
     return TorManager()
+
 
 
 

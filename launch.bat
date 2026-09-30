@@ -1,3 +1,3 @@
 @echo off
-cd /d "%~dp0"
-start /b pythonw "%~dp0main.pyw"
+cd /d "D:\Documents\ToInet-MAX"
+start /b pythonw "D:\Documents\ToInet-MAX\main.pyw"

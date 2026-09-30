@@ -1,13 +1,13 @@
-import os
+﻿import os
 import sys
 import subprocess
 import time
 from PyQt5.QtWidgets import QMessageBox
-import lang
+import system_utils as lang
 from managers import config_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "cpller.pyw")
+CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "system_utils.py")
 
 class ModeManager:
     def __init__(self):
@@ -25,7 +25,7 @@ class ModeManager:
     def run_cpller(self, port, action_flag):
         config = config_manager.load_config()
         mode = config.get("inetcpl_mode", "classic")
-        cmd = [sys.executable, CPLLER_SCRIPT, str(port), str(action_flag), mode]
+        cmd = [sys.executable, CPLLER_SCRIPT, "cpller", str(port), str(action_flag), mode]
         creationflags = 0
         if os.name == "nt":
             creationflags = subprocess.CREATE_NO_WINDOW
@@ -195,7 +195,7 @@ class ModeManager:
             return True
         
         from PyQt5.QtWidgets import QMessageBox
-        import lang
+        import system_utils as lang
         import shlex
         
         path_line = self.get_tun_app_path()
@@ -378,7 +378,7 @@ class ModeManager:
         edit_rules_btn = QPushButton("Редактировать правила")
         def open_rules_file():
             # We run rules_editor.py in a separate process
-            subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "rules_editor.py")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "ui/rules_editor.py")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
             
         edit_rules_btn.clicked.connect(open_rules_file)
         
@@ -433,3 +433,4 @@ _manager = ModeManager()
 
 def get_manager():
     return _manager
+

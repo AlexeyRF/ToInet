@@ -1,8 +1,11 @@
+﻿import os
+
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import os
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
 from managers import config_manager
-import lang
+import system_utils as lang
 
 def T(ru, en):
     return en if lang._is_en else ru
@@ -233,3 +236,4 @@ if __name__ == "__main__":
     win = AutostartSettingsWindow()
     win.show()
     sys.exit(app.exec_())
+

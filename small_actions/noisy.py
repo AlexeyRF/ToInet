@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 import datetime
 import json
 import logging
@@ -6,6 +6,7 @@ import random
 import re
 import subprocess
 import sys
+import os
 import time
 from urllib.parse import urljoin, urlparse
 import requests
@@ -199,7 +200,7 @@ def run_config_generator():
     logging.info("Запуск config_generator.py для генерации конфигурации...")
     try:
         result = subprocess.run(
-            [sys.executable, "config_generator.py"],
+            [sys.executable, os.path.join(os.path.dirname(os.path.abspath(__file__)), "config_generator.py")],
             capture_output=True,
             text=True,
             check=False
@@ -252,3 +253,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Socks5-слой для ByeDPI (режим клиент-upstream)
@@ -356,7 +356,7 @@ def main() -> None:
     args = parser.parse_args()
 
     # Разрешение путей относительно расположения скрипта.
-    base_dir = Path(__file__).parent
+    base_dir = Path(__file__).parent.parent
     # Фиксированный путь к бинарнику ByeDPI относительно корня проекта
     byedpi_exe = (base_dir / "byedpi/ciadpi.exe").resolve()
     strategies_path = (base_dir / args.strategies_file).resolve()
@@ -410,3 +410,4 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+

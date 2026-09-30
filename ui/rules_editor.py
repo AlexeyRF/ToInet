@@ -1,3 +1,6 @@
+﻿import os
+
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import os
 import sys
 import json
@@ -203,3 +206,4 @@ if __name__ == "__main__":
     d = RulesEditorDialog()
     d.show()
     sys.exit(app.exec_())
+

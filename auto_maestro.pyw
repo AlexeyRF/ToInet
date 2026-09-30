@@ -1,3 +1,5 @@
+﻿from pathlib import Path
+
 from pathlib import Path
 def load_bridges(filename="bridges.txt"):
     path = Path.cwd() / filename
@@ -29,3 +31,5 @@ try:
     torrc = generate_torrc(bridges)
     write_torrc(torrc)
 except Exception as e: print(f"Ошибка: {e}")
+
+

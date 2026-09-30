@@ -1,3 +1,6 @@
+﻿import sys
+
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import sys
 import os
 import json
@@ -14,7 +17,7 @@ PARENT_DIR = os.path.dirname(CURRENT_DIR)
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-import config_manager
+from managers import config_manager
 
 ALL_IPS = [
     "1:149.154.175.50", "1:149.154.175.53", 
@@ -245,4 +248,5 @@ if __name__ == '__main__':
     win = TGWSTesterGUI()
     win.show()
     sys.exit(app.exec_())
+
 
