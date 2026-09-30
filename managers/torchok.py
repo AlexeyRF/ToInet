@@ -8,7 +8,7 @@ from PyQt5.QtWidgets import QMessageBox
 
 # Пути к файлам
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-TORRC_FILE = os.path.join(CURRENT_DIR, "torrc")
+TORRC_FILE = os.path.join(CURRENT_DIR, "data", "torrc")
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
 UPDATE_BRIDGES_SCRIPT = os.path.join(CURRENT_DIR, "update_bridges_torrc.pyw")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
@@ -79,7 +79,7 @@ class TorManager:
 
     def _delete_torrc_files(self):
         """Удаляет файлы torrc"""
-        torrc_paths = [TORRC_FILE, os.path.join(CURRENT_DIR, "for_servers/torrc")]
+        torrc_paths = [TORRC_FILE, os.path.join(CURRENT_DIR, "server", "torrc")]
         
         for torrc_path in torrc_paths:
             if os.path.exists(torrc_path):
@@ -254,7 +254,7 @@ class TorManager:
             pool_enabled = False
             pool_size = 3
             try:
-                with open(os.path.join(CURRENT_DIR, "config.json"), "r", encoding="utf-8") as f:
+                with open(os.path.join(CURRENT_DIR, "data", "config.json"), "r", encoding="utf-8") as f:
                     config = json.load(f)
                     pool_enabled = config.get("tor_pool_enabled", False)
                     pool_size = int(config.get("tor_pool_size", 3))

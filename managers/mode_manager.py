@@ -187,7 +187,7 @@ class ModeManager:
             config["outbounds"][0]["type"] = "http"
             
         import json
-        with open("tun_config.json", "w", encoding="utf-8") as f:
+        with open("data/tun_config.json", "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
     def start_tun(self, port=None):
@@ -220,7 +220,7 @@ class ModeManager:
                 QMessageBox.critical(None, "Ошибка TUN", "sing-box не найден в bin/sing-box/")
                 return False
                 
-            cmd = [sing_box_exe, "run", "-c", "tun_config.json"]
+            cmd = [sing_box_exe, "run", "-c", "data/tun_config.json"]
             kwargs = {}
             if platform.system() == "Windows":
                 kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW

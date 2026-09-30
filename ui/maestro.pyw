@@ -552,7 +552,7 @@ class TorrcConfigurator(QMainWindow):
         self.data_dir = os.path.join(self.base_tor_dir, "data")
         self.geoip_path = os.path.join(self.base_tor_dir, "data", "geoip")
         self.geoipv6_path = os.path.join(self.base_tor_dir, "data", "geoip6")
-        self.bridges_path = os.path.join(self.current_dir, "bridges.txt")
+        self.bridges_path = os.path.join(self.current_dir, "data/bridges.txt")
         self.pt_config_path = os.path.join(self.base_tor_dir, "tor", "pluggable_transports", "pt_config.json")
         
         self.init_ui()
@@ -854,7 +854,7 @@ class TorrcConfigurator(QMainWindow):
         
         if reply == QMessageBox.Yes:
             import shutil
-            for f in ["torrc", "update_bridges_torrc.pyw"]:
+            for f in ["data/torrc", "update_bridges_torrc.pyw"]:
                 p = os.path.join(self.current_dir, f)
                 if os.path.exists(p):
                     try:
@@ -1259,7 +1259,7 @@ class TorrcConfigurator(QMainWindow):
         ])
         
         # Write to file
-        output_path = os.path.join(self.current_dir, "torrc")
+        output_path = os.path.join(self.current_dir, "data/torrc")
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(torrc_lines))

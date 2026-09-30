@@ -182,7 +182,7 @@ class TorBridgeManager(QMainWindow):
         """)
         
         self.changes_made = False
-        self.bridges_file = "bridges.txt"
+        self.bridges_file = "data/bridges.txt"
         self.torrc_file = "torrc"
         self.maestro_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maestro.pyw")
         

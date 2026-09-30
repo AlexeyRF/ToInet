@@ -416,7 +416,7 @@ class VlessManager(QObject):
 
     def open_settings(self):
 
-        import utils
+        import system_utils as utils
 
         utils.run_script("evpn/vless_settings.pyw")
 

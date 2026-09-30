@@ -2,7 +2,7 @@ import os
 import json
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CONFIG_FILE = os.path.join(CURRENT_DIR, "config.json")
+CONFIG_FILE = os.path.join(CURRENT_DIR, "data", "config.json")
 
 DEFAULT_CONFIG = {
     "use_custom_settings": True,

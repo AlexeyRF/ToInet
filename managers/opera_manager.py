@@ -332,7 +332,7 @@ class OperaProxyManager(QObject):
 
     def open_settings(self):
 
-        import utils
+        import system_utils as utils
 
         utils.run_script("ui/opera_settings.pyw")
 

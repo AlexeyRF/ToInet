@@ -1,14 +1,14 @@
 import os
 from pathlib import Path
 
-def load_bridges(filename="bridges.txt"):
+def load_bridges(filename="data/bridges.txt"):
     path = Path.cwd() / filename
     if not path.exists():
         return []
     with open(path, "r", encoding="utf-8") as f:
         return [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
 
-def update_torrc(bridges, filename="torrc"):
+def update_torrc(bridges, filename="data/torrc"):
     path = Path.cwd() / filename
     if not path.exists():
         return False

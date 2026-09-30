@@ -1,7 +1,7 @@
 ﻿from pathlib import Path
 
 from pathlib import Path
-def load_bridges(filename="bridges.txt"):
+def load_bridges(filename="data/bridges.txt"):
     path = Path.cwd() / filename
     if not path.exists(): raise FileNotFoundError(f"Файл {filename} не найден.")
     with open(path, "r", encoding="utf-8") as f: return [line.strip() for line in f if line.strip()]
@@ -23,13 +23,13 @@ def generate_torrc(bridges):
         "AutomapHostsOnResolve 1",
         "SafeLogging 1",
     ]
-def write_torrc(torrc_lines, filename="torrc"):
+def write_torrc(torrc_lines, filename="data/torrc"):
     with open(filename, "w", encoding="utf-8") as f: f.write('\n'.join(torrc_lines))
     print(f"Файл {filename} успешно создан.")
 try:
     bridges = load_bridges()
     torrc = generate_torrc(bridges)
-    write_torrc(torrc)
+    write_torrc(torrc, "data/torrc")
 except Exception as e: print(f"Ошибка: {e}")
 
 
