@@ -55,7 +55,7 @@ class TGWSManager:
             tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
             
             try:
-                import gatik
+                from tgws import gatik
                 tasks.append(gatik.main(stop_event=stop_ev))
             except Exception as e:
                 self.log(f"Failed to load gatik for async loop: {e}")

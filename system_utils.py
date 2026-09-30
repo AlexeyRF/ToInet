@@ -1,7 +1,25 @@
 import sys
 import os
+import shutil
 import ctypes
 import locale
+
+# --- CACHER ---
+def clean_data_directory(data_path="data"):
+    if not os.path.exists(data_path):
+        print(f"Директория {data_path} не существует!")
+        return False
+    if not os.path.isdir(data_path):
+        print(f"{data_path} не является директорией!")
+        return False
+    keep_files = {'geoip', 'geoip6'}
+    for item in os.listdir(data_path):
+        item_path = os.path.join(data_path, item)
+        if item in keep_files:continue
+        try:
+            if os.path.isfile(item_path) or os.path.islink(item_path): os.remove(item_path)
+            elif os.path.isdir(item_path):shutil.rmtree(item_path)
+        except Exception as e: pass
 
 # --- LANG ---
 def is_english_system():
@@ -120,6 +138,8 @@ if __name__ == "__main__":
             mode = sys.argv[4] if len(sys.argv) > 4 else "classic"
             if flag == '1': set_proxy(port, mode)
             else: disable_proxy()
+        elif cmd == "cacher":
+            clean_data_directory()
         elif cmd == "yarlik":
             target = sys.argv[2] if len(sys.argv) > 2 else "main.pyw"
             create_shortcut(target)
