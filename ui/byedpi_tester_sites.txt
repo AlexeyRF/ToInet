@@ -1,7 +1,0 @@
-# Список сайтов/доменов для проверки ByeDPI стратегий
-# Вы можете редактировать этот файл вручную
-
-youtube.com
-rutracker.org
-nyaa.si
-speedtest.net
