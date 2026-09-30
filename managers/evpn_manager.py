@@ -1,4 +1,4 @@
-import os
+﻿import os
 import subprocess
 import urllib.request
 import urllib.parse
@@ -136,10 +136,10 @@ class ProxyTester(QThread):
 
     def run(self):
         try:
-            self.progress.emit("Загрузка подписок...")
-            subs_file = "subs.txt"
+            self.progress.emit("Р—Р°РіСЂСѓР·РєР° РїРѕРґРїРёСЃРѕРє...")
+            subs_file = "evpn/subs.txt"
             if not os.path.exists(subs_file):
-                self.finished.emit(False, ["Файл subs.txt не найден в папке"])
+                self.finished.emit(False, ["Р¤Р°Р№Р» evpn/subs.txt РЅРµ РЅР°Р№РґРµРЅ РІ РїР°РїРєРµ"])
                 return
                 
             with open(subs_file, "r") as f:
@@ -162,10 +162,10 @@ class ProxyTester(QThread):
                     pass
             
             if not nodes:
-                self.finished.emit(False, ["Не найдено ни одного vless конфига"])
+                self.finished.emit(False, ["РќРµ РЅР°Р№РґРµРЅРѕ РЅРё РѕРґРЅРѕРіРѕ vless РєРѕРЅС„РёРіР°"])
                 return
                 
-            self.progress.emit(f"Проверка серверов (найдено {len(nodes)})...")
+            self.progress.emit(f"РџСЂРѕРІРµСЂРєР° СЃРµСЂРІРµСЂРѕРІ (РЅР°Р№РґРµРЅРѕ {len(nodes)})...")
             
             working_nodes = []
             checked = 0
@@ -188,18 +188,18 @@ class ProxyTester(QThread):
                 for future in concurrent.futures.as_completed(futures):
                     checked += 1
                     if checked % 20 == 0:
-                        self.progress.emit(f"Проверка: {checked}/{len(nodes)} (Рабочих: {len(working_nodes)})")
+                        self.progress.emit(f"РџСЂРѕРІРµСЂРєР°: {checked}/{len(nodes)} (Р Р°Р±РѕС‡РёС…: {len(working_nodes)})")
                     res = future.result()
                     if res:
                         working_nodes.append(res)
             
             if not working_nodes:
-                self.finished.emit(False, ["Нет доступных серверов"])
+                self.finished.emit(False, ["РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… СЃРµСЂРІРµСЂРѕРІ"])
                 return
                 
             self.finished.emit(True, working_nodes)
         except Exception as e:
-            self.finished.emit(False, [f"Ошибка: {e}"])
+            self.finished.emit(False, [f"РћС€РёР±РєР°: {e}"])
 
 
 class EvpnManager(QObject):
@@ -228,7 +228,7 @@ class EvpnManager(QObject):
         if not success:
             self.error_occurred.emit(result[0])
             self.is_running = False
-            self.status_changed.emit("VPN Выключен")
+            self.status_changed.emit("VPN Р’С‹РєР»СЋС‡РµРЅ")
             return
             
         self.working_nodes = result
@@ -236,19 +236,19 @@ class EvpnManager(QObject):
 
     def _start_singbox_with_nodes(self):
         if not self.working_nodes:
-            self.error_occurred.emit("Нет доступных серверов!")
+            self.error_occurred.emit("РќРµС‚ РґРѕСЃС‚СѓРїРЅС‹С… СЃРµСЂРІРµСЂРѕРІ!")
             self.is_running = False
-            self.status_changed.emit("VPN Выключен")
+            self.status_changed.emit("VPN Р’С‹РєР»СЋС‡РµРЅ")
             return
             
-        self.status_changed.emit(f"Генерация конфига (сохранено {len(self.working_nodes[:200])} серверов)...")
+        self.status_changed.emit(f"Р“РµРЅРµСЂР°С†РёСЏ РєРѕРЅС„РёРіР° (СЃРѕС…СЂР°РЅРµРЅРѕ {len(self.working_nodes[:200])} СЃРµСЂРІРµСЂРѕРІ)...")
         
         try:
             config = build_singbox_config(self.working_nodes)
-            with open("evpn_config.json", "w", encoding="utf-8") as f:
+            with open("evpn/evpn_config.json", "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2)
                 
-            self.status_changed.emit("Запуск sing-box...")
+            self.status_changed.emit("Р—Р°РїСѓСЃРє sing-box...")
             
             current_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
             sing_box_exe = os.path.join(current_dir, "bin", "sing-box", "sing-box.exe")
@@ -258,7 +258,7 @@ class EvpnManager(QObject):
             cmd = [
                 sing_box_exe,
                 "run",
-                "-c", "evpn_config.json"
+                "-c", "evpn/evpn_config.json"
             ]
             
             kwargs = {}
@@ -271,18 +271,18 @@ class EvpnManager(QObject):
             env["ENABLE_DEPRECATED_MISSING_DOMAIN_RESOLVER"] = "true"
             
             self.sb_process = subprocess.Popen(cmd, env=env, **kwargs)
-            self.status_changed.emit("VPN Включен")
+            self.status_changed.emit("VPN Р’РєР»СЋС‡РµРЅ")
             
         except Exception as e:
-            self.error_occurred.emit(f"Ошибка запуска sing-box:\n{e}")
+            self.error_occurred.emit(f"РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° sing-box:\n{e}")
             self.is_running = False
-            self.status_changed.emit("VPN Выключен")
+            self.status_changed.emit("VPN Р’С‹РєР»СЋС‡РµРЅ")
 
     def next_server(self):
         if not self.is_running or not self.working_nodes:
             return
         
-        self.status_changed.emit("Переключение сервера...")
+        self.status_changed.emit("РџРµСЂРµРєР»СЋС‡РµРЅРёРµ СЃРµСЂРІРµСЂР°...")
         if self.sb_process:
             self.sb_process.terminate()
             try:
@@ -300,7 +300,7 @@ class EvpnManager(QObject):
         if not self.is_running:
             return
         self.is_running = False
-        self.status_changed.emit("Выключение...")
+        self.status_changed.emit("Р’С‹РєР»СЋС‡РµРЅРёРµ...")
         
         if self.sb_process:
             self.sb_process.terminate()
@@ -310,7 +310,7 @@ class EvpnManager(QObject):
                 self.sb_process.kill()
             self.sb_process = None
             
-        self.status_changed.emit("VPN Выключен")
+        self.status_changed.emit("VPN Р’С‹РєР»СЋС‡РµРЅ")
 
 _manager = None
 def get_manager():
@@ -318,3 +318,4 @@ def get_manager():
     if _manager is None:
         _manager = EvpnManager()
     return _manager
+

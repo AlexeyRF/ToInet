@@ -1,4 +1,4 @@
-import os
+﻿import os
 import subprocess
 import json
 import platform
@@ -43,11 +43,11 @@ class VlessManager(QObject):
             
         matches = glob.glob(pattern)
         if not matches:
-            self.error_occurred.emit(lang.T("Архив sing-box не найден!", "sing-box zip not found!"))
+            self.error_occurred.emit(lang.T("РђСЂС…РёРІ sing-box РЅРµ РЅР°Р№РґРµРЅ!", "sing-box zip not found!"))
             return False
         zip_path = matches[-1]
         if not os.path.exists(zip_path):
-            self.error_occurred.emit(lang.T("Файл sing-box не найден!", "sing-box zip not found!"))
+            self.error_occurred.emit(lang.T("Р¤Р°Р№Р» sing-box РЅРµ РЅР°Р№РґРµРЅ!", "sing-box zip not found!"))
             return False
             
         try:
@@ -135,7 +135,7 @@ class VlessManager(QObject):
                     creationflags=subprocess.CREATE_NO_WINDOW
                 )
             else:
-                script_path = os.path.join(CURRENT_DIR, "wl_torred_vless.py")
+                script_path = os.path.join(CURRENT_DIR, "evpn/wl_torred_vless.py")
                 
                 # Support passing arguments like "next", "prev", "keep"
                 args = [sys.executable, script_path]
@@ -195,7 +195,7 @@ class VlessManager(QObject):
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     pass
                     
-            # Also kill wl_torred_vless.py python processes if any
+            # Also kill evpn/wl_torred_vless.py python processes if any
             # It's tricky to kill just that python script cleanly without affecting the main app
             # But the process object kill should have handled it mostly.
             
@@ -208,12 +208,12 @@ class VlessManager(QObject):
 
     def open_settings(self):
         import utils
-        utils.run_script("vless_settings.pyw")
+        utils.run_script("evpn/vless_settings.pyw")
 
     def get_status_text(self):
         if self.running:
-            return lang.T("Остановить VLESS Proxy", "Stop VLESS Proxy")
-        return lang.T("Запустить VLESS Proxy", "Start VLESS Proxy")
+            return lang.T("РћСЃС‚Р°РЅРѕРІРёС‚СЊ VLESS Proxy", "Stop VLESS Proxy")
+        return lang.T("Р—Р°РїСѓСЃС‚РёС‚СЊ VLESS Proxy", "Start VLESS Proxy")
 
 _manager = None
 def get_manager(config=None):
@@ -221,3 +221,4 @@ def get_manager(config=None):
     if _manager is None:
         _manager = VlessManager(config)
     return _manager
+

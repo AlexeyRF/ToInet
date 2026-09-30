@@ -1,5 +1,8 @@
-import sys
+﻿import sys
 import os
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if PARENT_DIR not in sys.path: sys.path.insert(0, PARENT_DIR)
+
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QMessageBox, QGroupBox, QComboBox, QSpinBox, QTextEdit)
@@ -16,7 +19,7 @@ def T(ru_text, en_text):
 class VlessSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(T("Настройки VLESS", "VLESS Settings"))
+        self.setWindowTitle(T("РќР°СЃС‚СЂРѕР№РєРё VLESS", "VLESS Settings"))
         self.setFixedSize(500, 600)
         
         icon_path = os.path.join(CURRENT_DIR, "icon.ico")
@@ -29,22 +32,22 @@ class VlessSettingsWindow(QMainWindow):
         main_layout.setContentsMargins(20, 20, 20, 20)
         main_layout.setSpacing(15)
         
-        title_label = QLabel(T("Настройки VLESS Proxy", "VLESS Proxy Settings"))
+        title_label = QLabel(T("РќР°СЃС‚СЂРѕР№РєРё VLESS Proxy", "VLESS Proxy Settings"))
         title_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
         main_layout.addWidget(title_label)
         
         mode_layout = QHBoxLayout()
-        mode_label = QLabel(T("Режим работы:", "Mode:"))
+        mode_label = QLabel(T("Р РµР¶РёРј СЂР°Р±РѕС‚С‹:", "Mode:"))
         self.mode_combo = QComboBox()
-        self.mode_combo.addItems([T("Стандартный (Один сервер)", "Standard (Single Server)"), T("Ротация (wl_torred_vless)", "Rotation (wl_torred_vless)")])
+        self.mode_combo.addItems([T("РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ (РћРґРёРЅ СЃРµСЂРІРµСЂ)", "Standard (Single Server)"), T("Р РѕС‚Р°С†РёСЏ (wl_torred_vless)", "Rotation (wl_torred_vless)")])
         self.mode_combo.currentIndexChanged.connect(self.toggle_mode_ui)
         mode_layout.addWidget(mode_label)
         mode_layout.addWidget(self.mode_combo)
         main_layout.addLayout(mode_layout)
         
         # Standard Mode Group
-        self.std_group = QGroupBox(T("Стандартный режим", "Standard Mode"))
+        self.std_group = QGroupBox(T("РЎС‚Р°РЅРґР°СЂС‚РЅС‹Р№ СЂРµР¶РёРј", "Standard Mode"))
         std_layout = QVBoxLayout(self.std_group)
         
         def add_input(layout, label_text):
@@ -64,15 +67,15 @@ class VlessSettingsWindow(QMainWindow):
         main_layout.addWidget(self.std_group)
         
         # Rotation Mode Group
-        self.rot_group = QGroupBox(T("Режим Ротации", "Rotation Mode"))
+        self.rot_group = QGroupBox(T("Р РµР¶РёРј Р РѕС‚Р°С†РёРё", "Rotation Mode"))
         rot_layout = QVBoxLayout(self.rot_group)
         
-        rot_layout.addWidget(QLabel(T("Ссылки на подписки (по одной на строку):", "Subscription URLs (one per line):")))
+        rot_layout.addWidget(QLabel(T("РЎСЃС‹Р»РєРё РЅР° РїРѕРґРїРёСЃРєРё (РїРѕ РѕРґРЅРѕР№ РЅР° СЃС‚СЂРѕРєСѓ):", "Subscription URLs (one per line):")))
         self.subs_text = QTextEdit()
         rot_layout.addWidget(self.subs_text)
         
         int_layout = QHBoxLayout()
-        int_layout.addWidget(QLabel(T("Интервал ротации (сек):", "Rotation interval (sec):")))
+        int_layout.addWidget(QLabel(T("РРЅС‚РµСЂРІР°Р» СЂРѕС‚Р°С†РёРё (СЃРµРє):", "Rotation interval (sec):")))
         self.inp_interval = QSpinBox()
         self.inp_interval.setRange(10, 86400)
         int_layout.addWidget(self.inp_interval)
@@ -82,12 +85,12 @@ class VlessSettingsWindow(QMainWindow):
         
         # Buttons
         btn_layout = QHBoxLayout()
-        save_btn = QPushButton(T("Сохранить и Применить", "Save and Apply"))
+        save_btn = QPushButton(T("РЎРѕС…СЂР°РЅРёС‚СЊ Рё РџСЂРёРјРµРЅРёС‚СЊ", "Save and Apply"))
         save_btn.setMinimumHeight(35)
         save_btn.setStyleSheet("background-color: #2b78e4; color: white; border: none; border-radius: 4px; font-weight: bold;")
         save_btn.clicked.connect(self.save_settings)
         
-        cancel_btn = QPushButton(T("Отмена", "Cancel"))
+        cancel_btn = QPushButton(T("РћС‚РјРµРЅР°", "Cancel"))
         cancel_btn.setMinimumHeight(35)
         cancel_btn.clicked.connect(self.close)
         
@@ -155,7 +158,7 @@ class VlessSettingsWindow(QMainWindow):
         with open(subs_path, "w", encoding="utf-8") as f:
             f.write(self.subs_text.toPlainText())
             
-        QMessageBox.information(self, T("Успех", "Success"), T("Настройки сохранены.\nПерезапустите VLESS для применения.", "Settings saved.\nRestart VLESS to apply."))
+        QMessageBox.information(self, T("РЈСЃРїРµС…", "Success"), T("РќР°СЃС‚СЂРѕР№РєРё СЃРѕС…СЂР°РЅРµРЅС‹.\nРџРµСЂРµР·Р°РїСѓСЃС‚РёС‚Рµ VLESS РґР»СЏ РїСЂРёРјРµРЅРµРЅРёСЏ.", "Settings saved.\nRestart VLESS to apply."))
         self.close()
 
 if __name__ == "__main__":
@@ -163,3 +166,4 @@ if __name__ == "__main__":
     window = VlessSettingsWindow()
     window.show()
     sys.exit(app.exec_())
+

@@ -1,4 +1,4 @@
-import lang
+﻿import lang
 import os
 import subprocess
 import json
@@ -18,7 +18,6 @@ def get_opera_proxy_exe():
     return os.path.join(CURRENT_DIR, "bin", exe_name)
 
 OPERA_PROXY_EXE = get_opera_proxy_exe()
-OPERA_CUSTOM_FILE = os.path.join(CURRENT_DIR, "opera_proxy_custom.txt")
 DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 10"
 
 class OperaProxyManager(QObject):
@@ -42,15 +41,6 @@ class OperaProxyManager(QObject):
     def get_params(self):
         if "opera_params" in self.config and self.config["opera_params"]:
             return self.config["opera_params"].split()
-        if os.path.exists(OPERA_CUSTOM_FILE):
-            try:
-                with open(OPERA_CUSTOM_FILE, 'r', encoding='utf-8') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line and not line.startswith('#'):
-                            return line.split()
-            except Exception:
-                pass
         return DEFAULT_OPERA_PARAMS.split()
 
     def start(self):
@@ -58,7 +48,7 @@ class OperaProxyManager(QObject):
             return True
             
         if not os.path.exists(OPERA_PROXY_EXE):
-            self.error_occurred.emit(lang.T("Файл opera-proxy.exe не найден!", "opera-proxy.exe not found!"))
+            self.error_occurred.emit(lang.T("Р¤Р°Р№Р» opera-proxy.exe РЅРµ РЅР°Р№РґРµРЅ!", "opera-proxy.exe not found!"))
             return False
             
         params = self.get_params()
@@ -68,7 +58,7 @@ class OperaProxyManager(QObject):
         
         try:
             if not pool_enabled or pool_size <= 1:
-                print(f"[OperaProxy] Запуск: {' '.join([OPERA_PROXY_EXE] + params)}")
+                print(f"[OperaProxy] Р—Р°РїСѓСЃРє: {' '.join([OPERA_PROXY_EXE] + params)}")
                 self.process = subprocess.Popen(
                     [OPERA_PROXY_EXE] + params,
                     stdout=subprocess.DEVNULL,
@@ -89,7 +79,7 @@ class OperaProxyManager(QObject):
                         
                 upstream_ports = [original_port + 1000 + i for i in range(pool_size)]
                 
-                print(f"[OperaProxy] Запуск пула из {pool_size} экземпляров...")
+                print(f"[OperaProxy] Р—Р°РїСѓСЃРє РїСѓР»Р° РёР· {pool_size} СЌРєР·РµРјРїР»СЏСЂРѕРІ...")
                 for i, port in enumerate(upstream_ports):
                     # Create custom params for each instance
                     instance_params = list(params)
@@ -118,13 +108,13 @@ class OperaProxyManager(QObject):
                         creationflags=subprocess.CREATE_NO_WINDOW
                     )
                 else:
-                    print("[OperaProxy] Ошибка: proxy_pool.py не найден")
+                    print("[OperaProxy] РћС€РёР±РєР°: proxy_pool.py РЅРµ РЅР°Р№РґРµРЅ")
                     
             self.running = True
             self.status_changed.emit(True)
             return True
         except Exception as e:
-            print(f"[OperaProxy] Ошибка запуска: {e}")
+            print(f"[OperaProxy] РћС€РёР±РєР° Р·Р°РїСѓСЃРєР°: {e}")
             self.error_occurred.emit(str(e))
             self.running = False
             return False
@@ -177,27 +167,21 @@ class OperaProxyManager(QObject):
                     pass
                     
         except Exception as e:
-            print(f"[OperaProxy] Ошибка остановки: {e}")
+            print(f"[OperaProxy] РћС€РёР±РєР° РѕСЃС‚Р°РЅРѕРІРєРё: {e}")
             
         self.process = None
         self.running = False
         self.status_changed.emit(False)
-        print("[OperaProxy] Остановлен")
+        print("[OperaProxy] РћСЃС‚Р°РЅРѕРІР»РµРЅ")
 
     def open_settings(self):
-        if not os.path.exists(OPERA_CUSTOM_FILE):
-            with open(OPERA_CUSTOM_FILE, 'w', encoding='utf-8') as f:
-                f.write("# Настройки для Opera Proxy\n")
-                f.write("# Пример:\n")
-                f.write("# " + DEFAULT_OPERA_PARAMS + "\n")
-        
         import utils
         utils.run_script("opera_settings.pyw")
 
     def get_status_text(self):
         if self.running:
-            return lang.T("Остановить Opera Proxy", "Stop Opera Proxy")
-        return lang.T("Запустить Opera Proxy", "Start Opera Proxy")
+            return lang.T("РћСЃС‚Р°РЅРѕРІРёС‚СЊ Opera Proxy", "Stop Opera Proxy")
+        return lang.T("Р—Р°РїСѓСЃС‚РёС‚СЊ Opera Proxy", "Start Opera Proxy")
 
 _manager = None
 def get_manager(config=None):
@@ -205,4 +189,5 @@ def get_manager(config=None):
     if _manager is None:
         _manager = OperaProxyManager(config)
     return _manager
+
 

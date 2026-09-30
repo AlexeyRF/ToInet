@@ -1,14 +1,14 @@
-import lang
+﻿import lang
 import sys
 import os
 
 if getattr(sys, 'frozen', False):
     import runpy
     
-    # --- Монкипатч для os.path.exists и os.path.isfile ---
-    # Так как мы подменили CURRENT_DIR на папку с EXE, стандартные проверки
-    # наличия Python-скриптов будут падать, потому что скрипты лежат в _MEIPASS.
-    # Этот патч глобально чинит все вызовы os.path.exists для .py и .pyw файлов.
+    # --- РњРѕРЅРєРёРїР°С‚С‡ РґР»СЏ os.path.exists Рё os.path.isfile ---
+    # РўР°Рє РєР°Рє РјС‹ РїРѕРґРјРµРЅРёР»Рё CURRENT_DIR РЅР° РїР°РїРєСѓ СЃ EXE, СЃС‚Р°РЅРґР°СЂС‚РЅС‹Рµ РїСЂРѕРІРµСЂРєРё
+    # РЅР°Р»РёС‡РёСЏ Python-СЃРєСЂРёРїС‚РѕРІ Р±СѓРґСѓС‚ РїР°РґР°С‚СЊ, РїРѕС‚РѕРјСѓ С‡С‚Рѕ СЃРєСЂРёРїС‚С‹ Р»РµР¶Р°С‚ РІ _MEIPASS.
+    # Р­С‚РѕС‚ РїР°С‚С‡ РіР»РѕР±Р°Р»СЊРЅРѕ С‡РёРЅРёС‚ РІСЃРµ РІС‹Р·РѕРІС‹ os.path.exists РґР»СЏ .py Рё .pyw С„Р°Р№Р»РѕРІ.
     original_exists = os.path.exists
     original_isfile = os.path.isfile
     exe_dir = os.path.dirname(sys.executable)
@@ -34,14 +34,14 @@ if getattr(sys, 'frozen', False):
     if len(sys.argv) >= 2 and sys.argv[1].endswith(('.py', '.pyw')):
         script_path = sys.argv[1]
         
-        # Если передан абсолютный путь, который начинается с папки программы,
-        # преобразуем его в относительный, чтобы найти внутри _MEIPASS
+        # Р•СЃР»Рё РїРµСЂРµРґР°РЅ Р°Р±СЃРѕР»СЋС‚РЅС‹Р№ РїСѓС‚СЊ, РєРѕС‚РѕСЂС‹Р№ РЅР°С‡РёРЅР°РµС‚СЃСЏ СЃ РїР°РїРєРё РїСЂРѕРіСЂР°РјРјС‹,
+        # РїСЂРµРѕР±СЂР°Р·СѓРµРј РµРіРѕ РІ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹Р№, С‡С‚РѕР±С‹ РЅР°Р№С‚Рё РІРЅСѓС‚СЂРё _MEIPASS
         if os.path.isabs(script_path) and script_path.startswith(exe_dir):
             rel_path = os.path.relpath(script_path, exe_dir)
             full_path = os.path.join(getattr(sys, '_MEIPASS', exe_dir), rel_path)
         else:
-            # Иначе просто склеиваем (сработает для относительных путей)
-            # или берем только имя файла как запасной вариант
+            # РРЅР°С‡Рµ РїСЂРѕСЃС‚Рѕ СЃРєР»РµРёРІР°РµРј (СЃСЂР°Р±РѕС‚Р°РµС‚ РґР»СЏ РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅС‹С… РїСѓС‚РµР№)
+            # РёР»Рё Р±РµСЂРµРј С‚РѕР»СЊРєРѕ РёРјСЏ С„Р°Р№Р»Р° РєР°Рє Р·Р°РїР°СЃРЅРѕР№ РІР°СЂРёР°РЅС‚
             base_path = getattr(sys, '_MEIPASS', exe_dir)
             full_path = os.path.join(base_path, script_path)
             if not original_exists(full_path) and os.path.isabs(script_path):
@@ -83,7 +83,7 @@ class OutputLogger(QObject):
             except: pass
 
 class AppLogWindow(QDialog):
-    def __init__(self, title="Логи приложения", parent=None):
+    def __init__(self, title="Р›РѕРіРё РїСЂРёР»РѕР¶РµРЅРёСЏ", parent=None):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(700, 500)
@@ -140,7 +140,7 @@ class AppLogWindow(QDialog):
         self.text_edit.setReadOnly(True)
         self.layout.addWidget(self.text_edit)
         
-        self.clear_btn = QPushButton(T("Очистить", "Clear"), self)
+        self.clear_btn = QPushButton(T("РћС‡РёСЃС‚РёС‚СЊ", "Clear"), self)
         self.clear_btn.clicked.connect(self.clear_logs)
         self.layout.addWidget(self.clear_btn)
         
@@ -193,7 +193,7 @@ app_log_window = None
 
 def setup_logging():
     global app_log_window
-    app_log_window = AppLogWindow("Логи приложения")
+    app_log_window = AppLogWindow("Р›РѕРіРё РїСЂРёР»РѕР¶РµРЅРёСЏ")
     
     sys.stdout = OutputLogger(sys.stdout)
     sys.stderr = OutputLogger(sys.stderr)
@@ -201,9 +201,9 @@ def setup_logging():
     sys.stdout.log_signal.connect(app_log_window.append_log)
     sys.stderr.log_signal.connect(app_log_window.append_log)
     
-    print("[LOG] Система логирования инициализирована.")
+    print("[LOG] РЎРёСЃС‚РµРјР° Р»РѕРіРёСЂРѕРІР°РЅРёСЏ РёРЅРёС†РёР°Р»РёР·РёСЂРѕРІР°РЅР°.")
 
-# Импортируем менеджеры и утилиты
+# РРјРїРѕСЂС‚РёСЂСѓРµРј РјРµРЅРµРґР¶РµСЂС‹ Рё СѓС‚РёР»РёС‚С‹
 from managers import config_manager
 from tgws import manager as tgws_manager
 from managers import opera_manager
@@ -224,7 +224,7 @@ import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'f
 ICON_TITLE = "ToInet-MAX"
 CACHER_SCRIPT = os.path.join(CURRENT_DIR, "cacher.pyw")
 
-# Инициализируем менеджеры
+# РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РјРµРЅРµРґР¶РµСЂС‹
 byedpi_manager = bdsher.get_manager({})
 tor_manager = torchok.get_manager()
 noisy_manager = noisy_manager.get_manager()
@@ -246,7 +246,7 @@ proxy_enabled = False
 simple_mode = True  
 mode_type = config.get("mode_type", "inetcpl")
 
-# Обновляем конфигурацию для менеджеров
+# РћР±РЅРѕРІР»СЏРµРј РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РґР»СЏ РјРµРЅРµРґР¶РµСЂРѕРІ
 byedpi_manager.update_config(config)
 tor_manager.update_config(config)
 noisy_manager.update_config(config)
@@ -254,7 +254,7 @@ tester_manager.update_config(config)
 opera_mgr.update_config(config)
 tgws_mgr.update_config(config)
 
-# Инициализируем менеджер для pip
+# РРЅРёС†РёР°Р»РёР·РёСЂСѓРµРј РјРµРЅРµРґР¶РµСЂ РґР»СЏ pip
 pip_manager = bdsher.get_pip_manager(config)
 
 def update_proxy_status():
@@ -281,7 +281,7 @@ def toggle_all():
             if not lang._is_en or config.get("enable_ru_features", False):
                 tgws_mgr.start()
             
-            # Запускаем pip прокси если включено
+            # Р—Р°РїСѓСЃРєР°РµРј pip РїСЂРѕРєСЃРё РµСЃР»Рё РІРєР»СЋС‡РµРЅРѕ
             if config.get("byedpi_pip_enabled", False):
                 if config.get("byedpi_pip_use_tor", False):
                     bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
@@ -315,7 +315,7 @@ def toggle_all():
         vless_mgr.stop()
         tgws_mgr.stop()
         
-        # Остановка pip-прокси и очистка глобального pip
+        # РћСЃС‚Р°РЅРѕРІРєР° pip-РїСЂРѕРєСЃРё Рё РѕС‡РёСЃС‚РєР° РіР»РѕР±Р°Р»СЊРЅРѕРіРѕ pip
         pip_manager.stop()
         bdsher.clear_pip_proxy()
         
@@ -531,7 +531,7 @@ def set_mode_type(mode):
     if mode == "tun":
         path = mode_mgr.get_tun_app_path()
         if not path or not os.path.exists(path):
-            QMessageBox.warning(None, T("TUN режим", "TUN Mode"), T("Сначала укажите корректный путь к проксификатору в файле proxification_app.txt!", "Please specify correct path to proxifier in proxification_app.txt first!"))
+            QMessageBox.warning(None, T("TUN СЂРµР¶РёРј", "TUN Mode"), T("РЎРЅР°С‡Р°Р»Р° СѓРєР°Р¶РёС‚Рµ РєРѕСЂСЂРµРєС‚РЅС‹Р№ РїСѓС‚СЊ Рє РїСЂРѕРєСЃРёС„РёРєР°С‚РѕСЂСѓ РІ С„Р°Р№Р»Рµ proxification_app.txt!", "Please specify correct path to proxifier in proxification_app.txt first!"))
             update_menu()
             return
         if proxy_enabled:
@@ -581,8 +581,8 @@ def toggle_auto_start():
         config_manager.save_config(config)
         update_menu()
     except Exception as e:
-        log(f"Ошибка настройки автозапуска: {e}")
-        QMessageBox.critical(None, T("Ошибка", "Error"), f"Не удалось настроить автозапуск:\n{e}")
+        log(f"РћС€РёР±РєР° РЅР°СЃС‚СЂРѕР№РєРё Р°РІС‚РѕР·Р°РїСѓСЃРєР°: {e}")
+        QMessageBox.critical(None, T("РћС€РёР±РєР°", "Error"), f"РќРµ СѓРґР°Р»РѕСЃСЊ РЅР°СЃС‚СЂРѕРёС‚СЊ Р°РІС‚РѕР·Р°РїСѓСЃРє:\n{e}")
 
 def toggle_auto_connect_last_mode():
     config["auto_connect_last_mode"] = not config.get("auto_connect_last_mode", False)
@@ -594,22 +594,22 @@ def set_dns(mode):
     
     if mode == "comms":
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('83.220.169.155', '212.109.195.93')"
-        msg = T("Запрос на установку Comms DNS отправлен. Подтвердите права администратора.", "Request to set Comms DNS sent. Please confirm admin rights.")
+        msg = T("Р—Р°РїСЂРѕСЃ РЅР° СѓСЃС‚Р°РЅРѕРІРєСѓ Comms DNS РѕС‚РїСЂР°РІР»РµРЅ. РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.", "Request to set Comms DNS sent. Please confirm admin rights.")
     elif mode == "xbox":
         if not lang._is_en or config.get("enable_ru_features", False):
             cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55')"
         else:
             cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51')"
-        msg = T("Запрос на установку Xbox DNS отправлен. Подтвердите права администратора.", "Request to set Xbox DNS sent. Please confirm admin rights.")
+        msg = T("Р—Р°РїСЂРѕСЃ РЅР° СѓСЃС‚Р°РЅРѕРІРєСѓ Xbox DNS РѕС‚РїСЂР°РІР»РµРЅ. РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.", "Request to set Xbox DNS sent. Please confirm admin rights.")
     elif mode == "xbox_ipv6":
         if not lang._is_en or config.get("enable_ru_features", False):
             cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55', '2a00:ab00:1233:26::54', '2a00:ab00:1233:26::55')"
         else:
             cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51', '2a00:ab00:1233:26::50', '2a00:ab00:1233:26::51')"
-        msg = T("Запрос на установку Xbox DNS (с IPv6) отправлен. Подтвердите права администратора.", "Request to set Xbox DNS (with IPv6) sent. Please confirm admin rights.")
+        msg = T("Р—Р°РїСЂРѕСЃ РЅР° СѓСЃС‚Р°РЅРѕРІРєСѓ Xbox DNS (СЃ IPv6) РѕС‚РїСЂР°РІР»РµРЅ. РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.", "Request to set Xbox DNS (with IPv6) sent. Please confirm admin rights.")
     elif mode == "reset":
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ResetServerAddresses"
-        msg = T("Запрос на сброс DNS отправлен. Подтвердите права администратора.", "Request to reset DNS sent. Please confirm admin rights.")
+        msg = T("Р—Р°РїСЂРѕСЃ РЅР° СЃР±СЂРѕСЃ DNS РѕС‚РїСЂР°РІР»РµРЅ. РџРѕРґС‚РІРµСЂРґРёС‚Рµ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР°.", "Request to reset DNS sent. Please confirm admin rights.")
     else:
         return
         
@@ -618,9 +618,9 @@ def set_dns(mode):
     ret = ctypes.windll.shell32.ShellExecuteW(None, "runas", "powershell.exe", f"-NoProfile -WindowStyle Hidden -Command \"{cmd}\"", None, 0)
     
     if ret <= 32:
-        QMessageBox.warning(None, T("Ошибка", "Error"), T("Не удалось получить права администратора для изменения DNS.", "Failed to get admin rights to change DNS."))
+        QMessageBox.warning(None, T("РћС€РёР±РєР°", "Error"), T("РќРµ СѓРґР°Р»РѕСЃСЊ РїРѕР»СѓС‡РёС‚СЊ РїСЂР°РІР° Р°РґРјРёРЅРёСЃС‚СЂР°С‚РѕСЂР° РґР»СЏ РёР·РјРµРЅРµРЅРёСЏ DNS.", "Failed to get admin rights to change DNS."))
     else:
-        QMessageBox.information(None, T("Успех", "Success"), msg)
+        QMessageBox.information(None, T("РЈСЃРїРµС…", "Success"), msg)
 
 def restart_app():
     tor_manager.stop()
@@ -628,7 +628,7 @@ def restart_app():
     opera_mgr.stop()
     vless_mgr.stop()
     
-    # Остановка pip-прокси и очистка глобального pip
+    # РћСЃС‚Р°РЅРѕРІРєР° pip-РїСЂРѕРєСЃРё Рё РѕС‡РёСЃС‚РєР° РіР»РѕР±Р°Р»СЊРЅРѕРіРѕ pip
     pip_mgr = bdsher.get_pip_manager()
     pip_mgr.stop()
     bdsher.clear_pip_proxy()
@@ -658,7 +658,7 @@ def exit_app():
     opera_mgr.stop()
     vless_mgr.stop()
     
-    # Остановка pip-прокси и очистка глобального pip
+    # РћСЃС‚Р°РЅРѕРІРєР° pip-РїСЂРѕРєСЃРё Рё РѕС‡РёСЃС‚РєР° РіР»РѕР±Р°Р»СЊРЅРѕРіРѕ pip
     pip_mgr = bdsher.get_pip_manager()
     pip_mgr.stop()
     bdsher.clear_pip_proxy()
@@ -766,15 +766,15 @@ def create_service_action(menu, name, is_running, toggle_func, restart_func=None
                     tor_manager.new_circuit()
                 else:
                     restart_func()
-            btn_restart = make_btn("↻", T("Перезапуск (Ctrl + Клик = Новая цепь)", "Restart (Ctrl + Click = New Circuit)"), tor_restart_handler)
+            btn_restart = make_btn("в†»", T("РџРµСЂРµР·Р°РїСѓСЃРє (Ctrl + РљР»РёРє = РќРѕРІР°СЏ С†РµРїСЊ)", "Restart (Ctrl + Click = New Circuit)"), tor_restart_handler)
         else:
-            btn_restart = make_btn("↻", T("Перезапустить", "Restart"), restart_func)
+            btn_restart = make_btn("в†»", T("РџРµСЂРµР·Р°РїСѓСЃС‚РёС‚СЊ", "Restart"), restart_func)
         l.addWidget(btn_restart)
         
-    play_stop_text = "■" if is_running else "▶"
+    play_stop_text = "в– " if is_running else "в–¶"
     play_stop_color = "#ff5555" if is_running else "#55ff55"
     
-    btn_play = make_btn(play_stop_text, T("Остановить", "Stop") if is_running else T("Запустить", "Start"), toggle_func)
+    btn_play = make_btn(play_stop_text, T("РћСЃС‚Р°РЅРѕРІРёС‚СЊ", "Stop") if is_running else T("Р—Р°РїСѓСЃС‚РёС‚СЊ", "Start"), toggle_func)
     btn_play.setStyleSheet(f"QPushButton {{ color: {play_stop_color}; }} QPushButton:hover {{ background: rgba(255, 255, 255, 0.1); }}")
     l.addWidget(btn_play)
     
@@ -788,44 +788,44 @@ def _update_menu_impl_unsafe():
     
     if simple_mode:
         log('[Menu] Building simple mode menu')
-        all_act = QAction(T("Запуск", "Start") if not proxy_enabled else T("Остановить всё", "Stop All"), tray_menu)
+        all_act = QAction(T("Р—Р°РїСѓСЃРє", "Start") if not proxy_enabled else T("РћСЃС‚Р°РЅРѕРІРёС‚СЊ РІСЃС‘", "Stop All"), tray_menu)
         all_act.triggered.connect(toggle_all)
         tray_menu.addAction(all_act)
         
         if mode_type == "inetcpl":
-            tor_cpl = QAction(T("Подключиться к TOR", "Connect to TOR") if not mode_mgr.inetcpl_tor_active else T("Отключиться от TOR", "Disconnect from TOR"), tray_menu)
+            tor_cpl = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє TOR", "Connect to TOR") if not mode_mgr.inetcpl_tor_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ TOR", "Disconnect from TOR"), tray_menu)
             tor_cpl.triggered.connect(toggle_inetcpl_tor)
             tray_menu.addAction(tor_cpl)
             
-            bd_cpl = QAction(T("Подключиться к BD", "Connect to BD") if not mode_mgr.inetcpl_bd_active else T("Отключиться от BD", "Disconnect from BD"), tray_menu)
+            bd_cpl = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє BD", "Connect to BD") if not mode_mgr.inetcpl_bd_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ BD", "Disconnect from BD"), tray_menu)
             bd_cpl.triggered.connect(toggle_inetcpl_bd)
             tray_menu.addAction(bd_cpl)
             
-            opera_cpl = QAction(T("Подключиться к Opera", "Connect to Opera") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera", "Disconnect from Opera"), tray_menu)
+            opera_cpl = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє Opera", "Connect to Opera") if not mode_mgr.inetcpl_opera_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ Opera", "Disconnect from Opera"), tray_menu)
             opera_cpl.triggered.connect(toggle_inetcpl_opera)
             tray_menu.addAction(opera_cpl)            
 
         elif mode_type == "tun" and not mode_mgr.get_tun_app_path():
-            tor_tun = QAction(T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), tray_menu)
+            tor_tun = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ TOR (TUN)", "Disconnect from TOR (TUN)"), tray_menu)
             tor_tun.triggered.connect(toggle_singbox_tun_tor)
             tray_menu.addAction(tor_tun)
             
-            bd_tun = QAction(T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), tray_menu)
+            bd_tun = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ BD (TUN)", "Disconnect from BD (TUN)"), tray_menu)
             bd_tun.triggered.connect(toggle_singbox_tun_bd)
             tray_menu.addAction(bd_tun)
             
-            opera_tun = QAction(T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), tray_menu)
+            opera_tun = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ Opera (TUN)", "Disconnect from Opera (TUN)"), tray_menu)
             opera_tun.triggered.connect(toggle_singbox_tun_opera)
             tray_menu.addAction(opera_tun)
             
-            adv_tun_simp = QAction(T("Продвинутые настройки TUN", "Advanced TUN Settings"), tray_menu)
+            adv_tun_simp = QAction(T("РџСЂРѕРґРІРёРЅСѓС‚С‹Рµ РЅР°СЃС‚СЂРѕР№РєРё TUN", "Advanced TUN Settings"), tray_menu)
             adv_tun_simp.triggered.connect(mode_mgr.open_advanced_tun_config)
             tray_menu.addAction(adv_tun_simp)
        
         tray_menu.addSeparator()
-        mode_m = QMenu(T("Режим", "Mode"), tray_menu)
+        mode_m = QMenu(T("Р РµР¶РёРј", "Mode"), tray_menu)
         for m in ["empty", "inetcpl", "tun", "evpn"]:
-            act = QAction(m.capitalize() + (" режим" if m=="tun" or m=="evpn" else ""), mode_m)
+            act = QAction(m.capitalize() + (" СЂРµР¶РёРј" if m=="tun" or m=="evpn" else ""), mode_m)
             act.setCheckable(True)
             act.setChecked(mode_type == m)
             act.triggered.connect(lambda checked, mode=m: set_mode_type(mode))
@@ -833,15 +833,15 @@ def _update_menu_impl_unsafe():
         tray_menu.addMenu(mode_m)
         tray_menu.addSeparator()
         
-        set_act = QAction(T("Настройки", "Settings"), tray_menu); set_act.triggered.connect(toggle_mode); tray_menu.addAction(set_act)
-        restart_act = QAction(T("Перезапуск", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
-        exit_act = QAction(T("Выход", "Exit"), tray_menu); exit_act.triggered.connect(exit_app); tray_menu.addAction(exit_act)
+        set_act = QAction(T("РќР°СЃС‚СЂРѕР№РєРё", "Settings"), tray_menu); set_act.triggered.connect(toggle_mode); tray_menu.addAction(set_act)
+        restart_act = QAction(T("РџРµСЂРµР·Р°РїСѓСЃРє", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
+        exit_act = QAction(T("Р’С‹С…РѕРґ", "Exit"), tray_menu); exit_act.triggered.connect(exit_app); tray_menu.addAction(exit_act)
     else:
         log('[Menu] Building advanced mode menu')
-        # Продвинутый режим
+        # РџСЂРѕРґРІРёРЅСѓС‚С‹Р№ СЂРµР¶РёРј
         
-        # 1. Управление компонентами
-        control_menu = QMenu(T("Управление компонентами", "Service Control"), tray_menu)
+        # 1. РЈРїСЂР°РІР»РµРЅРёРµ РєРѕРјРїРѕРЅРµРЅС‚Р°РјРё
+        control_menu = QMenu(T("РЈРїСЂР°РІР»РµРЅРёРµ РєРѕРјРїРѕРЅРµРЅС‚Р°РјРё", "Service Control"), tray_menu)
         
         tor_wa = create_service_action(control_menu, "TOR", tor_manager.is_running(), toggle_tor, tor_manager.restart, is_tor=True)
         control_menu.addAction(tor_wa)
@@ -886,7 +886,7 @@ def _update_menu_impl_unsafe():
             tg_wa = create_service_action(control_menu, "TGWS", tgws_mgr.running, toggle_tgws, lambda: (tgws_mgr.stop(), time.sleep(1), tgws_mgr.start()))
             control_menu.addAction(tg_wa)
             
-        tun_wa = create_service_action(control_menu, T("Проксификатор", "Proxifier"), mode_mgr.tun_running(), toggle_proxifier, mode_mgr.restart_tun)
+        tun_wa = create_service_action(control_menu, T("РџСЂРѕРєСЃРёС„РёРєР°С‚РѕСЂ", "Proxifier"), mode_mgr.tun_running(), toggle_proxifier, mode_mgr.restart_tun)
         control_menu.addAction(tun_wa)
         
         def toggle_ext():
@@ -894,50 +894,50 @@ def _update_menu_impl_unsafe():
                 ext_programs_manager.stop_all()
             else:
                 ext_programs_manager.start_all()
-        ext_wa = create_service_action(control_menu, T("Доп. Программы", "Ext. Programs"), ext_programs_manager.is_running(), toggle_ext, ext_programs_manager.restart_all)
+        ext_wa = create_service_action(control_menu, T("Р”РѕРї. РџСЂРѕРіСЂР°РјРјС‹", "Ext. Programs"), ext_programs_manager.is_running(), toggle_ext, ext_programs_manager.restart_all)
         control_menu.addAction(ext_wa)
         tray_menu.addMenu(control_menu)
         
-        # 2. Настройки Компонентов
-        settings_menu = QMenu(T("Настройки компонентов", "Component Settings"), tray_menu)
-        settings_menu.addAction(T("Настройки TOR", "TOR Settings"), tor_manager.open_settings)
+        # 2. РќР°СЃС‚СЂРѕР№РєРё РљРѕРјРїРѕРЅРµРЅС‚РѕРІ
+        settings_menu = QMenu(T("РќР°СЃС‚СЂРѕР№РєРё РєРѕРјРїРѕРЅРµРЅС‚РѕРІ", "Component Settings"), tray_menu)
+        settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё TOR", "TOR Settings"), tor_manager.open_settings)
         
-        settings_menu.addAction(T("Настройки BD", "BD Settings"), byedpi_manager.open_settings)
-        # settings_menu.addAction(T("Настройки VLESS", "VLESS Settings"), lambda: utils.run_script("vless_settings.pyw"))
-        # settings_menu.addAction(T("Настройки Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
+        settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё BD", "BD Settings"), byedpi_manager.open_settings)
+        # settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё VLESS", "VLESS Settings"), lambda: utils.run_script("evpn/vless_settings.pyw"))
+        # settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё Opera Proxy", "Opera Proxy Settings"), opera_mgr.open_settings)
         
         
 
         
         if not lang._is_en or config.get("enable_ru_features", False):
-            settings_menu.addAction(T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: utils.run_script("tgws/settings.pyw"))
+            settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё TGWS Proxy", "TGWS Proxy Settings"), lambda: utils.run_script("tgws/settings.pyw"))
             
-        settings_menu.addAction(T("Настройка Проксификатора", "Configure Proxifier"), mode_mgr.open_proxifier_config)
-        settings_menu.addAction(T("Настройка доп. программ", "Configure Ext. Programs"), ext_programs_manager.open_config)
+        settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєР° РџСЂРѕРєСЃРёС„РёРєР°С‚РѕСЂР°", "Configure Proxifier"), mode_mgr.open_proxifier_config)
+        settings_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєР° РґРѕРї. РїСЂРѕРіСЂР°РјРј", "Configure Ext. Programs"), ext_programs_manager.open_config)
         tray_menu.addMenu(settings_menu)
         
         
-        # 4. Добавить в Telegram
-        tg_menu = QMenu(T("Добавить в Telegram", "Telegram Integration"), tray_menu)
+        # 4. Р”РѕР±Р°РІРёС‚СЊ РІ Telegram
+        tg_menu = QMenu(T("Р”РѕР±Р°РІРёС‚СЊ РІ Telegram", "Telegram Integration"), tray_menu)
         if not lang._is_en or config.get("enable_ru_features", False):
-            tg_menu.addAction(T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), lambda: utils.add_proxy_to_telegram(config.get("tgws_port", 1480)))
-            tg_menu.addAction(T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), lambda: utils.add_mtproto_to_telegram(config.get("tgws_port", 1480), config.get("tgws_secret", "0"*32), config.get("tgws_fake_tls", "")))
-            tg_menu.addAction(T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
-        tg_menu.addAction(T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
-        tg_menu.addAction(T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
-        # tg_menu.addAction(T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: utils.add_proxy_to_telegram(1790))
+            tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ TGWS SOCKS5 (1480) РІ Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), lambda: utils.add_proxy_to_telegram(config.get("tgws_port", 1480)))
+            tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ TGWS MTProto (1480) РІ Telegram", "Add TGWS MTProto (1480) to Telegram"), lambda: utils.add_mtproto_to_telegram(config.get("tgws_port", 1480), config.get("tgws_secret", "0"*32), config.get("tgws_fake_tls", "")))
+            tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ РЁР»СЋР· Gatik (1777) РІ Telegram", "Add Smart Router (1777) to Telegram"), lambda: utils.add_proxy_to_telegram(1777))
+        tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ TOR (9853) РІ Telegram", "Add TOR (9853) to Telegram"), lambda: utils.add_proxy_to_telegram(9853))
+        tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ BD (1780) РІ Telegram", "Add BD (1780) to Telegram"), lambda: utils.add_proxy_to_telegram(1780))
+        # tg_menu.addAction(T("Р”РѕР±Р°РІРёС‚СЊ VLESS (1790) РІ Telegram", "Add VLESS (1790) to Telegram"), lambda: utils.add_proxy_to_telegram(1790))
         tray_menu.addMenu(tg_menu)
         
 
         
-        # 5. Проксирование pip
-        pip_menu = QMenu(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"), tray_menu)
+        # 5. РџСЂРѕРєСЃРёСЂРѕРІР°РЅРёРµ pip
+        pip_menu = QMenu(T("РџСЂРѕРєСЃРёСЂРѕРІР°РЅРёРµ pip (PyPI)", "pip (PyPI) Proxying"), tray_menu)
         
-        pip_enabled_act = QAction(T("Включить проксирование pip", "Enable pip Proxying"), pip_menu)
+        pip_enabled_act = QAction(T("Р’РєР»СЋС‡РёС‚СЊ РїСЂРѕРєСЃРёСЂРѕРІР°РЅРёРµ pip", "Enable pip Proxying"), pip_menu)
         pip_enabled_act.setCheckable(True)
         pip_enabled_act.setChecked(config.get("byedpi_pip_enabled", False))
         
-        pip_use_tor_act = QAction(T("Использовать TOR вместо ByeDPI", "Use TOR Instead of ByeDPI"), pip_menu)
+        pip_use_tor_act = QAction(T("РСЃРїРѕР»СЊР·РѕРІР°С‚СЊ TOR РІРјРµСЃС‚Рѕ ByeDPI", "Use TOR Instead of ByeDPI"), pip_menu)
         pip_use_tor_act.setCheckable(True)
         pip_use_tor_act.setChecked(config.get("byedpi_pip_use_tor", False))
         pip_use_tor_act.setEnabled(config.get("byedpi_pip_enabled", False))
@@ -979,15 +979,15 @@ def _update_menu_impl_unsafe():
         
         pip_menu.addAction(pip_enabled_act)
         pip_menu.addAction(pip_use_tor_act)
-        pip_menu.addAction(T("Настройки ByeDPI для pip", "ByeDPI Settings for pip"), lambda: bdsher.get_pip_manager(config).open_settings())
+        pip_menu.addAction(T("РќР°СЃС‚СЂРѕР№РєРё ByeDPI РґР»СЏ pip", "ByeDPI Settings for pip"), lambda: bdsher.get_pip_manager(config).open_settings())
         
-        # 6. Системные опции
+        # 6. РЎРёСЃС‚РµРјРЅС‹Рµ РѕРїС†РёРё
 
-        # Узконаправленное
+        # РЈР·РєРѕРЅР°РїСЂР°РІР»РµРЅРЅРѕРµ
         log('[Menu] Building narrow_menu')
-        narrow_menu = QMenu(T("Узконаправленное", "Narrow-focused"), tray_menu)
+        narrow_menu = QMenu(T("РЈР·РєРѕРЅР°РїСЂР°РІР»РµРЅРЅРѕРµ", "Narrow-focused"), tray_menu)
 
-        narrow_menu.addAction(T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
+        narrow_menu.addAction(T("Р РµР°Р±РёР»РёС‚Р°С‚РѕСЂ SOCKS", "Rehabilitate SOCKS"), lambda: utils.run_script("socks-reabilitator.pyw"))
 
         if not lang._is_en or config.get("enable_ru_features", False):
 
@@ -998,47 +998,47 @@ def _update_menu_impl_unsafe():
         tray_menu.addMenu(narrow_menu)
 
         log('[Menu] Building sys_menu')
-        sys_menu = QMenu(T("Системные опции", "System Options"), tray_menu)
+        sys_menu = QMenu(T("РЎРёСЃС‚РµРјРЅС‹Рµ РѕРїС†РёРё", "System Options"), tray_menu)
         sys_menu.addSeparator()
         
-        inetcpl_sub = QMenu(T("Настройки Inetcpl", "Inetcpl Settings"), sys_menu)
+        inetcpl_sub = QMenu(T("РќР°СЃС‚СЂРѕР№РєРё Inetcpl", "Inetcpl Settings"), sys_menu)
 
-        tor_cpl2 = QAction(T("Подключиться к TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not mode_mgr.inetcpl_tor_active else T("Отключиться от TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), inetcpl_sub)
+        tor_cpl2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not mode_mgr.inetcpl_tor_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), inetcpl_sub)
         tor_cpl2.triggered.connect(toggle_inetcpl_tor)
         inetcpl_sub.addAction(tor_cpl2)
         
-        bd_cpl2 = QAction(T("Подключиться к BD (Inetcpl)", "Connect to BD (Inetcpl)") if not mode_mgr.inetcpl_bd_active else T("Отключиться от BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), inetcpl_sub)
+        bd_cpl2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє BD (Inetcpl)", "Connect to BD (Inetcpl)") if not mode_mgr.inetcpl_bd_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), inetcpl_sub)
         bd_cpl2.triggered.connect(toggle_inetcpl_bd)
         inetcpl_sub.addAction(bd_cpl2)
         
-        opera_cpl2 = QAction(T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), inetcpl_sub)
+        opera_cpl2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not mode_mgr.inetcpl_opera_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), inetcpl_sub)
         opera_cpl2.triggered.connect(toggle_inetcpl_opera)
         inetcpl_sub.addAction(opera_cpl2)        
-        # vless_cpl2 = QAction(T("Подключиться к VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
+        # vless_cpl2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not mode_mgr.inetcpl_vless_active else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
         # vless_cpl2.triggered.connect(toggle_inetcpl_vless)
         # inetcpl_sub.addAction(vless_cpl2)
 
         inetcpl_mode = config.get("inetcpl_mode", "classic")
-        inetcpl_mode_txt = T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
+        inetcpl_mode_txt = T("Inetcpl: Р РµР¶РёРј Classic (РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else T("Inetcpl: Р РµР¶РёРј Modern (РњРѕСЃС‚С‹)", "Inetcpl: Modern Mode (Bridges)")
         inetcpl_mode_act = QAction(inetcpl_mode_txt, inetcpl_sub); inetcpl_mode_act.triggered.connect(toggle_inetcpl_mode); inetcpl_sub.addAction(inetcpl_mode_act)
         
         sys_menu.addMenu(inetcpl_sub)
         
-        tun_sub = QMenu(T("Настройки TUN", "TUN Settings"), sys_menu)
-        tor_tun2 = QAction(T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), tun_sub)
+        tun_sub = QMenu(T("РќР°СЃС‚СЂРѕР№РєРё TUN", "TUN Settings"), sys_menu)
+        tor_tun2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ TOR (TUN)", "Disconnect from TOR (TUN)"), tun_sub)
         tor_tun2.triggered.connect(toggle_singbox_tun_tor)
         tun_sub.addAction(tor_tun2)
         
-        bd_tun2 = QAction(T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), tun_sub)
+        bd_tun2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ BD (TUN)", "Disconnect from BD (TUN)"), tun_sub)
         bd_tun2.triggered.connect(toggle_singbox_tun_bd)
         tun_sub.addAction(bd_tun2)
         
-        opera_tun2 = QAction(T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), tun_sub)
+        opera_tun2 = QAction(T("РџРѕРґРєР»СЋС‡РёС‚СЊСЃСЏ Рє Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("РћС‚РєР»СЋС‡РёС‚СЊСЃСЏ РѕС‚ Opera (TUN)", "Disconnect from Opera (TUN)"), tun_sub)
         opera_tun2.triggered.connect(toggle_singbox_tun_opera)
         tun_sub.addAction(opera_tun2)
         
         tun_sub.addSeparator()
-        adv_tun_act = QAction(T("Продвинутые настройки TUN", "Advanced TUN Settings"), tun_sub)
+        adv_tun_act = QAction(T("РџСЂРѕРґРІРёРЅСѓС‚С‹Рµ РЅР°СЃС‚СЂРѕР№РєРё TUN", "Advanced TUN Settings"), tun_sub)
         adv_tun_act.triggered.connect(mode_mgr.open_advanced_tun_config)
         tun_sub.addAction(adv_tun_act)
         
@@ -1046,35 +1046,35 @@ def _update_menu_impl_unsafe():
 
         sys_menu.addSeparator()
         
-        app_logs_act = QAction(T("Показать логи приложения", "Show Application Logs"), sys_menu)
+        app_logs_act = QAction(T("РџРѕРєР°Р·Р°С‚СЊ Р»РѕРіРё РїСЂРёР»РѕР¶РµРЅРёСЏ", "Show Application Logs"), sys_menu)
         app_logs_act.triggered.connect(lambda: app_log_window.show() if app_log_window else None)
         sys_menu.addAction(app_logs_act)
         
-        ast_act = QAction(T("Настройки автозапуска", "Autostart Settings"), sys_menu)
+        ast_act = QAction(T("РќР°СЃС‚СЂРѕР№РєРё Р°РІС‚РѕР·Р°РїСѓСЃРєР°", "Autostart Settings"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(CURRENT_DIR, "autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
-        sys_menu.addAction(T("Очистка кеша", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
-        sys_menu.addAction(T("Открыть папку проекта", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
-        sys_menu.addAction(T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
-        sys_menu.addAction(T("Открыть свойства браузера", "Open Browser Properties"), utils.open_browser_properties)
-        # Управление DNS
-        dns_menu = QMenu(T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), sys_menu)
+        sys_menu.addAction(T("РћС‡РёСЃС‚РєР° РєРµС€Р°", "Clear Cache"), lambda: utils.run_script(CACHER_SCRIPT))
+        sys_menu.addAction(T("РћС‚РєСЂС‹С‚СЊ РїР°РїРєСѓ РїСЂРѕРµРєС‚Р°", "Open Project Folder"), lambda: utils.open_project_folder(CURRENT_DIR))
+        sys_menu.addAction(T("РЎРѕР·РґР°С‚СЊ СЏСЂР»С‹Рє РЅР° СЂР°Р±РѕС‡РµРј СЃС‚РѕР»Рµ", "Create Desktop Shortcut"), lambda: utils.run_script("yarlik.pyw", [os.path.basename(__file__)]))
+        sys_menu.addAction(T("РћС‚РєСЂС‹С‚СЊ СЃРІРѕР№СЃС‚РІР° Р±СЂР°СѓР·РµСЂР°", "Open Browser Properties"), utils.open_browser_properties)
+        # РЈРїСЂР°РІР»РµРЅРёРµ DNS
+        dns_menu = QMenu(T("РЈРїСЂР°РІР»РµРЅРёРµ DNS (РўСЂРµР±СѓРµС‚ РїСЂР°РІ РђРґРјРёРЅР°)", "DNS Management (Requires Admin)"), sys_menu)
         
-        comms_dns_act = QAction(T("Установить Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
+        comms_dns_act = QAction(T("РЈСЃС‚Р°РЅРѕРІРёС‚СЊ Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
         comms_dns_act.triggered.connect(lambda: set_dns("comms"))
         dns_menu.addAction(comms_dns_act)
 
-        xbox_dns_act = QAction(T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
+        xbox_dns_act = QAction(T("РЈСЃС‚Р°РЅРѕРІРёС‚СЊ Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
         xbox_dns_act.triggered.connect(lambda: set_dns("xbox"))
         dns_menu.addAction(xbox_dns_act)
         
-        xbox_ipv6_dns_act = QAction(T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
+        xbox_ipv6_dns_act = QAction(T("РЈСЃС‚Р°РЅРѕРІРёС‚СЊ Xbox DNS (СЃ IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
         xbox_ipv6_dns_act.triggered.connect(lambda: set_dns("xbox_ipv6"))
         dns_menu.addAction(xbox_ipv6_dns_act)
 
         dns_menu.addSeparator()
 
-        reset_dns_act = QAction(T("Сбросить DNS (По умолчанию)", "Reset DNS (Default)"), dns_menu)
+        reset_dns_act = QAction(T("РЎР±СЂРѕСЃРёС‚СЊ DNS (РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)", "Reset DNS (Default)"), dns_menu)
         reset_dns_act.triggered.connect(lambda: set_dns("reset"))
         dns_menu.addAction(reset_dns_act)
         
@@ -1094,7 +1094,7 @@ def _update_menu_impl_unsafe():
             
         sys_menu.addSeparator()
         
-        ui_type_act = QAction(T("Интерфейс: Окно (Приложение)", "Interface: Window (App)") if config.get("ui_type", "tray") == "window" else T("Интерфейс: Трей (По умолчанию)", "Interface: Tray (Default)"), sys_menu)
+        ui_type_act = QAction(T("РРЅС‚РµСЂС„РµР№СЃ: РћРєРЅРѕ (РџСЂРёР»РѕР¶РµРЅРёРµ)", "Interface: Window (App)") if config.get("ui_type", "tray") == "window" else T("РРЅС‚РµСЂС„РµР№СЃ: РўСЂРµР№ (РџРѕ СѓРјРѕР»С‡Р°РЅРёСЋ)", "Interface: Tray (Default)"), sys_menu)
         def toggle_ui_type():
             current = config.get("ui_type", "tray")
             config["ui_type"] = "window" if current == "tray" else "tray"
@@ -1107,9 +1107,9 @@ def _update_menu_impl_unsafe():
         
         tray_menu.addSeparator()
         
-        m_act = QAction(T("Перейти в простой режим", "Switch to Simple Mode"), tray_menu); m_act.triggered.connect(toggle_mode); tray_menu.addAction(m_act)
-        restart_act = QAction(T("Перезапуск", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
-        e_act = QAction(T("Выход", "Exit"), tray_menu); e_act.triggered.connect(exit_app); tray_menu.addAction(e_act)
+        m_act = QAction(T("РџРµСЂРµР№С‚Рё РІ РїСЂРѕСЃС‚РѕР№ СЂРµР¶РёРј", "Switch to Simple Mode"), tray_menu); m_act.triggered.connect(toggle_mode); tray_menu.addAction(m_act)
+        restart_act = QAction(T("РџРµСЂРµР·Р°РїСѓСЃРє", "Restart"), tray_menu); restart_act.triggered.connect(restart_app); tray_menu.addAction(restart_act)
+        e_act = QAction(T("Р’С‹С…РѕРґ", "Exit"), tray_menu); e_act.triggered.connect(exit_app); tray_menu.addAction(e_act)
 
 def create_tray_menu():
     global tray, tray_menu, config
@@ -1207,4 +1207,5 @@ def create_tray_menu():
 if __name__ == "__main__":
     app = create_tray_menu()
     sys.exit(app.exec_())
+
 

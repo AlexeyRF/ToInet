@@ -2,6 +2,47 @@ import lang
 import os
 import sys
 import json
+
+class UpdateInfoFile:
+    def __init__(self, mode): self.mode = mode
+    def __enter__(self): return self
+    def __exit__(self, *args): pass
+    def read(self):
+        import config_manager, json
+        cfg = config_manager.load_config()
+        info = {k.replace('update_info_', ''): v for k, v in cfg.items() if k.startswith('update_info_')}
+        return json.dumps(info)
+    def write(self, data):
+        import config_manager, json
+        info = json.loads(data)
+        cfg = config_manager.load_config()
+        for k, v in info.items():
+            cfg['update_info_' + k] = v
+        config_manager.save_config(cfg)
+
+def _mock_open(path, mode='r', *args, **kwargs):
+    if 'update_info.json' in str(path):
+        return UpdateInfoFile(mode)
+    return open(path, mode, *args, **kwargs)
+
+def _mock_exists(path):
+    if 'update_info.json' in str(path):
+        return True
+    import os
+    return os.path.exists(path)
+
+class MockPath:
+    def __init__(self, path):
+        import pathlib
+        self.path = pathlib.Path(path)
+    def exists(self):
+        if 'update_info.json' in str(self.path): return True
+        return self.path.exists()
+    def __str__(self): return str(self.path)
+    def __truediv__(self, other):
+        if 'update_info.json' in str(other): return MockPath(self.path / other)
+        return self.path / other
+
 from pathlib import Path
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
@@ -147,9 +188,9 @@ class TorUpdaterThread(QThread):
                 os_name, arch = self.get_system_info()
                 
                 base_dir = self.project_folder
-            if update_info_path.exists():
+            if True:
                 try:
-                    with open(update_info_path, 'r') as f:
+                    with _mock_open(update_info_path, 'r') as f:
                         info = json.load(f)
                         folder_name = info.get('use_folder')
                         if folder_name and (self.project_folder / folder_name).exists():
@@ -333,15 +374,15 @@ ClientOnly 1
         self.progress.emit("Обновление конфигурации...")
         update_info_path = self.project_folder / "update_info.json"
         info = {}
-        if update_info_path.exists():
+        if True:
             import json
-            with open(update_info_path, 'r') as f:
+            with _mock_open(update_info_path, 'r') as f:
                 info = json.load(f)
         if 'use_folder' in info:
             del info['use_folder']
         info['branch'] = self.channel
         import json
-        with open(update_info_path, 'w') as f:
+        with _mock_open(update_info_path, 'w') as f:
             json.dump(info, f)
             
         self.finished.emit(True, T("Обновление успешно завершено! Изменения вступят в силу после перезапуска.", "Update successfully completed! Changes will take effect after restart."))
@@ -495,9 +536,9 @@ class TorrcConfigurator(QMainWindow):
         # Determine base tor dir from update_info.json
         self.base_tor_dir = self.current_dir
         update_info_path = os.path.join(self.current_dir, "update_info.json")
-        if os.path.exists(update_info_path):
+        if True:
             try:
-                with open(update_info_path, 'r') as f:
+                with _mock_open(update_info_path, 'r') as f:
                     info = json.load(f)
                     folder_name = info.get('use_folder')
                     if folder_name and os.path.exists(os.path.join(self.current_dir, folder_name)):
@@ -783,9 +824,9 @@ class TorrcConfigurator(QMainWindow):
         
     def load_update_settings(self):
         update_info_path = os.path.join(self.current_dir, "update_info.json")
-        if os.path.exists(update_info_path):
+        if True:
             try:
-                with open(update_info_path, 'r') as f:
+                with _mock_open(update_info_path, 'r') as f:
                     info = json.load(f)
                     if info.get('auto_update', False):
                         self.autoupdate_cb.setChecked(True)
@@ -836,16 +877,16 @@ class TorrcConfigurator(QMainWindow):
     def on_autoupdate_changed(self, state):
         update_info_path = os.path.join(self.current_dir, "update_info.json")
         info = {}
-        if os.path.exists(update_info_path):
+        if True:
             try:
-                with open(update_info_path, 'r') as f:
+                with _mock_open(update_info_path, 'r') as f:
                     info = json.load(f)
             except:
                 pass
         
         info['auto_update'] = self.autoupdate_cb.isChecked()
         try:
-            with open(update_info_path, 'w') as f:
+            with _mock_open(update_info_path, 'w') as f:
                 json.dump(info, f)
         except:
             pass
@@ -862,10 +903,10 @@ class TorrcConfigurator(QMainWindow):
         self.on_autoupdate_changed(None)
         update_info_path = os.path.join(self.current_dir, "update_info.json")
         try:
-            with open(update_info_path, 'r') as f:
+            with _mock_open(update_info_path, 'r') as f:
                 info = json.load(f)
             info['branch'] = branch
-            with open(update_info_path, 'w') as f:
+            with _mock_open(update_info_path, 'w') as f:
                 json.dump(info, f)
         except:
             pass
@@ -976,12 +1017,12 @@ class TorrcConfigurator(QMainWindow):
                 shutil.rmtree(tor_latest_dir)
                 
             info = {}
-            if os.path.exists(update_info_path):
-                with open(update_info_path, 'r') as f:
+            if True:
+                with _mock_open(update_info_path, 'r') as f:
                     info = json.load(f)
             
             info['use_folder'] = ''
-            with open(update_info_path, 'w') as f:
+            with _mock_open(update_info_path, 'w') as f:
                 json.dump(info, f)
                 
             QMessageBox.information(self, T("Успешно", "Success"), T("Откат выполнен успешно. Файлы восстановлены из бекапа.", "Rollback successful. Files restored from backup."))
