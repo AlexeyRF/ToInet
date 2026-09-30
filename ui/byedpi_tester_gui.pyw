@@ -34,7 +34,7 @@ except ImportError:
 
 # Import byedpi_tester functions
 try:
-    import byedpi_tester
+    from byedpi import byedpi_tester
 except ImportError:
     byedpi_tester = None
 BYEDPI_EXE_DEFAULT = os.path.join(CURRENT_DIR, r"byedpi\ciadpi.exe")
