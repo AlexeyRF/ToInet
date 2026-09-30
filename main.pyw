@@ -528,6 +528,7 @@ def restart_app():
     else:
         subprocess.Popen([sys.executable, os.path.abspath(__file__)] + sys.argv[1:])
         
+    if tray: tray.hide()
     app.quit()
 
 def exit_app():
@@ -550,9 +551,14 @@ def exit_app():
     # conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Exiting...")
+    import sys
+    if hasattr(sys.stdout, "original_stream"): sys.stdout = sys.__stdout__
+    if hasattr(sys.stderr, "original_stream"): sys.stderr = sys.__stderr__
+    if tray: tray.hide()
     app.quit()
 
 tray = None
+app_log_window = None
 tray_menu = None
 
 def run_agy_fix():
@@ -571,11 +577,11 @@ update_menu = ui.tray_menu.update_menu
 _update_menu_impl = ui.tray_menu._update_menu_impl
 _update_menu_impl_unsafe = ui.tray_menu._update_menu_impl_unsafe
 def create_tray_menu():
-    global tray, tray_menu, config
+    global tray, tray_menu, config, app_log_window
     
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
-    setup_logging()
+    app_log_window = setup_logging()
     # conv_mgr.start()
     
     tray = QSystemTrayIcon()
@@ -665,7 +671,15 @@ def create_tray_menu():
 
 if __name__ == "__main__":
     app = create_tray_menu()
-    sys.exit(app.exec_())
+    ret = app.exec_()
+    print("[DEBUG] app.exec_() returned:", ret)
+    import threading
+    for t in threading.enumerate():
+        print(f"[DEBUG] Thread: {t.name}, daemon: {t.daemon}")
+    try:
+        sys.exit(ret)
+    finally:
+        os._exit(ret)
 
 
 
