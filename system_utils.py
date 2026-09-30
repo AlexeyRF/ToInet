@@ -45,16 +45,10 @@ import builtins
 builtins.T = T
 
 # --- CPLLER ---
-def set_proxy(port, mode="classic"):
+def set_proxy(port, mode=None):
     port = str(port)
-    if mode == "modern":
-        if port == "9853": proxy_server = "http=127.0.0.1:9854;https=127.0.0.1:9854;socks=127.0.0.1:9853"
-        elif port == "1780": proxy_server = "http=127.0.0.1:1782;https=127.0.0.1:1782;socks=127.0.0.1:1780"
-        elif port == "1785": proxy_server = "http=127.0.0.1:1785;https=127.0.0.1:1785;socks=127.0.0.1:1785"
-        else: proxy_server = f"socks=127.0.0.1:{port}"
-    else:
-        if port == "1785": proxy_server = f"http=127.0.0.1:{port};https=127.0.0.1:{port}"
-        else: proxy_server = f"socks=127.0.0.1:{port}"
+    if port == "1785": proxy_server = f"http=127.0.0.1:{port};https=127.0.0.1:{port}"
+    else: proxy_server = f"socks=127.0.0.1:{port}"
     
     os.system(f'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f >nul')
     os.system(f'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "{proxy_server}" /f >nul')

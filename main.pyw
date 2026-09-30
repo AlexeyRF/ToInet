@@ -438,12 +438,7 @@ def set_mode_type(mode):
     update_proxy_status()
     update_menu()
 
-def toggle_inetcpl_mode():
-    global config
-    current = config.get("inetcpl_mode", "classic")
-    config["inetcpl_mode"] = "modern" if current == "classic" else "classic"
-    config_manager.save_config(config)
-    update_menu()
+
 
 
 def toggle_mode():

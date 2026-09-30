@@ -342,9 +342,6 @@ def _update_menu_impl_unsafe():
         # vless_cpl2.triggered.connect(toggle_inetcpl_vless)
         # inetcpl_sub.addAction(vless_cpl2)
 
-        inetcpl_mode = m.config.get("inetcpl_mode", "classic")
-        inetcpl_mode_txt = m.T("Inetcpl: Режим Classic (По умолчанию)", "Inetcpl: Classic Mode (Default)") if inetcpl_mode == "classic" else m.T("Inetcpl: Режим Modern (Мосты)", "Inetcpl: Modern Mode (Bridges)")
-        inetcpl_mode_act = QAction(inetcpl_mode_txt, inetcpl_sub); inetcpl_mode_act.triggered.connect(m.toggle_inetcpl_mode); inetcpl_sub.addAction(inetcpl_mode_act)
         
         sys_menu.addMenu(inetcpl_sub)
         
