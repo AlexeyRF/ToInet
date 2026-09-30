@@ -9,7 +9,6 @@ from PyQt5.QtWidgets import QMessageBox
 # Пути к файлам
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TORRC_FILE = os.path.join(CURRENT_DIR, "torrc")
-LAUNCHER_SCRIPT = os.path.join(CURRENT_DIR, "launcher.pyw")
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
 UPDATE_BRIDGES_SCRIPT = os.path.join(CURRENT_DIR, "update_bridges_torrc.pyw")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
@@ -40,6 +39,28 @@ class TorManager:
         cfg = config_manager.load_config()
         cfg["recreate_torrc"] = str(value).lower()
         config_manager.save_config(cfg)
+
+    def _launch_tor_direct(self):
+        if not os.path.exists(TOR_EXE):
+            log("tor.exe not found!")
+            return False
+        if not os.path.exists(TORRC_FILE):
+            log("torrc not found!")
+            return False
+            
+        creation_flags = subprocess.CREATE_NEW_CONSOLE if self.show_window else subprocess.CREATE_NO_WINDOW
+        stdout = None if self.show_window else subprocess.DEVNULL
+        stderr = None if self.show_window else subprocess.DEVNULL
+        
+        try:
+            self.tor_process = subprocess.Popen([TOR_EXE, '-f', TORRC_FILE], stdout=stdout, stderr=stderr, creationflags=creation_flags)
+            self.tor_running = True
+            log("tor.exe started directly")
+            return True
+        except Exception as e:
+            log(f"Failed to start tor.exe: {e}")
+            self.tor_running = False
+            return False
 
     def _run_script(self, script_name):
         """Запускает скрипт в фоне"""
@@ -86,7 +107,7 @@ class TorManager:
                     break
             else:
                 log("tor.exe не найден, используется launcher.pyw")
-                return self._run_script(LAUNCHER_SCRIPT)
+                return self._launch_tor_direct()
         
         # Проверяем существование torrc
         if not os.path.exists(torrc_path):
@@ -95,7 +116,7 @@ class TorManager:
             
             if not os.path.exists(torrc_path):
                 log("Не удалось создать torrc, используем launcher.pyw")
-                return self._run_script(LAUNCHER_SCRIPT)
+                return self._launch_tor_direct()
         
         # Запускаем tor.exe
         try:
@@ -128,12 +149,12 @@ class TorManager:
             else:
                 log("Не удалось запустить TOR напрямую, используем launcher.pyw")
                 self.tor_process = None
-                return self._run_script(LAUNCHER_SCRIPT)
+                return self._launch_tor_direct()
                 
         except Exception as e:
             log(f"Ошибка запуска TOR напрямую: {e}")
             self.tor_process = None
-            return self._run_script(LAUNCHER_SCRIPT)
+            return self._launch_tor_direct()
 
     def _stop_tor_direct(self):
         """Останавливает TOR, запущенный напрямую"""
@@ -188,7 +209,7 @@ class TorManager:
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
         
         # Только через launcher.pyw, как просил пользователь
-        if self._run_script(LAUNCHER_SCRIPT):
+        if self._launch_tor_direct():
             self.tor_running = True
             return True
 
