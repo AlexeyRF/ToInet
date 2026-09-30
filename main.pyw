@@ -15,7 +15,8 @@ def _ensure_dependencies():
         'requests': 'requests',
         'cryptography': 'cryptography==46.0.5',
         'win32com': 'pywin32',
-        'pyperclip': 'pyperclip==1.9.0'
+        'pyperclip': 'pyperclip==1.9.0',
+        'socks': 'pysocks'
     }
 
     missing = []
@@ -44,16 +45,6 @@ _ensure_dependencies()
 if getattr(sys, 'frozen', False):
 
     import runpy
-
-    
-
-    # --- Монкипатч для os.path.exists и os.path.isfile ---
-
-    # Так как мы подменили CURRENT_DIR на папку с EXE, стандартные проверки
-
-    # наличия Python-скриптов будут падать, потому что скрипты лежат в _MEIPASS.
-
-    # Этот патч глобально чинит все вызовы os.path.exists для .py и .pyw файлов.
 
     original_exists = os.path.exists
 
