@@ -25,13 +25,10 @@ class TGWSManager:
         self.config = config
 
     def _run_thread(self):
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        
-        stop_ev = asyncio.Event()
-        self.stop_event = (loop, stop_ev)
-        
-        try:
+        async def runner():
+            stop_ev = asyncio.Event()
+            self.stop_event = (asyncio.get_running_loop(), stop_ev)
+            
             port = self.config.get("tgws_port", 1480)
             host = self.config.get("tgws_host", "127.0.0.1")
             dc_ip_list = self.config.get("tgws_dc_ip", ["2:149.154.167.220", "4:149.154.167.220"])
@@ -60,26 +57,19 @@ class TGWSManager:
             except Exception as e:
                 self.log(f"Failed to load gatik for async loop: {e}")
                 
-            loop.run_until_complete(
-                asyncio.gather(*tasks))
+            await asyncio.gather(*tasks)
+
+        try:
+            asyncio.run(runner())
         except Exception as exc:
+            import traceback
             self.log(f"TG WS Proxy thread crashed: {exc}")
+            traceback.print_exc()
             if "10048" in str(exc) or "Address already in use" in str(exc):
+                port = self.config.get("tgws_port", 1480)
                 QMessageBox.critical(None, "Ошибка TG WS Proxy", 
                                    f"Не удалось запустить TG WS Proxy:\nПорт {port} уже используется другим приложением.")
         finally:
-            try:
-                pending = asyncio.all_tasks(loop)
-                for task in pending:
-                    task.cancel()
-                if pending:
-                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
-            except Exception:
-                pass
-            try:
-                loop.close()
-            except Exception:
-                pass
             self.stop_event = None
 
     def start(self):
