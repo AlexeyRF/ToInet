@@ -3,11 +3,11 @@ import sys
 import subprocess
 import time
 from PyQt5.QtWidgets import QMessageBox
-import system_utils as lang
+from managers import system_utils as lang
 from managers import config_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "system_utils.py")
+CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "managers", "system_utils.py")
 
 class ModeManager:
     def __init__(self):
@@ -193,7 +193,7 @@ class ModeManager:
             return True
         
         from PyQt5.QtWidgets import QMessageBox
-        import system_utils as lang
+        from managers import system_utils as lang
         import shlex
         
         path_line = self.get_tun_app_path()

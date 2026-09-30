@@ -1,7 +1,7 @@
-﻿import system_utils as lang
+﻿from managers import system_utils as lang
 
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import system_utils as lang
+from managers import system_utils as lang
 import os
 import sys
 import subprocess

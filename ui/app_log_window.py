@@ -2,7 +2,7 @@ import sys, os
 import re
 from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QCheckBox
 from PyQt5.QtCore import QObject, pyqtSignal, Qt
-from system_utils import T
+from managers.system_utils import T
 
 class OutputLogger(QObject):
     log_signal = pyqtSignal(str)

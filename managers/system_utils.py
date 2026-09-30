@@ -1,5 +1,6 @@
 import sys
 import os
+import winreg
 import shutil
 import ctypes
 import locale
@@ -99,7 +100,7 @@ def create_shortcut(target_file="main.pyw"):
             bat_path = os.path.join(app_dir, "launch.bat")
             try:
                 import subprocess
-                subprocess.call([sys.executable, os.path.join(app_dir, "auto_launcher_setuper.py"), target_file])
+                create_launch_bat(target_file)
             except: pass
             
         icon_path = os.path.join(app_dir, "icon.ico")
@@ -137,6 +138,128 @@ if __name__ == "__main__":
         elif cmd == "yarlik":
             target = sys.argv[2] if len(sys.argv) > 2 else "main.pyw"
             create_shortcut(target)
+
+# --- AUTO START ---
+def get_app_path():
+    """Получает путь к исполняемому файлу"""
+    if getattr(sys, 'frozen', False):
+        # Если приложение скомпилировано в exe
+        return sys.executable
+    else:
+        # Если запущено как скрипт - возвращаем путь к launch.bat
+        script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+        return os.path.join(script_dir, "launch.bat")
+
+def get_app_name():
+    """Получает имя приложения"""
+    return "ToInet-MAX"
+
+def create_launch_bat(target_file="main.pyw"):
+    """Создает launch.bat файл если его нет"""
+    if getattr(sys, 'frozen', False):
+        return sys.executable
+
+    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+    launch_bat_path = os.path.join(script_dir, "launch.bat")
+    
+    try:
+        main_pyw_path = os.path.join(script_dir, target_file)
+        with open(launch_bat_path, 'w', encoding='utf-8') as f:
+            f.write(f'@echo off\n')
+            f.write(f'cd /d "{script_dir}"\n')
+            f.write(f'start /b pythonw "{main_pyw_path}"\n')
+        print(f"[AutoLauncher] Создан/Обновлен файл {launch_bat_path}")
+    except Exception as e:
+        print(f"[AutoLauncher] Ошибка создания launch.bat: {e}")
+    
+    return launch_bat_path
+
+def enable_auto_start(target_file="main.pyw"):
+    """Включает автозапуск приложения через launch.bat"""
+    try:
+        # Создаем launch.bat если его нет (или получаем путь к exe)
+        launch_bat_path = create_launch_bat(target_file)
+        
+        if not os.path.exists(launch_bat_path):
+            print(f"[AutoLauncher] Файл {launch_bat_path} не существует")
+            return False
+        
+        app_name = get_app_name()
+        
+        # Открываем ключ автозапуска
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_SET_VALUE
+        )
+        
+        # Добавляем запись с путем к launch.bat
+        winreg.SetValueEx(key, app_name, 0, winreg.REG_SZ, launch_bat_path)
+        winreg.CloseKey(key)
+        
+        print(f"[AutoLauncher] Автозапуск включен для {app_name} -> {launch_bat_path}")
+        return True
+    except Exception as e:
+        print(f"[AutoLauncher] Ошибка включения автозапуска: {e}")
+        return False
+
+def disable_auto_start():
+    """Отключает автозапуск приложения"""
+    try:
+        app_name = get_app_name()
+        
+        # Открываем ключ автозапуска
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_SET_VALUE
+        )
+        
+        # Удаляем запись
+        try:
+            winreg.DeleteValue(key, app_name)
+        except FileNotFoundError:
+            # Запись не найдена - ничего страшного
+            pass
+        
+        winreg.CloseKey(key)
+        
+        print(f"[AutoLauncher] Автозапуск отключен для {app_name}")
+        return True
+    except Exception as e:
+        print(f"[AutoLauncher] Ошибка отключения автозапуска: {e}")
+        return False
+
+def check_auto_start():
+    """Проверяет, включен ли автозапуск"""
+    try:
+        app_name = get_app_name()
+        
+        # Открываем ключ автозапуска
+        key = winreg.OpenKey(
+            winreg.HKEY_CURRENT_USER,
+            r"Software\Microsoft\Windows\CurrentVersion\Run",
+            0,
+            winreg.KEY_READ
+        )
+        
+        # Проверяем наличие записи
+        try:
+            value, _ = winreg.QueryValueEx(key, app_name)
+            winreg.CloseKey(key)
+            if getattr(sys, 'frozen', False):
+                return value == sys.executable
+            # Проверяем, что значение указывает на launch.bat
+            return value.endswith("launch.bat") and os.path.exists(value)
+        except FileNotFoundError:
+            winreg.CloseKey(key)
+            return False
+    except Exception as e:
+        print(f"[AutoLauncher] Ошибка проверки автозапуска: {e}")
+        return False
+
 
 # --- UTILS ---
 import subprocess

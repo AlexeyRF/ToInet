@@ -1,5 +1,5 @@
 ﻿import time, os, sys, subprocess
-import system_utils as lang
+from managers import system_utils as lang
 from PyQt5.QtWidgets import QMenu, QAction, QWidgetAction, QWidget, QHBoxLayout, QLabel, QPushButton, QApplication
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
@@ -376,7 +376,7 @@ def _update_menu_impl_unsafe():
         sys_menu.addAction(ast_act)
         sys_menu.addAction(m.T("Очистка кеша", "Clear Cache"), lambda: m.utils.run_script(m.CACHER_SCRIPT))
         sys_menu.addAction(m.T("Открыть папку проекта", "Open Project Folder"), lambda: m.utils.open_project_folder(m.CURRENT_DIR))
-        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: m.utils.run_script("system_utils.py", ["yarlik", os.path.basename(__file__)]))
+        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: m.utils.run_script(os.path.join(m.CURRENT_DIR, "managers", "system_utils.py"), ["yarlik", os.path.basename(__file__)]))
         sys_menu.addAction(m.T("Открыть свойства браузера", "Open Browser Properties"), m.utils.open_browser_properties)
         # Управление DNS
         dns_menu = QMenu(m.T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), sys_menu)

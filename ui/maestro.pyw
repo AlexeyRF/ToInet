@@ -1,7 +1,7 @@
-﻿import system_utils as lang
+﻿from managers import system_utils as lang
 
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-import system_utils as lang
+from managers import system_utils as lang
 import os
 import sys
 import json
@@ -854,7 +854,7 @@ class TorrcConfigurator(QMainWindow):
         
         if reply == QMessageBox.Yes:
             import shutil
-            for f in ["data/torrc", "update_bridges_torrc.pyw"]:
+            for f in ["data/torrc"]:
                 p = os.path.join(self.current_dir, f)
                 if os.path.exists(p):
                     try:

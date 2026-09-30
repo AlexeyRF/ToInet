@@ -1,4 +1,4 @@
-﻿import system_utils as lang
+﻿from managers import system_utils as lang
 
 import os
 
@@ -332,7 +332,7 @@ class OperaProxyManager(QObject):
 
     def open_settings(self):
 
-        import system_utils as utils
+        from managers import system_utils as utils
 
         utils.run_script("ui/opera_settings.pyw")
 

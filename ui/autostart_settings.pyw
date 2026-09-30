@@ -5,7 +5,7 @@ import os
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
 from managers import config_manager
-import system_utils as lang
+from managers import system_utils as lang
 
 def T(ru, en):
     return en if lang._is_en else ru
@@ -150,7 +150,7 @@ class AutostartSettingsWindow(QMainWindow):
         if app_autostart != current_app_autostart:
             self.config["auto_start"] = app_autostart
             try:
-                import auto_launcher_setuper
+                from managers import system_utils as auto_launcher_setuper
                 if app_autostart:
                     auto_launcher_setuper.enable_auto_start("main.pyw")
                 else:

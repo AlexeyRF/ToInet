@@ -7,7 +7,7 @@ PARENT_DIR = os.path.dirname(CURRENT_DIR)
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-import system_utils as lang
+from managers import system_utils as lang
 import json
 import socket
 from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
@@ -17,7 +17,7 @@ from PyQt5.QtCore import Qt
 
 from tgws import config as tgws_config
 
-from system_utils import T
+from managers.system_utils import T
 
 from managers import config_manager
 

@@ -1,4 +1,4 @@
-﻿import system_utils as lang
+﻿from managers import system_utils as lang
 import sys
 import os
 import subprocess
@@ -9,8 +9,6 @@ from PyQt5.QtWidgets import QMessageBox
 # Пути к файлам
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TORRC_FILE = os.path.join(CURRENT_DIR, "data", "torrc")
-AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
-UPDATE_BRIDGES_SCRIPT = os.path.join(CURRENT_DIR, "update_bridges_torrc.pyw")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
 TOR_EXE = os.path.join(CURRENT_DIR, "tor", "tor.exe")
 
@@ -70,6 +68,76 @@ class TorManager:
             return True
         return False
 
+
+    def _generate_torrc_from_bridges(self):
+        """Generates torrc from bridges.txt"""
+        bridges_path = os.path.join(CURRENT_DIR, "data", "bridges.txt")
+        if not os.path.exists(bridges_path):
+            log(f"bridges.txt not found at {bridges_path}")
+            return False
+            
+        with open(bridges_path, "r", encoding="utf-8") as f:
+            bridges = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+            
+        data_dir = os.path.join(CURRENT_DIR, "data")
+        geoip_path = os.path.join(data_dir, "geoip")
+        geoip6_path = os.path.join(data_dir, "geoip6")
+        lyrebird_path = os.path.join(CURRENT_DIR, "tor", "pluggable_transports", "lyrebird.exe")
+        
+        torrc_lines = [
+            f"DataDirectory {data_dir}",
+            f"GeoIPFile {geoip_path}",
+            f"GeoIPv6File {geoip6_path}",
+            "SocksPort 9853",
+            "ControlPort 9851",
+            "HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1",
+            "ExitNodes {us},{de},{fr},{nl},{se}",
+            "UseBridges 1"
+        ]
+        torrc_lines.extend([f"Bridge {bridge}" for bridge in bridges])
+        torrc_lines.extend([
+            f"ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec {lyrebird_path}",
+            "AvoidDiskWrites 1",
+            "HardwareAccel 1",
+            "ClientOnly 1",
+            "AutomapHostsOnResolve 1",
+            "SafeLogging 1"
+        ])
+        
+        with open(TORRC_FILE, "w", encoding="utf-8") as f:
+            f.write('
+'.join(torrc_lines))
+        log("Generated torrc from bridges")
+        return True
+
+    def _update_bridges_in_torrc(self):
+        """Updates bridges in existing torrc"""
+        bridges_path = os.path.join(CURRENT_DIR, "data", "bridges.txt")
+        if not os.path.exists(bridges_path) or not os.path.exists(TORRC_FILE):
+            return False
+            
+        with open(bridges_path, "r", encoding="utf-8") as f:
+            bridges = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
+            
+        with open(TORRC_FILE, "r", encoding="utf-8") as f:
+            lines = f.readlines()
+            
+        new_lines = []
+        for line in lines:
+            if not line.strip().startswith("Bridge ") and line.strip() != "UseBridges 1":
+                new_lines.append(line.rstrip())
+                
+        if bridges:
+            new_lines.append("UseBridges 1")
+            for b in bridges:
+                new_lines.append(f"Bridge {b}")
+                
+        with open(TORRC_FILE, "w", encoding="utf-8") as f:
+            f.write('
+'.join(new_lines))
+        log("Updated bridges in torrc")
+        return True
+
     def _run_script_blocking(self, script_name):
         """Запускает скрипт и ждет его завершения"""
         if os.path.exists(script_name):
@@ -112,7 +180,7 @@ class TorManager:
         # Проверяем существование torrc
         if not os.path.exists(torrc_path):
             log("torrc не найден, запускаем auto_maestro для создания")
-            self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
+            self._generate_torrc_from_bridges()
             
             if not os.path.exists(torrc_path):
                 log("Не удалось создать torrc, используем launcher.pyw")
@@ -200,13 +268,13 @@ class TorManager:
 
         if self.recreate_torrc == "full":
             self._delete_torrc_files()
-            self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
+            self._generate_torrc_from_bridges()
         elif self.recreate_torrc == "bridges":
             self._run_script_blocking(UPDATE_BRIDGES_SCRIPT)
         # if "none", do nothing
 
         if not os.path.exists(TORRC_FILE):
-            self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
+            self._generate_torrc_from_bridges()
         
         # Только через launcher.pyw, как просил пользователь
         if self._launch_tor_direct():

@@ -1,4 +1,4 @@
-﻿import system_utils as lang
+﻿from managers import system_utils as lang
 import sys
 import os
 def _ensure_dependencies():
@@ -94,9 +94,9 @@ from tgws import manager as tgws_manager
 from managers import opera_manager
 from managers import vless_manager
 from managers import mode_manager
-import system_utils as utils
+from managers import system_utils as utils
 from utils import log
-from system_utils import T
+from managers.system_utils import T
 import subprocess
 from managers import bdsher
 from managers import torchok
@@ -106,7 +106,7 @@ from managers import ext_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
-CACHER_SCRIPT = os.path.join(CURRENT_DIR, "system_utils.py")
+CACHER_SCRIPT = os.path.join(CURRENT_DIR, "managers", "system_utils.py")
 
 # Инициализируем менеджеры
 byedpi_manager = bdsher.get_manager({})
@@ -448,7 +448,7 @@ def toggle_mode():
 
 def toggle_auto_start():
     try:
-        import auto_launcher_setuper
+        from managers import system_utils as auto_launcher_setuper
         current_state = config.get("auto_start", False)
         if not current_state:
             auto_launcher_setuper.enable_auto_start(os.path.basename(__file__))
@@ -557,7 +557,7 @@ tray_menu = None
 
 def run_agy_fix():
     try:
-        import system_utils as utils
+        from managers import system_utils as utils
         utils.run_script("agy_fix.pyw")
     except:
         pass

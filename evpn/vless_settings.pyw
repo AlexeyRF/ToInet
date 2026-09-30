@@ -7,7 +7,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QMessageBox, QGroupBox, QComboBox, QSpinBox, QTextEdit)
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
-import system_utils as lang
+from managers import system_utils as lang
 from managers import config_manager
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))

@@ -16,7 +16,7 @@ import zipfile
 
 import shutil
 
-import system_utils as lang
+from managers import system_utils as lang
 
 
 
@@ -416,7 +416,7 @@ class VlessManager(QObject):
 
     def open_settings(self):
 
-        import system_utils as utils
+        from managers import system_utils as utils
 
         utils.run_script("evpn/vless_settings.pyw")
 
