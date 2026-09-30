@@ -145,7 +145,7 @@ def setup_logging():
     app_log_window = AppLogWindow('Логи приложения')
     sys.stdout = OutputLogger(sys.stdout)
     sys.stderr = OutputLogger(sys.stderr)
-    sys.stdout.log_signal.connect(app_log_window.append_log)
-    sys.stderr.log_signal.connect(app_log_window.append_log)
+    sys.stdout.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
+    sys.stderr.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
     print('[LOG] Система логирования инициализирована.')
     return app_log_window
