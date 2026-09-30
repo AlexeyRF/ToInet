@@ -1,9 +1,9 @@
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+﻿import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import threading
 import time
 import socket
 from tgws import tg_ws_proxy, config as tgws_config
-import windows as tgws_windows
+import asyncio
 from PyQt5.QtWidgets import QMessageBox
 import sys
 import subprocess
@@ -25,10 +25,10 @@ class TGWSManager:
         self.config = config
 
     def _run_thread(self):
-        loop = tgws_windows._asyncio.new_event_loop()
-        tgws_windows._asyncio.set_event_loop(loop)
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
         
-        stop_ev = tgws_windows._asyncio.Event()
+        stop_ev = asyncio.Event()
         self.stop_event = (loop, stop_ev)
         
         try:
@@ -61,19 +61,19 @@ class TGWSManager:
                 self.log(f"Failed to load gatik for async loop: {e}")
                 
             loop.run_until_complete(
-                tgws_windows._asyncio.gather(*tasks))
+                asyncio.gather(*tasks))
         except Exception as exc:
             self.log(f"TG WS Proxy thread crashed: {exc}")
             if "10048" in str(exc) or "Address already in use" in str(exc):
-                QMessageBox.critical(None, "Ошибка TG WS Proxy", 
-                                   f"Не удалось запустить TG WS Proxy:\nПорт {port} уже используется другим приложением.")
+                QMessageBox.critical(None, "РћС€РёР±РєР° TG WS Proxy", 
+                                   f"РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ TG WS Proxy:\nРџРѕСЂС‚ {port} СѓР¶Рµ РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ РґСЂСѓРіРёРј РїСЂРёР»РѕР¶РµРЅРёРµРј.")
         finally:
             try:
-                pending = tgws_windows._asyncio.all_tasks(loop)
+                pending = asyncio.all_tasks(loop)
                 for task in pending:
                     task.cancel()
                 if pending:
-                    loop.run_until_complete(tgws_windows._asyncio.gather(*pending, return_exceptions=True))
+                    loop.run_until_complete(asyncio.gather(*pending, return_exceptions=True))
             except Exception:
                 pass
             try:
@@ -92,12 +92,12 @@ class TGWSManager:
         sock.close()
         
         if result == 0:
-            self.log(f"Порт {port} уже занят, возможно TGWS уже запущен.")
+            self.log(f"РџРѕСЂС‚ {port} СѓР¶Рµ Р·Р°РЅСЏС‚, РІРѕР·РјРѕР¶РЅРѕ TGWS СѓР¶Рµ Р·Р°РїСѓС‰РµРЅ.")
             self.running = True
             return True
         
-        tgws_windows._ensure_dirs()
-        tgws_windows.setup_logging(self.config.get("tgws_verbose", False))
+        pass
+        pass
         
         self.thread = threading.Thread(target=self._run_thread, daemon=True, name="tgws-proxy")
         self.thread.start()
@@ -106,7 +106,7 @@ class TGWSManager:
         
         if self.thread.is_alive():
             self.running = True
-            self.log("TG WS Proxy запущен")
+            self.log("TG WS Proxy Р·Р°РїСѓС‰РµРЅ")
             
             # Start reabilitator if configured
             try:
@@ -120,7 +120,7 @@ class TGWSManager:
                         if os.path.exists(reab_script):
                             creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
                             subprocess.Popen([sys.executable, reab_script, "--silent"], creationflags=creationflags)
-                            self.log("Socks-Reabilitator запущен в фоне")
+                            self.log("Socks-Reabilitator Р·Р°РїСѓС‰РµРЅ РІ С„РѕРЅРµ")
             except Exception as e:
                 self.log(f"Failed to start reabilitator: {e}")
                 
@@ -128,7 +128,7 @@ class TGWSManager:
                 
             return True
         else:
-            self.log("Ошибка: поток TG WS Proxy не запустился")
+            self.log("РћС€РёР±РєР°: РїРѕС‚РѕРє TG WS Proxy РЅРµ Р·Р°РїСѓСЃС‚РёР»СЃСЏ")
             return False
 
     def stop(self):
@@ -141,7 +141,7 @@ class TGWSManager:
         self.thread = None
         self.stop_event = None
         self.running = False
-        self.log("TG WS Proxy остановлен")
+        self.log("TG WS Proxy РѕСЃС‚Р°РЅРѕРІР»РµРЅ")
         
         # Stop reabilitator
         try:
@@ -150,16 +150,17 @@ class TGWSManager:
             if os.path.exists(reab_script):
                 creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
                 subprocess.Popen([sys.executable, reab_script, "--stop"], creationflags=creationflags)
-                self.log("Отправлена команда остановки Socks-Reabilitator")
+                self.log("РћС‚РїСЂР°РІР»РµРЅР° РєРѕРјР°РЅРґР° РѕСЃС‚Р°РЅРѕРІРєРё Socks-Reabilitator")
         except Exception as e:
             self.log(f"Failed to stop reabilitator: {e}")
             
-        # Gatik (Telegram Smart Router) остановлен вместе с циклом
+        # Gatik (Telegram Smart Router) РѕСЃС‚Р°РЅРѕРІР»РµРЅ РІРјРµСЃС‚Рµ СЃ С†РёРєР»РѕРј
 
 _manager = TGWSManager()
 
 def get_manager():
     return _manager
+
 
 
 

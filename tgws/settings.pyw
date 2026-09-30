@@ -1,7 +1,7 @@
-import sys
+﻿import sys
 import os
 
-# Добавляем родительскую директорию в sys.path
+# Р”РѕР±Р°РІР»СЏРµРј СЂРѕРґРёС‚РµР»СЊСЃРєСѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ РІ sys.path
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)
 if PARENT_DIR not in sys.path:
@@ -16,10 +16,10 @@ from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
 from PyQt5.QtCore import Qt
 
 from tgws import config as tgws_config
-import windows as tgws_windows
+
 from lang import T
 
-import config_manager
+from managers import config_manager
 
 class TGWSSettingsDialog(QDialog):
     def __init__(self, parent=None):
@@ -28,7 +28,7 @@ class TGWSSettingsDialog(QDialog):
         self.init_ui()
     
     def init_ui(self):
-        self.setWindowTitle(T("Настройки TGWS Proxy", "TGWS Proxy Settings"))
+        self.setWindowTitle(T("РќР°СЃС‚СЂРѕР№РєРё TGWS Proxy", "TGWS Proxy Settings"))
         self.setMinimumWidth(500)
         self.setMinimumHeight(400)
         self.setStyleSheet("""
@@ -43,61 +43,61 @@ class TGWSSettingsDialog(QDialog):
         
         layout = QVBoxLayout()
         
-        # IP адрес
-        layout.addWidget(QLabel("IP-адрес прокси:"))
+        # IP Р°РґСЂРµСЃ
+        layout.addWidget(QLabel("IP-Р°РґСЂРµСЃ РїСЂРѕРєСЃРё:"))
         self.host_edit = QLineEdit(self.config.get("tgws_host", "127.0.0.1"))
         layout.addWidget(self.host_edit)
         
-        # Порт
-        layout.addWidget(QLabel("Порт прокси:"))
+        # РџРѕСЂС‚
+        layout.addWidget(QLabel("РџРѕСЂС‚ РїСЂРѕРєСЃРё:"))
         self.port_edit = QLineEdit(str(self.config.get("tgws_port", 1480)))
         layout.addWidget(self.port_edit)
         
-        # DC маппинги
-        layout.addWidget(QLabel("DC → IP маппинги (по одному на строку, формат DC:IP):"))
+        # DC РјР°РїРїРёРЅРіРё
+        layout.addWidget(QLabel("DC в†’ IP РјР°РїРїРёРЅРіРё (РїРѕ РѕРґРЅРѕРјСѓ РЅР° СЃС‚СЂРѕРєСѓ, С„РѕСЂРјР°С‚ DC:IP):"))
         self.dc_text = QTextEdit()
         self.dc_text.setPlainText("\n".join(self.config.get("tgws_dc_ip", ["2:149.154.167.220", "4:149.154.167.220"])))
         self.dc_text.setMaximumHeight(100)
         layout.addWidget(self.dc_text)
         
         # MTProto Secret
-        layout.addWidget(QLabel("MTProto Секрет (32 hex символа):"))
+        layout.addWidget(QLabel("MTProto РЎРµРєСЂРµС‚ (32 hex СЃРёРјРІРѕР»Р°):"))
         self.secret_edit = QLineEdit(self.config.get("tgws_secret", ""))
         layout.addWidget(self.secret_edit)
 
         # Fake TLS Domain
-        layout.addWidget(QLabel("Fake TLS Домен (опционально):"))
+        layout.addWidget(QLabel("Fake TLS Р”РѕРјРµРЅ (РѕРїС†РёРѕРЅР°Р»СЊРЅРѕ):"))
         self.fake_tls_edit = QLineEdit(self.config.get("tgws_fake_tls", ""))
         layout.addWidget(self.fake_tls_edit)
         
-        layout.addWidget(QLabel(T("Domain Fronting SNI (Устарело):", "Domain Fronting SNI (Obsolete):")))
+        layout.addWidget(QLabel(T("Domain Fronting SNI (РЈСЃС‚Р°СЂРµР»Рѕ):", "Domain Fronting SNI (Obsolete):")))
         self.fronting_edit = QLineEdit(self.config.get("tgws_fronting_sni", ""))
-        self.fronting_edit.setPlaceholderText("Например: sprinthost.ru")
-        self.fronting_edit.setToolTip(T("Включить старый фоллбэк с подменой SNI. Оставьте пустым для отключения.", "Enable old fallback with SNI masking. Leave empty to disable."))
+        self.fronting_edit.setPlaceholderText("РќР°РїСЂРёРјРµСЂ: sprinthost.ru")
+        self.fronting_edit.setToolTip(T("Р’РєР»СЋС‡РёС‚СЊ СЃС‚Р°СЂС‹Р№ С„РѕР»Р»Р±СЌРє СЃ РїРѕРґРјРµРЅРѕР№ SNI. РћСЃС‚Р°РІСЊС‚Рµ РїСѓСЃС‚С‹Рј РґР»СЏ РѕС‚РєР»СЋС‡РµРЅРёСЏ.", "Enable old fallback with SNI masking. Leave empty to disable."))
         layout.addWidget(self.fronting_edit)
         
-        # Verbose логирование
-        self.verbose_check = QCheckBox("Подробное логирование (verbose)")
+        # Verbose Р»РѕРіРёСЂРѕРІР°РЅРёРµ
+        self.verbose_check = QCheckBox("РџРѕРґСЂРѕР±РЅРѕРµ Р»РѕРіРёСЂРѕРІР°РЅРёРµ (verbose)")
         self.verbose_check.setChecked(self.config.get("tgws_verbose", False))
         layout.addWidget(self.verbose_check)
         
 
         
-        # Информация
+        # РРЅС„РѕСЂРјР°С†РёСЏ
         info_label = QLabel(
-            "TGWS Proxy будет работать на указанном порту.\n"
-            f"SOCKS5: {self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1480)} (без логина/пароля)\n"
-            f"MTProto: Секрет начинается с ee/dd и содержит ваш домен\n\n"
-            "Примечание: После сохранения настроек может потребоваться\n"
-            "перезапуск TGWS Proxy для применения изменений."
+            "TGWS Proxy Р±СѓРґРµС‚ СЂР°Р±РѕС‚Р°С‚СЊ РЅР° СѓРєР°Р·Р°РЅРЅРѕРј РїРѕСЂС‚Сѓ.\n"
+            f"SOCKS5: {self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1480)} (Р±РµР· Р»РѕРіРёРЅР°/РїР°СЂРѕР»СЏ)\n"
+            f"MTProto: РЎРµРєСЂРµС‚ РЅР°С‡РёРЅР°РµС‚СЃСЏ СЃ ee/dd Рё СЃРѕРґРµСЂР¶РёС‚ РІР°С€ РґРѕРјРµРЅ\n\n"
+            "РџСЂРёРјРµС‡Р°РЅРёРµ: РџРѕСЃР»Рµ СЃРѕС…СЂР°РЅРµРЅРёСЏ РЅР°СЃС‚СЂРѕРµРє РјРѕР¶РµС‚ РїРѕС‚СЂРµР±РѕРІР°С‚СЊСЃСЏ\n"
+            "РїРµСЂРµР·Р°РїСѓСЃРє TGWS Proxy РґР»СЏ РїСЂРёРјРµРЅРµРЅРёСЏ РёР·РјРµРЅРµРЅРёР№."
         )
         info_label.setStyleSheet("color: #888; font-size: 10pt;")
         layout.addWidget(info_label)
         
-        # Кнопки
+        # РљРЅРѕРїРєРё
         
-        # Кнопка для теста стратегий временно закомментирована, так как пока нет необходимости
-        # self.tester_btn = QPushButton("Тест стратегий TGWS")
+        # РљРЅРѕРїРєР° РґР»СЏ С‚РµСЃС‚Р° СЃС‚СЂР°С‚РµРіРёР№ РІСЂРµРјРµРЅРЅРѕ Р·Р°РєРѕРјРјРµРЅС‚РёСЂРѕРІР°РЅР°, С‚Р°Рє РєР°Рє РїРѕРєР° РЅРµС‚ РЅРµРѕР±С…РѕРґРёРјРѕСЃС‚Рё
+        # self.tester_btn = QPushButton("РўРµСЃС‚ СЃС‚СЂР°С‚РµРіРёР№ TGWS")
         # def run_tester():
         #     import subprocess, sys, os
         #     subprocess.Popen([sys.executable, "tgws/tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
@@ -105,8 +105,8 @@ class TGWSSettingsDialog(QDialog):
         # layout.addWidget(self.tester_btn)
 
         btn_layout = QHBoxLayout()
-        self.save_btn = QPushButton(T("Сохранить", "Save"))
-        self.cancel_btn = QPushButton(T("Отмена", "Cancel"))
+        self.save_btn = QPushButton(T("РЎРѕС…СЂР°РЅРёС‚СЊ", "Save"))
+        self.cancel_btn = QPushButton(T("РћС‚РјРµРЅР°", "Cancel"))
         
         self.save_btn.clicked.connect(self.validate_and_save)
         self.cancel_btn.clicked.connect(self.reject)
@@ -118,39 +118,39 @@ class TGWSSettingsDialog(QDialog):
         self.setLayout(layout)
     
     def validate_and_save(self):
-        """Проверка и сохранение настроек"""
+        """РџСЂРѕРІРµСЂРєР° Рё СЃРѕС…СЂР°РЅРµРЅРёРµ РЅР°СЃС‚СЂРѕРµРє"""
         host = self.host_edit.text().strip()
         
-        # Проверка IP
+        # РџСЂРѕРІРµСЂРєР° IP
         try:
             socket.inet_aton(host)
         except OSError:
-            QMessageBox.critical(self, T("Ошибка", "Error"), "Некорректный IP-адрес.")
+            QMessageBox.critical(self, T("РћС€РёР±РєР°", "Error"), "РќРµРєРѕСЂСЂРµРєС‚РЅС‹Р№ IP-Р°РґСЂРµСЃ.")
             return
         
-        # Проверка порта
+        # РџСЂРѕРІРµСЂРєР° РїРѕСЂС‚Р°
         try:
             port = int(self.port_edit.text().strip())
             if not (1 <= port <= 65535):
                 raise ValueError
         except ValueError:
-            QMessageBox.critical(self, T("Ошибка", "Error"), "Порт должен быть числом от 1 до 65535")
+            QMessageBox.critical(self, T("РћС€РёР±РєР°", "Error"), "РџРѕСЂС‚ РґРѕР»Р¶РµРЅ Р±С‹С‚СЊ С‡РёСЃР»РѕРј РѕС‚ 1 РґРѕ 65535")
             return
         
-        # Проверка DC маппингов
+        # РџСЂРѕРІРµСЂРєР° DC РјР°РїРїРёРЅРіРѕРІ
         lines = [l.strip() for l in self.dc_text.toPlainText().strip().splitlines() if l.strip()]
         try:
             tgws_config.parse_dc_ip_list(lines)
         except ValueError as e:
-            QMessageBox.critical(self, T("Ошибка", "Error"), str(e))
+            QMessageBox.critical(self, T("РћС€РёР±РєР°", "Error"), str(e))
             return
             
         secret = self.secret_edit.text().strip()
         if len(secret) != 32 or not all(c in '0123456789abcdefABCDEF' for c in secret):
-            QMessageBox.critical(self, T("Ошибка", "Error"), "Секрет должен состоять из 32 шестнадцатеричных символов")
+            QMessageBox.critical(self, T("РћС€РёР±РєР°", "Error"), "РЎРµРєСЂРµС‚ РґРѕР»Р¶РµРЅ СЃРѕСЃС‚РѕСЏС‚СЊ РёР· 32 С€РµСЃС‚РЅР°РґС†Р°С‚РµСЂРёС‡РЅС‹С… СЃРёРјРІРѕР»РѕРІ")
             return
         
-        # Сохраняем настройки
+        # РЎРѕС…СЂР°РЅСЏРµРј РЅР°СЃС‚СЂРѕР№РєРё
         self.config["tgws_host"] = host
         self.config["tgws_port"] = port
         self.config["tgws_dc_ip"] = lines
@@ -161,7 +161,7 @@ class TGWSSettingsDialog(QDialog):
 
         config_manager.save_config(self.config)
         
-        QMessageBox.information(self, T("Успех", "Success"), "Настройки TGWS Proxy сохранены!")
+        QMessageBox.information(self, T("РЈСЃРїРµС…", "Success"), "РќР°СЃС‚СЂРѕР№РєРё TGWS Proxy СЃРѕС…СЂР°РЅРµРЅС‹!")
         self.accept()
 
 def main():
@@ -171,4 +171,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+
 
