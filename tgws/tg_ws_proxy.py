@@ -550,11 +550,15 @@ async def _run(stop_event: Optional[asyncio.Event] = None):
     log.info("=" * 60)
 
     async def log_stats():
+        last_summary = None
         try:
             while True:
                 await asyncio.sleep(60)
                 bl = ', '.join(f'DC{k}' for k in sorted(ws_blacklist)) or 'none'
-                log.info("stats: %s | ws_bl: %s", stats.summary(), bl)
+                current_summary = f"{stats.summary()} | ws_bl: {bl}"
+                if current_summary != last_summary:
+                    log.info("stats: %s", current_summary)
+                    last_summary = current_summary
         except asyncio.CancelledError:
             raise
 
