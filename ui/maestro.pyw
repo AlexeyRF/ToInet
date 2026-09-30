@@ -1,6 +1,4 @@
-﻿from managers import system_utils as lang
-
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+﻿import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from managers import system_utils as lang
 import os
 import sys
