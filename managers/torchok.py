@@ -105,8 +105,7 @@ class TorManager:
         ])
         
         with open(TORRC_FILE, "w", encoding="utf-8") as f:
-            f.write('
-'.join(torrc_lines))
+            f.write('\n'.join(torrc_lines))
         log("Generated torrc from bridges")
         return True
 
@@ -133,8 +132,7 @@ class TorManager:
                 new_lines.append(f"Bridge {b}")
                 
         with open(TORRC_FILE, "w", encoding="utf-8") as f:
-            f.write('
-'.join(new_lines))
+            f.write('\n'.join(new_lines))
         log("Updated bridges in torrc")
         return True
 
