@@ -28,7 +28,9 @@ class TorManager:
         self.show_window = config.get("tor_show_window", False)
 
     def _read_recreate_torrc(self):
-        val = self.config.get("recreate_torrc", "none")
+        from managers import config_manager
+        cfg = config_manager.load_config()
+        val = cfg.get("recreate_torrc", "none")
         if isinstance(val, bool): return "full" if val else "none"
         if val == "true": return "full"
         if val == "false": return "bridges"
@@ -36,8 +38,9 @@ class TorManager:
 
     def _write_recreate_torrc(self, value):
         from managers import config_manager
-        self.config["recreate_torrc"] = str(value).lower()
-        config_manager.save_config(self.config)
+        cfg = config_manager.load_config()
+        cfg["recreate_torrc"] = str(value).lower()
+        config_manager.save_config(cfg)
 
     def _run_script(self, script_name):
         """Р—Р°РїСѓСЃРєР°РµС‚ СЃРєСЂРёРїС‚ РІ С„РѕРЅРµ"""
@@ -332,6 +335,7 @@ def log(msg):
 def get_manager():
     """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЌРєР·РµРјРїР»СЏСЂ РјРµРЅРµРґР¶РµСЂР° TOR"""
     return TorManager()
+
 
 
 
