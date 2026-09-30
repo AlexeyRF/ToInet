@@ -1,9 +1,9 @@
-from __future__ 
+from __future__ import annotations
+
 import sys
 import asyncio
 if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-import annotations
 
 import os
 import sys
