@@ -67,12 +67,20 @@ class OutputLogger(QObject):
     def __init__(self, original_stream):
         super().__init__()
         self.original_stream = original_stream
+        import os
+        if not os.path.exists('logs'): os.makedirs('logs')
+        self.log_file = os.path.join('logs', 'app.log')
 
     def write(self, text):
         if self.original_stream:
             try:
                 self.original_stream.write(text)
                 self.original_stream.flush()
+            except: pass
+        if text.strip():
+            try:
+                with open(self.log_file, 'a', encoding='utf-8') as f:
+                    f.write(text)
             except: pass
         self.log_signal.emit(text)
 

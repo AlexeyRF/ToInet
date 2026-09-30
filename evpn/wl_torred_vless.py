@@ -1,8 +1,8 @@
-import os
+﻿import os
 import sys
 def safe_print(*args, **kwargs):
     try:
-        with open('wl_vless.log', 'a', encoding='utf-8') as f:
+        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'wl_vless.log'), 'a', encoding='utf-8') as f:
             f.write(' '.join(map(str, args)) + '\n')
     except:
         pass
@@ -261,3 +261,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

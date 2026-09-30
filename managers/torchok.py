@@ -1,4 +1,4 @@
-import lang
+﻿import lang
 import sys
 import os
 import subprocess
@@ -6,10 +6,9 @@ import time
 import psutil
 from PyQt5.QtWidgets import QMessageBox
 
-# Пути к файлам
+# РџСѓС‚Рё Рє С„Р°Р№Р»Р°Рј
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TORRC_FILE = os.path.join(CURRENT_DIR, "torrc")
-RECREATE_TORRC_FILE = os.path.join(CURRENT_DIR, "recreate_torrc.txt")
 LAUNCHER_SCRIPT = os.path.join(CURRENT_DIR, "launcher.pyw")
 CLOSER_SCRIPT = os.path.join(CURRENT_DIR, "closer.pyw")
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, "auto_maestro.pyw")
@@ -25,25 +24,23 @@ class TorManager:
         self.show_window = False
 
     def update_config(self, config):
-        """Обновляет конфигурацию из основного config"""
+        """РћР±РЅРѕРІР»СЏРµС‚ РєРѕРЅС„РёРіСѓСЂР°С†РёСЋ РёР· РѕСЃРЅРѕРІРЅРѕРіРѕ config"""
         self.show_window = config.get("tor_show_window", False)
 
     def _read_recreate_torrc(self):
-        """Читает флаг пересоздания torrc из файла"""
-        if not os.path.exists(RECREATE_TORRC_FILE):
-            with open(RECREATE_TORRC_FILE, "w") as f:
-                f.write("false")
-            return False
-        with open(RECREATE_TORRC_FILE, "r") as f:
-            return f.read().strip().lower() == "true"
+        val = self.config.get("recreate_torrc", "none")
+        if isinstance(val, bool): return "full" if val else "none"
+        if val == "true": return "full"
+        if val == "false": return "bridges"
+        return str(val).lower()
 
-    def _write_recreate_torrc(self, value: bool):
-        """Записывает флаг пересоздания torrc в файл"""
-        with open(RECREATE_TORRC_FILE, "w") as f:
-            f.write("true" if value else "false")
+    def _write_recreate_torrc(self, value):
+        from managers import config_manager
+        self.config["recreate_torrc"] = str(value).lower()
+        config_manager.save_config(self.config)
 
     def _run_script(self, script_name):
-        """Запускает скрипт в фоне"""
+        """Р—Р°РїСѓСЃРєР°РµС‚ СЃРєСЂРёРїС‚ РІ С„РѕРЅРµ"""
         if os.path.exists(script_name):
             subprocess.Popen([sys.executable, script_name], 
                            creationflags=subprocess.CREATE_NO_WINDOW)
@@ -51,14 +48,14 @@ class TorManager:
         return False
 
     def _run_script_blocking(self, script_name):
-        """Запускает скрипт и ждет его завершения"""
+        """Р—Р°РїСѓСЃРєР°РµС‚ СЃРєСЂРёРїС‚ Рё Р¶РґРµС‚ РµРіРѕ Р·Р°РІРµСЂС€РµРЅРёСЏ"""
         if os.path.exists(script_name):
             subprocess.call([sys.executable, script_name])
             return True
         return False
 
     def _delete_torrc_files(self):
-        """Удаляет файлы torrc"""
+        """РЈРґР°Р»СЏРµС‚ С„Р°Р№Р»С‹ torrc"""
         torrc_paths = [TORRC_FILE, os.path.join(CURRENT_DIR, "for_servers/torrc")]
         
         for torrc_path in torrc_paths:
@@ -69,13 +66,13 @@ class TorManager:
                     pass
 
     def _start_tor_direct(self):
-        """Запускает TOR напрямую через tor.exe -f torrc с абсолютными путями"""
+        """Р—Р°РїСѓСЃРєР°РµС‚ TOR РЅР°РїСЂСЏРјСѓСЋ С‡РµСЂРµР· tor.exe -f torrc СЃ Р°Р±СЃРѕР»СЋС‚РЅС‹РјРё РїСѓС‚СЏРјРё"""
         tor_exe_path = os.path.abspath(TOR_EXE)
         torrc_path = os.path.abspath(TORRC_FILE)
         
-        # Проверяем существование tor.exe
+        # РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ tor.exe
         if not os.path.exists(tor_exe_path):
-            # Ищем tor.exe в других местах
+            # РС‰РµРј tor.exe РІ РґСЂСѓРіРёС… РјРµСЃС‚Р°С…
             possible_paths = [
                 os.path.join(CURRENT_DIR, "tor.exe"),
                 os.path.join(CURRENT_DIR, "Tor", "tor.exe"),
@@ -86,61 +83,61 @@ class TorManager:
                     tor_exe_path = os.path.abspath(path)
                     break
             else:
-                log("tor.exe не найден, используется launcher.pyw")
+                log("tor.exe РЅРµ РЅР°Р№РґРµРЅ, РёСЃРїРѕР»СЊР·СѓРµС‚СЃСЏ launcher.pyw")
                 return self._run_script(LAUNCHER_SCRIPT)
         
-        # Проверяем существование torrc
+        # РџСЂРѕРІРµСЂСЏРµРј СЃСѓС‰РµСЃС‚РІРѕРІР°РЅРёРµ torrc
         if not os.path.exists(torrc_path):
-            log("torrc не найден, запускаем auto_maestro для создания")
+            log("torrc РЅРµ РЅР°Р№РґРµРЅ, Р·Р°РїСѓСЃРєР°РµРј auto_maestro РґР»СЏ СЃРѕР·РґР°РЅРёСЏ")
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
             
             if not os.path.exists(torrc_path):
-                log("Не удалось создать torrc, используем launcher.pyw")
+                log("РќРµ СѓРґР°Р»РѕСЃСЊ СЃРѕР·РґР°С‚СЊ torrc, РёСЃРїРѕР»СЊР·СѓРµРј launcher.pyw")
                 return self._run_script(LAUNCHER_SCRIPT)
         
-        # Запускаем tor.exe
+        # Р—Р°РїСѓСЃРєР°РµРј tor.exe
         try:
             creation_flags = subprocess.CREATE_NO_WINDOW if not self.show_window else subprocess.CREATE_NEW_CONSOLE
             
             if self.show_window:
-                # Создаем новое окно консоли
+                # РЎРѕР·РґР°РµРј РЅРѕРІРѕРµ РѕРєРЅРѕ РєРѕРЅСЃРѕР»Рё
                 self.tor_process = subprocess.Popen(
                     [tor_exe_path, "-f", torrc_path],
                     creationflags=creation_flags,
-                    cwd=CURRENT_DIR  # Явно задаем рабочую директорию
+                    cwd=CURRENT_DIR  # РЇРІРЅРѕ Р·Р°РґР°РµРј СЂР°Р±РѕС‡СѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ
                 )
             else:
-                # Без окна
+                # Р‘РµР· РѕРєРЅР°
                 self.tor_process = subprocess.Popen(
                     [tor_exe_path, "-f", torrc_path],
                     creationflags=subprocess.CREATE_NO_WINDOW,
                     stdout=subprocess.DEVNULL,
                     stderr=subprocess.DEVNULL,
-                    cwd=CURRENT_DIR  # Явно задаем рабочую директорию
+                    cwd=CURRENT_DIR  # РЇРІРЅРѕ Р·Р°РґР°РµРј СЂР°Р±РѕС‡СѓСЋ РґРёСЂРµРєС‚РѕСЂРёСЋ
                 )
             
-            # Небольшая пауза для запуска процесса
+            # РќРµР±РѕР»СЊС€Р°СЏ РїР°СѓР·Р° РґР»СЏ Р·Р°РїСѓСЃРєР° РїСЂРѕС†РµСЃСЃР°
             time.sleep(2)
             
-            # Проверяем, запустился ли процесс
+            # РџСЂРѕРІРµСЂСЏРµРј, Р·Р°РїСѓСЃС‚РёР»СЃСЏ Р»Рё РїСЂРѕС†РµСЃСЃ
             if self.tor_process.poll() is None:
-                log(f"TOR запущен напрямую через {tor_exe_path}")
+                log(f"TOR Р·Р°РїСѓС‰РµРЅ РЅР°РїСЂСЏРјСѓСЋ С‡РµСЂРµР· {tor_exe_path}")
                 return True
             else:
-                log("Не удалось запустить TOR напрямую, используем launcher.pyw")
+                log("РќРµ СѓРґР°Р»РѕСЃСЊ Р·Р°РїСѓСЃС‚РёС‚СЊ TOR РЅР°РїСЂСЏРјСѓСЋ, РёСЃРїРѕР»СЊР·СѓРµРј launcher.pyw")
                 self.tor_process = None
                 return self._run_script(LAUNCHER_SCRIPT)
                 
         except Exception as e:
-            log(f"Ошибка запуска TOR напрямую: {e}")
+            log(f"РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° TOR РЅР°РїСЂСЏРјСѓСЋ: {e}")
             self.tor_process = None
             return self._run_script(LAUNCHER_SCRIPT)
 
     def _stop_tor_direct(self):
-        """Останавливает TOR, запущенный напрямую"""
+        """РћСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ TOR, Р·Р°РїСѓС‰РµРЅРЅС‹Р№ РЅР°РїСЂСЏРјСѓСЋ"""
         if self.tor_process:
             try:
-                # Пытаемся завершить процесс
+                # РџС‹С‚Р°РµРјСЃСЏ Р·Р°РІРµСЂС€РёС‚СЊ РїСЂРѕС†РµСЃСЃ
                 self.tor_process.terminate()
                 try:
                     self.tor_process.wait(timeout=0.2)
@@ -149,16 +146,16 @@ class TorManager:
                 if self.tor_process.poll() is None:
                     self.tor_process.kill()
                 self.tor_process = None
-                log("TOR процесс остановлен")
+                log("TOR РїСЂРѕС†РµСЃСЃ РѕСЃС‚Р°РЅРѕРІР»РµРЅ")
                 return True
             except Exception as e:
-                log(f"Ошибка остановки TOR процесса: {e}")
+                log(f"РћС€РёР±РєР° РѕСЃС‚Р°РЅРѕРІРєРё TOR РїСЂРѕС†РµСЃСЃР°: {e}")
         
-        # Если не получилось через процесс, используем closer.pyw
+        # Р•СЃР»Рё РЅРµ РїРѕР»СѓС‡РёР»РѕСЃСЊ С‡РµСЂРµР· РїСЂРѕС†РµСЃСЃ, РёСЃРїРѕР»СЊР·СѓРµРј closer.pyw
         return self._run_script(CLOSER_SCRIPT)
 
     def start(self):
-        """Запуск TOR"""
+        """Р—Р°РїСѓСЃРє TOR"""
         if self.tor_running:
             return True
 
@@ -172,7 +169,7 @@ class TorManager:
         if not os.path.exists(TORRC_FILE):
             self._run_script_blocking(AUTO_MAESTRO_SCRIPT)
         
-        # Только через launcher.pyw, как просил пользователь
+        # РўРѕР»СЊРєРѕ С‡РµСЂРµР· launcher.pyw, РєР°Рє РїСЂРѕСЃРёР» РїРѕР»СЊР·РѕРІР°С‚РµР»СЊ
         if self._run_script(LAUNCHER_SCRIPT):
             self.tor_running = True
             return True
@@ -180,36 +177,36 @@ class TorManager:
         return False
 
     def stop(self):
-        """Останавливает TOR"""
+        """РћСЃС‚Р°РЅР°РІР»РёРІР°РµС‚ TOR"""
         if not self.tor_running:
             return
         
-        # Пытаемся остановить напрямую
+        # РџС‹С‚Р°РµРјСЃСЏ РѕСЃС‚Р°РЅРѕРІРёС‚СЊ РЅР°РїСЂСЏРјСѓСЋ
         self._stop_tor_direct()
         self.tor_running = False
 
     def restart(self, parent=None):
-        """Перезапускает TOR"""
+        """РџРµСЂРµР·Р°РїСѓСЃРєР°РµС‚ TOR"""
         if self.tor_running:
             self.stop()
             time.sleep(2)
         
         if self.start():
             if parent:
-                QMessageBox.information(parent, "Перезапуск TOR", 
-                                      "TOR успешно перезапущен!")
+                QMessageBox.information(parent, "РџРµСЂРµР·Р°РїСѓСЃРє TOR", 
+                                      "TOR СѓСЃРїРµС€РЅРѕ РїРµСЂРµР·Р°РїСѓС‰РµРЅ!")
             return True
         else:
             if parent:
-                QMessageBox.critical(parent, T("Ошибка", "Error"), 
-                                   "Не удалось перезапустить TOR")
+                QMessageBox.critical(parent, T("РћС€РёР±РєР°", "Error"), 
+                                   "РќРµ СѓРґР°Р»РѕСЃСЊ РїРµСЂРµР·Р°РїСѓСЃС‚РёС‚СЊ TOR")
             return False
 
     def new_circuit(self, parent=None):
-        """Запрашивает новую цепочку (NEWNYM) у TOR"""
+        """Р—Р°РїСЂР°С€РёРІР°РµС‚ РЅРѕРІСѓСЋ С†РµРїРѕС‡РєСѓ (NEWNYM) Сѓ TOR"""
         if not self.tor_running:
             if parent:
-                QMessageBox.warning(parent, T("Ошибка", "Error"), "TOR не запущен.")
+                QMessageBox.warning(parent, T("РћС€РёР±РєР°", "Error"), "TOR РЅРµ Р·Р°РїСѓС‰РµРЅ.")
             return False
 
         try:
@@ -261,71 +258,71 @@ class TorManager:
                     success = False
             
             if success:
-                log("Успешно запрошена новая цепочка TOR")
+                log("РЈСЃРїРµС€РЅРѕ Р·Р°РїСЂРѕС€РµРЅР° РЅРѕРІР°СЏ С†РµРїРѕС‡РєР° TOR")
                 if parent:
-                    QMessageBox.information(parent, "TOR", "Новая цепочка успешно запрошена!")
+                    QMessageBox.information(parent, "TOR", "РќРѕРІР°СЏ С†РµРїРѕС‡РєР° СѓСЃРїРµС€РЅРѕ Р·Р°РїСЂРѕС€РµРЅР°!")
                 return True
             else:
                 err_str = "\n".join(errors)
-                log(f"Ошибка при запросе NEWNYM: {err_str}")
+                log(f"РћС€РёР±РєР° РїСЂРё Р·Р°РїСЂРѕСЃРµ NEWNYM: {err_str}")
                 if parent:
-                    QMessageBox.warning(parent, T("Ошибка", "Error"), f"Ошибка при запросе новой цепочки:\n{err_str}")
+                    QMessageBox.warning(parent, T("РћС€РёР±РєР°", "Error"), f"РћС€РёР±РєР° РїСЂРё Р·Р°РїСЂРѕСЃРµ РЅРѕРІРѕР№ С†РµРїРѕС‡РєРё:\n{err_str}")
                 return False
         except Exception as e:
-            log(f"Внутренняя ошибка: {e}")
+            log(f"Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР°: {e}")
             if parent:
-                QMessageBox.warning(parent, T("Ошибка", "Error"), f"Внутренняя ошибка:\n{e}")
+                QMessageBox.warning(parent, T("РћС€РёР±РєР°", "Error"), f"Р’РЅСѓС‚СЂРµРЅРЅСЏСЏ РѕС€РёР±РєР°:\n{e}")
             return False
 
     def is_running(self):
-        """Возвращает статус работы TOR"""
-        # Проверяем, жив ли процесс, если запускали напрямую
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃС‚Р°С‚СѓСЃ СЂР°Р±РѕС‚С‹ TOR"""
+        # РџСЂРѕРІРµСЂСЏРµРј, Р¶РёРІ Р»Рё РїСЂРѕС†РµСЃСЃ, РµСЃР»Рё Р·Р°РїСѓСЃРєР°Р»Рё РЅР°РїСЂСЏРјСѓСЋ
         if self.tor_running and self.tor_process:
             if self.tor_process.poll() is not None:
                 self.tor_running = False
         return self.tor_running
 
     def toggle_recreate(self):
-        """Цикличное переключение режима пересоздания torrc"""
+        """Р¦РёРєР»РёС‡РЅРѕРµ РїРµСЂРµРєР»СЋС‡РµРЅРёРµ СЂРµР¶РёРјР° РїРµСЂРµСЃРѕР·РґР°РЅРёСЏ torrc"""
         if self.recreate_torrc == "full": self.recreate_torrc = "bridges"
         elif self.recreate_torrc == "bridges": self.recreate_torrc = "none"
         else: self.recreate_torrc = "full"
         self._write_recreate_torrc(self.recreate_torrc)
 
     def get_recreate_mode(self):
-        """Возвращает статус флага пересоздания torrc"""
+        """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЃС‚Р°С‚СѓСЃ С„Р»Р°РіР° РїРµСЂРµСЃРѕР·РґР°РЅРёСЏ torrc"""
         return self.recreate_torrc
 
     def delete_config(self):
-        """Удаляет конфигурационные файлы TOR"""
+        """РЈРґР°Р»СЏРµС‚ РєРѕРЅС„РёРіСѓСЂР°С†РёРѕРЅРЅС‹Рµ С„Р°Р№Р»С‹ TOR"""
         self._delete_torrc_files()
 
     def open_settings(self):
-        """Открывает настройки TOR (maestro.pyw, НЕ auto_maestro)"""
-        # Сначала проверяем наличие maestro.pyw
+        """РћС‚РєСЂС‹РІР°РµС‚ РЅР°СЃС‚СЂРѕР№РєРё TOR (maestro.pyw, РќР• auto_maestro)"""
+        # РЎРЅР°С‡Р°Р»Р° РїСЂРѕРІРµСЂСЏРµРј РЅР°Р»РёС‡РёРµ maestro.pyw
         if os.path.exists(MAESTRO_SCRIPT):
             try:
-                # Запускаем maestro.pyw с обычным окном (не скрытым)
+                # Р—Р°РїСѓСЃРєР°РµРј maestro.pyw СЃ РѕР±С‹С‡РЅС‹Рј РѕРєРЅРѕРј (РЅРµ СЃРєСЂС‹С‚С‹Рј)
                 subprocess.Popen([sys.executable, MAESTRO_SCRIPT])
-                log(f"Запущен {MAESTRO_SCRIPT}")
+                log(f"Р—Р°РїСѓС‰РµРЅ {MAESTRO_SCRIPT}")
                 return True
             except Exception as e:
-                log(f"Ошибка запуска {MAESTRO_SCRIPT}: {e}")
+                log(f"РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° {MAESTRO_SCRIPT}: {e}")
         
-        # Если maestro.pyw не найден, пробуем auto_maestro.pyw
+        # Р•СЃР»Рё maestro.pyw РЅРµ РЅР°Р№РґРµРЅ, РїСЂРѕР±СѓРµРј auto_maestro.pyw
         if os.path.exists(AUTO_MAESTRO_SCRIPT):
             try:
                 subprocess.Popen([sys.executable, AUTO_MAESTRO_SCRIPT])
-                log(f"Запущен {AUTO_MAESTRO_SCRIPT} (как запасной вариант)")
+                log(f"Р—Р°РїСѓС‰РµРЅ {AUTO_MAESTRO_SCRIPT} (РєР°Рє Р·Р°РїР°СЃРЅРѕР№ РІР°СЂРёР°РЅС‚)")
                 return True
             except Exception as e:
-                log(f"Ошибка запуска {AUTO_MAESTRO_SCRIPT}: {e}")
+                log(f"РћС€РёР±РєР° Р·Р°РїСѓСЃРєР° {AUTO_MAESTRO_SCRIPT}: {e}")
         
-        # Если ничего не сработало
-        QMessageBox.critical(None, T("Ошибка", "Error"), 
-                           f"Не найдены файлы настроек TOR:\n"
+        # Р•СЃР»Рё РЅРёС‡РµРіРѕ РЅРµ СЃСЂР°Р±РѕС‚Р°Р»Рѕ
+        QMessageBox.critical(None, T("РћС€РёР±РєР°", "Error"), 
+                           f"РќРµ РЅР°Р№РґРµРЅС‹ С„Р°Р№Р»С‹ РЅР°СЃС‚СЂРѕРµРє TOR:\n"
                            f"{MAESTRO_SCRIPT}\n"
-                           f"или\n{AUTO_MAESTRO_SCRIPT}")
+                           f"РёР»Рё\n{AUTO_MAESTRO_SCRIPT}")
         return False
 
 
@@ -333,6 +330,8 @@ def log(msg):
     print(f"[TOR Manager] {msg}")
 
 def get_manager():
-    """Возвращает экземпляр менеджера TOR"""
+    """Р’РѕР·РІСЂР°С‰Р°РµС‚ СЌРєР·РµРјРїР»СЏСЂ РјРµРЅРµРґР¶РµСЂР° TOR"""
     return TorManager()
+
+
 

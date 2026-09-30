@@ -1,4 +1,4 @@
-import os
+﻿import os
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
 from managers import config_manager
@@ -10,7 +10,7 @@ def T(ru, en):
 class AutostartSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings"))
+        self.setWindowTitle(T("РќР°СЃС‚СЂРѕР№РєРё Р°РІС‚РѕР·Р°РїСѓСЃРєР°", "Autostart Settings"))
         self.resize(600, 650)
         
         # Dark Title Bar for Windows
@@ -34,15 +34,15 @@ class AutostartSettingsWindow(QMainWindow):
         self.setCentralWidget(central)
         layout = QVBoxLayout(central)
         
-        label = QLabel(T("Выберите, какие инструменты будут запускаться\nавтоматически при старте приложения:", 
+        label = QLabel(T("Р’С‹Р±РµСЂРёС‚Рµ, РєР°РєРёРµ РёРЅСЃС‚СЂСѓРјРµРЅС‚С‹ Р±СѓРґСѓС‚ Р·Р°РїСѓСЃРєР°С‚СЊСЃСЏ\nР°РІС‚РѕРјР°С‚РёС‡РµСЃРєРё РїСЂРё СЃС‚Р°СЂС‚Рµ РїСЂРёР»РѕР¶РµРЅРёСЏ:", 
                          "Select which tools should be started\nautomatically when the application starts:"))
         layout.addWidget(label)
         
-        self.cb_byedpi = QCheckBox(T("ByeDPI (Обход DPI)", "ByeDPI (DPI Bypass)"))
+        self.cb_byedpi = QCheckBox(T("ByeDPI (РћР±С…РѕРґ DPI)", "ByeDPI (DPI Bypass)"))
         self.cb_byedpi.setChecked("byedpi" in self.autostart_tools)
         layout.addWidget(self.cb_byedpi)
         
-        self.cb_tor = QCheckBox(T("Tor (Для сайтов Onion и заблокированных)", "Tor (For Onion and blocked sites)"))
+        self.cb_tor = QCheckBox(T("Tor (Р”Р»СЏ СЃР°Р№С‚РѕРІ Onion Рё Р·Р°Р±Р»РѕРєРёСЂРѕРІР°РЅРЅС‹С…)", "Tor (For Onion and blocked sites)"))
         self.cb_tor.setChecked("tor" in self.autostart_tools)
         layout.addWidget(self.cb_tor)
         
@@ -63,95 +63,32 @@ class AutostartSettingsWindow(QMainWindow):
         self.cb_tgws.toggled.connect(self.on_tgws_toggled)
         layout.addWidget(self.cb_tgws)
         
-        self.cb_proxifier = QCheckBox(T("Проксификатор (TUN / ProxyBridge)", "Proxifier (TUN / ProxyBridge)"))
+        self.cb_proxifier = QCheckBox(T("РџСЂРѕРєСЃРёС„РёРєР°С‚РѕСЂ (TUN / ProxyBridge)", "Proxifier (TUN / ProxyBridge)"))
         self.cb_proxifier.setChecked("proxifier" in self.autostart_tools)
         layout.addWidget(self.cb_proxifier)
         
-        self.cb_ext = QCheckBox(T("Дополнительные программы", "External Programs"))
+        self.cb_ext = QCheckBox(T("Р”РѕРїРѕР»РЅРёС‚РµР»СЊРЅС‹Рµ РїСЂРѕРіСЂР°РјРјС‹", "External Programs"))
         self.cb_ext.setChecked("ext" in self.autostart_tools)
         layout.addWidget(self.cb_ext)
         
         # Adding a master checkbox for app autostart itself
         layout.addSpacing(15)
         
-        self.cb_auto_last = QCheckBox(T("Подключать последний режим при запуске", "Connect Last Mode on Start"))
+        self.cb_auto_last = QCheckBox(T("РџРѕРґРєР»СЋС‡Р°С‚СЊ РїРѕСЃР»РµРґРЅРёР№ СЂРµР¶РёРј РїСЂРё Р·Р°РїСѓСЃРєРµ", "Connect Last Mode on Start"))
         self.cb_auto_last.setChecked(self.config.get("auto_connect_last_mode", False))
         layout.addWidget(self.cb_auto_last)
         
         layout.addSpacing(10)
         torrc_layout = QHBoxLayout()
-        torrc_label = QLabel(T("Действие с torrc при запуске:", "Action with torrc on start:"))
+        torrc_label = QLabel(T("Р”РµР№СЃС‚РІРёРµ СЃ torrc РїСЂРё Р·Р°РїСѓСЃРєРµ:", "Action with torrc on start:"))
         torrc_label.setStyleSheet("padding-bottom: 0px;")
         self.torrc_combo = QComboBox()
-        self.torrc_combo.addItem(T("Не трогать (None)", "Do nothing (None)"), "none")
-        self.torrc_combo.addItem(T("Обновлять мосты (Bridges Only)", "Update bridges (Bridges Only)"), "bridges")
-        self.torrc_combo.addItem(T("Полное пересоздание (Full)", "Full recreation (Full)"), "full")
+        self.torrc_combo.addItem(T("РќРµ С‚СЂРѕРіР°С‚СЊ (None)", "Do nothing (None)"), "none")
+        self.torrc_combo.addItem(T("РћР±РЅРѕРІР»СЏС‚СЊ РјРѕСЃС‚С‹ (Bridges Only)", "Update bridges (Bridges Only)"), "bridges")
+        self.torrc_combo.addItem(T("РџРѕР»РЅРѕРµ РїРµСЂРµСЃРѕР·РґР°РЅРёРµ (Full)", "Full recreation (Full)"), "full")
         
         # Read current state
-        try:
-            import sys
-            cdir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-            with open(os.path.join(cdir, "recreate_torrc.txt"), "r") as f:
-                val = f.read().strip().lower()
-                if val == "true" or val == "full": self.torrc_combo.setCurrentIndex(2)
-                elif val == "false" or val == "bridges": self.torrc_combo.setCurrentIndex(1)
-                elif val == "none": self.torrc_combo.setCurrentIndex(0)
-                else: self.torrc_combo.setCurrentIndex(1)
-        except Exception:
-            self.torrc_combo.setCurrentIndex(1)
-            
-        torrc_layout.addWidget(torrc_label)
-        torrc_layout.addWidget(self.torrc_combo)
-        torrc_layout.addStretch()
-        layout.addLayout(torrc_layout)
-        
-        layout.addSpacing(15)
-        self.cb_app_autostart = QCheckBox(T("Запускать приложение при старте Windows", "Start application on Windows startup"))
-        self.cb_app_autostart.setChecked(self.config.get("auto_start", False))
-        layout.addWidget(self.cb_app_autostart)
-        
-        layout.addStretch()
-        
-        save_btn = QPushButton(T("Сохранить", "Save"))
-        save_btn.setFixedHeight(40)
-        save_btn.clicked.connect(self.save_settings)
-        layout.addWidget(save_btn)
-        
-    def on_tgws_toggled(self, checked):
-        if checked:
-            reply = QMessageBox.warning(self, T("Внимание", "Warning"),
-                T("Павел Дуров признан в России экстремистом и не известно какие меры будут приняты в отношении телеграмма, поэтому вместо tgws стоит использовать tor или opera proxy. Включить автозапуск tgws?",
-                  "Pavel Durov is recognized as an extremist in Russia and it is unknown what measures will be taken against Telegram, so instead of tgws you should use tor or opera proxy. Enable tgws autostart?"),
-                QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
-            if reply == QMessageBox.No:
-                self.cb_tgws.blockSignals(True)
-                self.cb_tgws.setChecked(False)
-                self.cb_tgws.blockSignals(False)
-
-    def save_settings(self):
-        tools = []
-        if self.cb_byedpi.isChecked(): tools.append("byedpi")
-        if self.cb_tor.isChecked(): tools.append("tor")
-        if self.cb_opera.isChecked(): tools.append("opera")
-        # if self.cb_vless.isChecked(): tools.append("vless")
-        if self.cb_socks.isChecked(): tools.append("socks")
-        if self.cb_tgws.isChecked(): tools.append("tgws")
-        if self.cb_proxifier.isChecked(): tools.append("proxifier")
-        if self.cb_ext.isChecked(): tools.append("ext")
-        
-        self.config["autostart_tools"] = tools
-        
-        # Handle app autostart
-        self.config["auto_connect_last_mode"] = self.cb_auto_last.isChecked()
-        
-        mode = self.torrc_combo.currentData()
-        try:
-            import sys
-            cdir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-            with open(os.path.join(cdir, "recreate_torrc.txt"), "w") as f:
-                f.write(mode)
-        except:
-            pass
+        self.config["recreate_torrc"] = mode
             
         app_autostart = self.cb_app_autostart.isChecked()
         current_app_autostart = self.config.get("auto_start", False)
@@ -165,10 +102,10 @@ class AutostartSettingsWindow(QMainWindow):
                 else:
                     auto_launcher_setuper.disable_auto_start()
             except Exception as e:
-                QMessageBox.warning(self, T("Ошибка", "Error"), f"Failed to set autorun: {e}")
+                QMessageBox.warning(self, T("РћС€РёР±РєР°", "Error"), f"Failed to set autorun: {e}")
                 
         config_manager.save_config(self.config)
-        QMessageBox.information(self, T("Успех", "Success"), T("Настройки автозапуска сохранены.", "Autostart settings saved."))
+        QMessageBox.information(self, T("РЈСЃРїРµС…", "Success"), T("РќР°СЃС‚СЂРѕР№РєРё Р°РІС‚РѕР·Р°РїСѓСЃРєР° СЃРѕС…СЂР°РЅРµРЅС‹.", "Autostart settings saved."))
         self.close()
 
 if __name__ == "__main__":
@@ -245,3 +182,4 @@ if __name__ == "__main__":
     win = AutostartSettingsWindow()
     win.show()
     sys.exit(app.exec_())
+
