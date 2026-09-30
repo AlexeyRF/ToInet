@@ -341,7 +341,7 @@ def load_strategies(strategies_path: Path) -> List[str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Local SOCKS5 proxy that routes through ByeDPI to an upstream SOCKS5 server")
-    parser.add_argument("--strategies-file", default="byedpi_tester_strategies.txt",
+    parser.add_argument("--strategies-file", default="byedpi/byedpi_tester_strategies.txt",
                         help="File with ByeDPI strategies (default: byedpi_tester_strategies.txt)")
     parser.add_argument("--strategy-index", type=int, default=0,
                         help="Zero‑based index of the strategy to use")

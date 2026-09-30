@@ -59,7 +59,7 @@ if getattr(sys, 'frozen', False):
 import time
 import subprocess
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidget, QWidgetAction, QHBoxLayout, QLabel, QCheckBox
-from PyQt5.QtGui import QIcon, QPixmap
+from PyQt5.QtGui import QIcon, QPixmap, QCursor
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
 
 class OutputLogger(QObject):
@@ -204,21 +204,21 @@ def setup_logging():
     print("[LOG] Система логирования инициализирована.")
 
 # Импортируем менеджеры и утилиты
-import config_manager
+from managers import config_manager
 from tgws import manager as tgws_manager
-import opera_manager
-import vless_manager
-import converter_manager
-import mode_manager
+from managers import opera_manager
+from managers import vless_manager
+from managers import converter_manager
+from managers import mode_manager
 import utils
 from utils import log
 from lang import T
 import subprocess
-import bdsher
-import torchok
-import noisy_manager
-import tester_manager
-import ext_manager
+from managers import bdsher
+from managers import torchok
+from managers import noisy_manager
+from managers import tester_manager
+from managers import ext_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
@@ -234,6 +234,11 @@ ext_programs_manager = ext_manager.get_manager()
 tgws_mgr = tgws_manager.get_manager()
 conv_mgr = converter_manager.get_manager()
 mode_mgr = mode_manager.get_manager()
+
+from managers import evpn_manager
+evpn_mgr = evpn_manager.get_manager()
+import window_ui
+main_window = None
 
 config = config_manager.load_config()
 vless_mgr = vless_manager.get_manager(config)
@@ -260,26 +265,30 @@ def update_proxy_status():
                      opera_mgr.is_running() or
                      mode_mgr.inetcpl_tor_active or 
                      mode_mgr.inetcpl_bd_active or 
+                     evpn_mgr.is_running or
                      (mode_mgr.tun_process is not None))
+    if main_window:
+        main_window.update_ui_state()
 
 def toggle_all():
     global proxy_enabled
     
     if not proxy_enabled:
-        byedpi_manager.start()
-        tor_manager.start()
-        opera_mgr.start()
-        if not lang._is_en or config.get("enable_ru_features", False):
-            tgws_mgr.start()
-        
-        # Запускаем pip прокси если включено
-        if config.get("byedpi_pip_enabled", False):
-            if config.get("byedpi_pip_use_tor", False):
-                bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
-            else:
-                pip_mgr = bdsher.get_pip_manager(config)
-                pip_mgr.start()
-                bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+        if mode_type != "evpn":
+            byedpi_manager.start()
+            tor_manager.start()
+            opera_mgr.start()
+            if not lang._is_en or config.get("enable_ru_features", False):
+                tgws_mgr.start()
+            
+            # Запускаем pip прокси если включено
+            if config.get("byedpi_pip_enabled", False):
+                if config.get("byedpi_pip_use_tor", False):
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+                else:
+                    pip_mgr = bdsher.get_pip_manager(config)
+                    pip_mgr.start()
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
         
         mode_mgr.inetcpl_tor_active = False
         mode_mgr.inetcpl_bd_active = False
@@ -288,6 +297,15 @@ def toggle_all():
         
         if mode_type == "tun":
             mode_mgr.start_tun()
+        elif mode_type == "evpn":
+            tor_manager.stop()
+            byedpi_manager.stop()
+            opera_mgr.stop()
+            vless_mgr.stop()
+            tgws_mgr.stop()
+            pip_manager.stop()
+            bdsher.clear_pip_proxy()
+            evpn_mgr.start()
         
         proxy_enabled = True
     else:
@@ -316,6 +334,8 @@ def toggle_all():
         
         if mode_type == "tun":
             mode_mgr.stop_tun()
+        elif mode_type == "evpn":
+            evpn_mgr.stop()
         
         proxy_enabled = False
     
@@ -470,6 +490,29 @@ def toggle_inetcpl_opera():
     update_proxy_status()
     update_menu()
 
+def toggle_singbox_tun(port, ptype="socks"):
+    if mode_mgr.tun_proxy_port == port:
+        mode_mgr.tun_proxy_port = 0
+        if mode_type == "tun":
+            mode_mgr.stop_tun()
+    else:
+        if mode_type == "tun":
+            mode_mgr.set_singbox_tun_proxy(port, ptype)
+        else:
+            mode_mgr.tun_proxy_port = port
+            mode_mgr.tun_proxy_type = ptype
+    update_proxy_status()
+    update_menu()
+
+def toggle_singbox_tun_tor():
+    toggle_singbox_tun(9853)
+
+def toggle_singbox_tun_bd():
+    toggle_singbox_tun(1780)
+
+def toggle_singbox_tun_opera():
+    toggle_singbox_tun(1785)
+
 def set_mode_type(mode):
     global mode_type, config, proxy_enabled
 
@@ -481,6 +524,9 @@ def set_mode_type(mode):
 
     if mode_type == "tun" and mode != "tun":
         mode_mgr.stop_tun()
+        
+    if mode_type == "evpn" and mode != "evpn":
+        evpn_mgr.stop()
 
     if mode == "tun":
         path = mode_mgr.get_tun_app_path()
@@ -488,9 +534,19 @@ def set_mode_type(mode):
             QMessageBox.warning(None, T("TUN режим", "TUN Mode"), T("Сначала укажите корректный путь к проксификатору в файле proxification_app.txt!", "Please specify correct path to proxifier in proxification_app.txt first!"))
             update_menu()
             return
-
         if proxy_enabled:
             mode_mgr.start_tun()
+            
+    if mode == "evpn":
+        if proxy_enabled:
+            tor_manager.stop()
+            byedpi_manager.stop()
+            opera_mgr.stop()
+            vless_mgr.stop()
+            tgws_mgr.stop()
+            pip_manager.stop()
+            bdsher.clear_pip_proxy()
+            evpn_mgr.start()
 
     mode_type = mode
     config["mode_type"] = mode
@@ -540,10 +596,16 @@ def set_dns(mode):
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('83.220.169.155', '212.109.195.93')"
         msg = T("Запрос на установку Comms DNS отправлен. Подтвердите права администратора.", "Request to set Comms DNS sent. Please confirm admin rights.")
     elif mode == "xbox":
-        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51')"
+        if not lang._is_en or config.get("enable_ru_features", False):
+            cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55')"
+        else:
+            cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51')"
         msg = T("Запрос на установку Xbox DNS отправлен. Подтвердите права администратора.", "Request to set Xbox DNS sent. Please confirm admin rights.")
     elif mode == "xbox_ipv6":
-        cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51', '2a00:ab00:1233:26::50', '2a00:ab00:1233:26::51')"
+        if not lang._is_en or config.get("enable_ru_features", False):
+            cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55', '2a00:ab00:1233:26::54', '2a00:ab00:1233:26::55')"
+        else:
+            cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51', '2a00:ab00:1233:26::50', '2a00:ab00:1233:26::51')"
         msg = T("Запрос на установку Xbox DNS (с IPv6) отправлен. Подтвердите права администратора.", "Request to set Xbox DNS (with IPv6) sent. Please confirm admin rights.")
     elif mode == "reset":
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ResetServerAddresses"
@@ -576,6 +638,7 @@ def restart_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
+    evpn_mgr.stop()
     # conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Restarting...")
@@ -605,6 +668,7 @@ def exit_app():
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
     tgws_mgr.stop()
+    evpn_mgr.stop()
     # conv_mgr.stop()
     mode_mgr.reset_inetcpl_proxy()
     log("Exiting...")
@@ -740,14 +804,28 @@ def _update_menu_impl_unsafe():
             opera_cpl = QAction(T("Подключиться к Opera", "Connect to Opera") if not mode_mgr.inetcpl_opera_active else T("Отключиться от Opera", "Disconnect from Opera"), tray_menu)
             opera_cpl.triggered.connect(toggle_inetcpl_opera)
             tray_menu.addAction(opera_cpl)            
-            # vless_cpl = QAction(T("Подключиться к VLESS", "Connect to VLESS") if not mode_mgr.inetcpl_vless_active else T("Отключиться от VLESS", "Disconnect from VLESS"), tray_menu)
-            # vless_cpl.triggered.connect(toggle_inetcpl_vless)
-            # tray_menu.addAction(vless_cpl)
+
+        elif mode_type == "tun" and not mode_mgr.get_tun_app_path():
+            tor_tun = QAction(T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), tray_menu)
+            tor_tun.triggered.connect(toggle_singbox_tun_tor)
+            tray_menu.addAction(tor_tun)
+            
+            bd_tun = QAction(T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), tray_menu)
+            bd_tun.triggered.connect(toggle_singbox_tun_bd)
+            tray_menu.addAction(bd_tun)
+            
+            opera_tun = QAction(T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), tray_menu)
+            opera_tun.triggered.connect(toggle_singbox_tun_opera)
+            tray_menu.addAction(opera_tun)
+            
+            adv_tun_simp = QAction(T("Продвинутые настройки TUN", "Advanced TUN Settings"), tray_menu)
+            adv_tun_simp.triggered.connect(mode_mgr.open_advanced_tun_config)
+            tray_menu.addAction(adv_tun_simp)
        
         tray_menu.addSeparator()
         mode_m = QMenu(T("Режим", "Mode"), tray_menu)
-        for m in ["empty", "inetcpl", "tun"]:
-            act = QAction(m.capitalize() + (" режим" if m=="tun" else ""), mode_m)
+        for m in ["empty", "inetcpl", "tun", "evpn"]:
+            act = QAction(m.capitalize() + (" режим" if m=="tun" or m=="evpn" else ""), mode_m)
             act.setCheckable(True)
             act.setChecked(mode_type == m)
             act.triggered.connect(lambda checked, mode=m: set_mode_type(mode))
@@ -945,6 +1023,26 @@ def _update_menu_impl_unsafe():
         inetcpl_mode_act = QAction(inetcpl_mode_txt, inetcpl_sub); inetcpl_mode_act.triggered.connect(toggle_inetcpl_mode); inetcpl_sub.addAction(inetcpl_mode_act)
         
         sys_menu.addMenu(inetcpl_sub)
+        
+        tun_sub = QMenu(T("Настройки TUN", "TUN Settings"), sys_menu)
+        tor_tun2 = QAction(T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if mode_mgr.tun_proxy_port != 9853 else T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), tun_sub)
+        tor_tun2.triggered.connect(toggle_singbox_tun_tor)
+        tun_sub.addAction(tor_tun2)
+        
+        bd_tun2 = QAction(T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if mode_mgr.tun_proxy_port != 1780 else T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), tun_sub)
+        bd_tun2.triggered.connect(toggle_singbox_tun_bd)
+        tun_sub.addAction(bd_tun2)
+        
+        opera_tun2 = QAction(T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if mode_mgr.tun_proxy_port != 1785 else T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), tun_sub)
+        opera_tun2.triggered.connect(toggle_singbox_tun_opera)
+        tun_sub.addAction(opera_tun2)
+        
+        tun_sub.addSeparator()
+        adv_tun_act = QAction(T("Продвинутые настройки TUN", "Advanced TUN Settings"), tun_sub)
+        adv_tun_act.triggered.connect(mode_mgr.open_advanced_tun_config)
+        tun_sub.addAction(adv_tun_act)
+        
+        sys_menu.addMenu(tun_sub)
 
         sys_menu.addSeparator()
         
@@ -994,6 +1092,17 @@ def _update_menu_impl_unsafe():
             ru_feat_act.triggered.connect(toggle_ru_features)
             sys_menu.addAction(ru_feat_act)
             
+        sys_menu.addSeparator()
+        
+        ui_type_act = QAction(T("Интерфейс: Окно (Приложение)", "Interface: Window (App)") if config.get("ui_type", "tray") == "window" else T("Интерфейс: Трей (По умолчанию)", "Interface: Tray (Default)"), sys_menu)
+        def toggle_ui_type():
+            current = config.get("ui_type", "tray")
+            config["ui_type"] = "window" if current == "tray" else "tray"
+            config_manager.save_config(config)
+            update_menu()
+        ui_type_act.triggered.connect(toggle_ui_type)
+        sys_menu.addAction(ui_type_act)
+            
         tray_menu.addMenu(sys_menu)
         
         tray_menu.addSeparator()
@@ -1018,8 +1127,23 @@ def create_tray_menu():
     tray.setToolTip(ICON_TITLE)
     tray_menu = QMenu()
     tray_menu.setStyleSheet("QMenu { background-color: #2b2b2b; color: white; border: 1px solid #555555; padding: 5px; } QMenu::item { padding: 5px 20px 5px 20px; } QMenu::item:selected { background-color: #3d3d3d; } QMenu::separator { height: 1px; background: #555555; margin: 5px 0px 5px 0px; }")
-    tray.setContextMenu(tray_menu)
     tray.show()
+    
+    global main_window
+    import window_ui
+    main_window = window_ui.MainWindow(sys.modules[__name__])
+    
+    def on_tray_activated(reason):
+        if config.get("ui_type", "tray") == "window":
+            if reason in (QSystemTrayIcon.Trigger, QSystemTrayIcon.Context, QSystemTrayIcon.DoubleClick):
+                main_window.update_ui_state()
+                main_window.show()
+                main_window.activateWindow()
+        else:
+            if reason in (QSystemTrayIcon.Trigger, QSystemTrayIcon.Context):
+                tray_menu.popup(QCursor.pos())
+    
+    tray.activated.connect(on_tray_activated)
     
     update_menu()
     
@@ -1055,7 +1179,7 @@ def create_tray_menu():
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             tgws_mgr.start()
             
-        if "proxifier" in tools:
+        if "proxifier" in tools and mode_type != "evpn":
             mode_mgr.start_tun()
             
         if "ext" in tools:
@@ -1073,7 +1197,7 @@ def create_tray_menu():
         if "socks" in tools:
             import subprocess
             subprocess.Popen([sys.executable, "socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-        if "proxifier" in tools:
+        if "proxifier" in tools and mode_type != "evpn":
             mode_mgr.start_tun()
         if "ext" in tools:
             ext_programs_manager.start_all()

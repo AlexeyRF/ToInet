@@ -13,7 +13,7 @@ import socket
 import struct
 import time
 
-import config_manager
+from managers import config_manager
 
 # ---------------------------------------------------------------------------
 PID_FILE = Path(__file__).parent / "socks_layer_pid.txt"
@@ -296,7 +296,7 @@ class Socks5Gui(QMainWindow):
         # Внутреннее состояние
         self.process = None
         self.base_dir = Path(__file__).parent
-        self.strategies_path = self.base_dir / "byedpi_tester_strategies.txt"
+        self.strategies_path = self.base_dir / "byedpi" / "byedpi_tester_strategies.txt"
         self._populate_strategies()
 
         # Load last config

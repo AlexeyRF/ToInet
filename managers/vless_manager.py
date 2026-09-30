@@ -9,7 +9,7 @@ import zipfile
 import shutil
 import lang
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BIN_DIR = os.path.join(CURRENT_DIR, "bin")
 SING_BOX_DIR = os.path.join(BIN_DIR, "sing-box")
 SING_BOX_EXE = os.path.join(SING_BOX_DIR, "sing-box.exe")
@@ -120,7 +120,7 @@ class VlessManager(QObject):
         if not self.extract_sing_box():
             return False
             
-        import config_manager
+        from managers import config_manager
         self.config = config_manager.load_config()
         mode = self.config.get("vless_mode", "standard")
         

@@ -1,7 +1,7 @@
 import os
 import subprocess
 from PyQt5.QtWidgets import QMessageBox
-import config_manager
+from managers import config_manager
 
 class ExtProgramsManager:
     def __init__(self):

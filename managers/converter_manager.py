@@ -9,7 +9,7 @@ try:
 except ImportError:
     pass
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 CONVERTER_SCRIPT = os.path.join(CURRENT_DIR, "proxy_converter.py")
 
 class ConverterManager:

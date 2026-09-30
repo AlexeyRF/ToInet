@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QIcon
 import lang
-import config_manager
+from managers import config_manager
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 OPERA_CUSTOM_FILE = os.path.join(CURRENT_DIR, "opera_proxy_custom.txt")

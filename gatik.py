@@ -12,7 +12,7 @@ import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'f
 if CURRENT_DIR not in sys.path:
     sys.path.insert(0, CURRENT_DIR)
 
-import config_manager
+from managers import config_manager
 _config = config_manager.load_config()
 
 # === НАСТРОЙКИ СЕТИ ===

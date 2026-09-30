@@ -1,7 +1,7 @@
 import os
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
-import config_manager
+from managers import config_manager
 import lang
 
 def T(ru, en):
