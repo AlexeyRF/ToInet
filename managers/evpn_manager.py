@@ -2,6 +2,8 @@ import os
 
 import subprocess
 
+import time
+
 import urllib.request
 
 import urllib.parse
@@ -246,7 +248,7 @@ def build_singbox_config(nodes):
 
                 {"port": 53, "action": "hijack-dns"},
 
-                {"inbound": "tun-in", "outbound": "auto"}
+                {"inbound": ["tun-in"], "outbound": "auto"}
 
             ],
 
@@ -270,57 +272,88 @@ class ProxyTester(QThread):
 
 
 
+    def emit_progress(self, msg):
+        self.progress.emit(msg)
+
     def run(self):
 
         try:
 
-            self.progress.emit("Загрузка подписок...")
-
-            subs_file = "evpn/subs.txt"
-
-            if not os.path.exists(subs_file):
-
-                self.finished.emit(False, ["Файл evpn/subs.txt не найден в папке"])
-
-                return
-
-                
-
-            with open(subs_file, "r") as f:
-
-                urls = [line.strip() for line in f if line.strip()]
-
-                
-
             nodes = []
 
-            for u in urls:
+            use_cache = False
+
+            cache_file = "evpn/working_nodes.json"
+
+            if os.path.exists(cache_file):
 
                 try:
 
-                    req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0'})
+                    with open(cache_file, "r", encoding="utf-8") as f:
 
-                    data = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
+                        cache_data = json.load(f)
+
+                    if time.time() - cache_data.get("timestamp", 0) < 1800:
+
+                        nodes = cache_data.get("nodes", [])
+
+                        if nodes:
+
+                            use_cache = True
+
+                            self.emit_progress("Проверка сохраненных ранее серверов...")
+
+                except Exception:
+
+                    pass
+
+            if not use_cache:
+
+                self.emit_progress("Загрузка подписок...")
+
+                subs_file = "evpn/subs.txt"
+
+                if not os.path.exists(subs_file):
+
+                    self.finished.emit(False, ["Файл evpn/subs.txt не найден в папке"])
+
+                    return
+
+                    
+
+                with open(subs_file, "r") as f:
+
+                    urls = [line.strip() for line in f if line.strip()]
+
+                    
+
+                for u in urls:
 
                     try:
 
-                        if "vless://" not in data:
+                        req = urllib.request.Request(u, headers={'User-Agent': 'Mozilla/5.0'})
 
-                            data = base64.b64decode(data).decode('utf-8')
+                        data = urllib.request.urlopen(req, timeout=10).read().decode('utf-8')
 
-                    except Exception:
+                        try:
+
+                            if "vless://" not in data:
+
+                                data = base64.b64decode(data).decode('utf-8')
+
+                        except Exception:
+
+                            pass
+
+                        for line in data.splitlines():
+
+                            if line.startswith('vless://'):
+
+                                nodes.append(line.strip())
+
+                    except Exception as e:
 
                         pass
-
-                    for line in data.splitlines():
-
-                        if line.startswith('vless://'):
-
-                            nodes.append(line.strip())
-
-                except Exception as e:
-
-                    pass
 
             
 
@@ -332,7 +365,7 @@ class ProxyTester(QThread):
 
                 
 
-            self.progress.emit(f"Проверка серверов (найдено {len(nodes)})...")
+            self.emit_progress(f"Проверка серверов (найдено {len(nodes)})...")
 
             
 
@@ -378,7 +411,7 @@ class ProxyTester(QThread):
 
                     if checked % 20 == 0:
 
-                        self.progress.emit(f"Проверка: {checked}/{len(nodes)} (Рабочих: {len(working_nodes)})")
+                        self.emit_progress(f"Проверка: {checked}/{len(nodes)} (Рабочих: {len(working_nodes)})")
 
                     res = future.result()
 
@@ -395,6 +428,18 @@ class ProxyTester(QThread):
                 return
 
                 
+            
+            try:
+
+                os.makedirs("evpn", exist_ok=True)
+
+                with open("evpn/working_nodes.json", "w", encoding="utf-8") as f:
+
+                    json.dump({"timestamp": time.time(), "nodes": working_nodes}, f)
+
+            except Exception:
+
+                pass
 
             self.finished.emit(True, working_nodes)
 
@@ -407,235 +452,155 @@ class ProxyTester(QThread):
 
 
 class EvpnManager(QObject):
-
     status_changed = pyqtSignal(str)
-
     error_occurred = pyqtSignal(str)
 
-
-
     def __init__(self):
-
         super().__init__()
-
         self.sb_process = None
-
         self.is_running = False
-
         self.tester = None
-
         self.working_nodes = []
+        self.log_file = None
 
+    def log(self, msg):
+        print(f"[EVPN] {msg}")
 
+    def emit_status(self, msg):
+        self.log(msg)
+        self.status_changed.emit(msg)
+
+    def emit_error(self, msg):
+        self.log(f"ERROR: {msg}")
+        self.error_occurred.emit(msg)
 
     def start(self):
-
         if self.is_running:
-
             return
-
         
-
         self.is_running = True
-
         
-
         self.tester = ProxyTester()
-
-        self.tester.progress.connect(self.status_changed.emit)
-
+        self.tester.progress.connect(self.emit_status)
         self.tester.finished.connect(self._on_test_finished)
-
         self.tester.start()
 
-
-
     def _on_test_finished(self, success, result):
-
-        if not success:
-
-            self.error_occurred.emit(result[0])
-
-            self.is_running = False
-
-            self.status_changed.emit("VPN Выключен")
-
+        if not self.is_running:
             return
-
+        if not success:
+            self.emit_error(result[0])
+            self.is_running = False
+            self.emit_status("VPN Выключен")
+            return
             
-
         self.working_nodes = result
-
         self._start_singbox_with_nodes()
-
-
 
     def _start_singbox_with_nodes(self):
-
         if not self.working_nodes:
-
-            self.error_occurred.emit("Нет доступных серверов!")
-
+            self.emit_error("Нет доступных серверов!")
             self.is_running = False
-
-            self.status_changed.emit("VPN Выключен")
-
+            self.emit_status("VPN Выключен")
             return
-
             
-
-        self.status_changed.emit(f"Генерация конфига (сохранено {len(self.working_nodes[:200])} серверов)...")
-
+        self.emit_status(f"Генерация конфига (сохранено {len(self.working_nodes[:200])} серверов)...")
         
-
         try:
-
-            config = build_singbox_config(self.working_nodes)
-
-            with open("evpn/evpn_config.json", "w", encoding="utf-8") as f:
-
-                json.dump(config, f, indent=2)
-
-                
-
-            self.status_changed.emit("Запуск sing-box...")
-
-            
-
             current_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
+            config = build_singbox_config(self.working_nodes)
+            
+            evpn_dir = os.path.join(current_dir, "evpn")
+            if not os.path.exists(evpn_dir):
+                os.makedirs(evpn_dir)
+            cfg_path = os.path.join(evpn_dir, "evpn_config.json")
+            
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(config, f, indent=2)
+                
+            self.emit_status("Запуск sing-box...")
+            
             sing_box_exe = os.path.join(current_dir, "bin", "sing-box", "sing-box.exe")
-
             if not os.path.exists(sing_box_exe) and platform.system() != "Windows":
-
                 sing_box_exe = os.path.join(current_dir, "bin", "sing-box", "sing-box")
 
-
-
             cmd = [
-
                 sing_box_exe,
-
                 "run",
-
-                "-c", "evpn/evpn_config.json"
-
+                "-c", cfg_path
             ]
-
             
-
             kwargs = {}
-
             if platform.system() == "Windows":
-
                 kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-
             
-
             env = os.environ.copy()
-
             env["ENABLE_DEPRECATED_LEGACY_DNS_SERVERS"] = "true"
-
             env["ENABLE_DEPRECATED_OUTBOUND_DNS_RULE_ITEM"] = "true"
-
             env["ENABLE_DEPRECATED_MISSING_DOMAIN_RESOLVER"] = "true"
-
             
-
-            self.sb_process = subprocess.Popen(cmd, env=env, **kwargs)
-
-            self.status_changed.emit("VPN Включен")
-
+            if self.log_file:
+                try:
+                    self.log_file.close()
+                except:
+                    pass
+            log_path = os.path.join(evpn_dir, "evpn.log")
+            self.log_file = open(log_path, "w", encoding="utf-8")
             
-
+            self.sb_process = subprocess.Popen(cmd, env=env, cwd=current_dir, stdout=self.log_file, stderr=subprocess.STDOUT, **kwargs)
+            self.emit_status("VPN Включен")
+            
         except Exception as e:
-
-            self.error_occurred.emit(f"Ошибка запуска sing-box:\n{e}")
-
+            self.emit_error(f"Ошибка запуска sing-box:\n{e}")
             self.is_running = False
-
-            self.status_changed.emit("VPN Выключен")
-
-
+            self.emit_status("VPN Выключен")
 
     def next_server(self):
-
         if not self.is_running or not self.working_nodes:
-
             return
-
         
-
-        self.status_changed.emit("Переключение сервера...")
-
+        self.emit_status("Переключение сервера...")
         if self.sb_process:
-
             self.sb_process.terminate()
-
             try:
-
                 self.sb_process.wait(timeout=3)
-
             except subprocess.TimeoutExpired:
-
                 self.sb_process.kill()
-
             self.sb_process = None
-
             
-
         top_node = self.working_nodes.pop(0)
-
         self.working_nodes.append(top_node)
-
         
-
         self._start_singbox_with_nodes()
 
-
-
     def stop(self):
-
         if not self.is_running:
-
             return
-
         self.is_running = False
-
-        self.status_changed.emit("Выключение...")
-
+        self.emit_status("Выключение...")
         
-
         if self.sb_process:
-
             self.sb_process.terminate()
-
             try:
-
                 self.sb_process.wait(timeout=3)
-
             except subprocess.TimeoutExpired:
-
                 self.sb_process.kill()
-
             self.sb_process = None
-
             
-
-        self.status_changed.emit("VPN Выключен")
-
-
+            if self.log_file:
+                try:
+                    self.log_file.close()
+                except:
+                    pass
+                self.log_file = None
+            
+        self.emit_status("VPN Выключен")
 
 _manager = None
-
 def get_manager():
-
     global _manager
-
     if _manager is None:
-
         _manager = EvpnManager()
-
     return _manager
 
 

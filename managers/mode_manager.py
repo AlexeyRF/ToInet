@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 import subprocess
 import time
@@ -179,13 +179,14 @@ class ModeManager:
         if block_quic:
             config["route"]["rules"].append({"port": 443, "network": "udp", "outbound": "block"})
             
-        config["route"]["rules"].append({"inbound": "tun-in", "outbound": "proxy"})
+        config["route"]["rules"].append({"inbound": ["tun-in"], "outbound": "proxy"})
         
         if self.tun_proxy_type == "http":
             config["outbounds"][0]["type"] = "http"
             
         import json
-        with open("data/tun_config.json", "w", encoding="utf-8") as f:
+        cfg_path = os.path.join(CURRENT_DIR, "data", "tun_config.json")
+        with open(cfg_path, "w", encoding="utf-8") as f:
             json.dump(config, f, indent=2)
 
     def start_tun(self, port=None):
@@ -196,54 +197,90 @@ class ModeManager:
         from managers import system_utils as lang
         import shlex
         
+        if not port:
+            if self.tun_proxy_port:
+                port = self.tun_proxy_port
+            else:
+                cfg = config_manager.load_config()
+                if cfg.get("tun_smart_route", False):
+                    port = 1780 # Default fallback for smart route
+                else:
+                    return False # No proxy selected yet
+        cfg = config_manager.load_config()
+        custom_tun_cfg = cfg.get("tun_singbox_config")
+        cfg_path = os.path.join(CURRENT_DIR, "data", "tun_config.json")
+        if custom_tun_cfg and isinstance(custom_tun_cfg, dict):
+            import json
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(custom_tun_cfg, f, indent=2, ensure_ascii=False)
+        else:
+            self._generate_singbox_config(port)
+        
+        import platform
+        exe_name = "sing-box.exe" if platform.system() == "Windows" else "sing-box"
+        sing_box_exe = os.path.join(CURRENT_DIR, "bin", "sing-box", exe_name)
+        if not os.path.exists(sing_box_exe):
+            QMessageBox.critical(None, "Ошибка TUN", "sing-box не найден в bin/sing-box/")
+            return False
+            
+        cmd = [sing_box_exe, "run", "-c", cfg_path]
+        kwargs = {}
+        if platform.system() == "Windows":
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+            
+        try:
+            self.tun_process = subprocess.Popen(cmd, cwd=CURRENT_DIR, **kwargs)
+            self.log(f"sing-box TUN запущен на порт {port}")
+            return True
+        except Exception as e:
+            self.log(f"Ошибка запуска sing-box TUN: {e}")
+            return False
+
+    def start_proxifier(self):
+        if hasattr(self, 'proxifier_process') and self.proxifier_process:
+            return True
+            
+        import shlex
+        from PyQt5.QtWidgets import QMessageBox
+        from managers import system_utils as lang
         path_line = self.get_tun_app_path()
         if not path_line:
-            # Use sing-box
-            if not port:
-                if self.tun_proxy_port:
-                    port = self.tun_proxy_port
-                else:
-                    cfg = config_manager.load_config()
-                    if cfg.get("tun_smart_route", False):
-                        port = 1780 # Default fallback for smart route
-                    else:
-                        return False # No proxy selected yet
+            return False
             
-            self._generate_singbox_config(port)
-            
-            import platform
-            exe_name = "sing-box.exe" if platform.system() == "Windows" else "sing-box"
-            sing_box_exe = os.path.join(CURRENT_DIR, "bin", "sing-box", exe_name)
-            if not os.path.exists(sing_box_exe):
-                QMessageBox.critical(None, "Ошибка TUN", "sing-box не найден в bin/sing-box/")
-                return False
-                
-            cmd = [sing_box_exe, "run", "-c", "data/tun_config.json"]
-            kwargs = {}
-            if platform.system() == "Windows":
-                kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-                
+        args = shlex.split(path_line, posix=False)
+        exe_path = args[0].strip('"\'')
+        if os.path.exists(exe_path):
             try:
-                self.tun_process = subprocess.Popen(cmd, cwd=CURRENT_DIR, **kwargs)
-                self.log(f"sing-box TUN запущен на порт {port}")
+                self.proxifier_process = subprocess.Popen(args, cwd=CURRENT_DIR)
+                self.log(f"Проксификатор запущен: {path_line}")
                 return True
             except Exception as e:
-                self.log(f"Ошибка запуска sing-box TUN: {e}")
-                return False
+                self.log(f"Ошибка запуска проксификатора: {e}")
+                QMessageBox.critical(None, "Ошибка", f"Не удалось запустить проксификатор:\n{e}")
         else:
-            args = shlex.split(path_line, posix=False)
-            exe_path = args[0].strip('"\'')
-            if os.path.exists(exe_path):
+            msg = lang.T(f"Программа для проксификатора не найдена:\n{exe_path}", f"Proxifier application not found:\n{exe_path}")
+            QMessageBox.warning(None, lang.T("Не настроен проксификатор", "Proxifier not configured"), msg)
+        return False
+        
+    def stop_proxifier(self):
+        if hasattr(self, 'proxifier_process') and self.proxifier_process:
+            try:
+                self.proxifier_process.terminate()
                 try:
-                    self.tun_process = subprocess.Popen(args, cwd=CURRENT_DIR)
-                    self.log(f"TUN режим запущен: {path_line}")
-                    return True
-                except Exception as e:
-                    self.log(f"Ошибка запуска TUN режима: {e}")
-                    QMessageBox.critical(None, "Ошибка TUN", f"Не удалось запустить проксификатор:\n{e}")
+                    self.proxifier_process.wait(timeout=2)
+                except:
+                    self.proxifier_process.kill()
+                self.log("Проксификатор остановлен")
+            except Exception as e:
+                self.log(f"Ошибка остановки проксификатора: {e}")
+            self.proxifier_process = None
+            
+    def proxifier_running(self):
+        if hasattr(self, 'proxifier_process') and self.proxifier_process:
+            if self.proxifier_process.poll() is None:
+                return True
             else:
-                msg = lang.T(f"Программа для TUN режима не найдена:\n{exe_path}", f"TUN mode application not found:\n{exe_path}")
-                QMessageBox.warning(None, lang.T("Не настроен TUN", "TUN not configured"), msg)
+                self.proxifier_process = None
         return False
 
     def stop_tun(self):
