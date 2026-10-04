@@ -196,60 +196,37 @@ def build_singbox_config(nodes):
 
 
 
+    from managers import config_manager
+    cfg = config_manager.load_config() if hasattr(config_manager, 'load_config') else {}
+    proxy_dns = cfg.get("proxy_dns_tun_evpn", True)
+
     config = {
-
         "log": {
-
             "level": "info"
-
         },
-
         "dns": {
-
             "servers": [
-
                 {"tag": "local", "address": "local", "detour": "direct"}
-
             ]
-
         },
-
         "inbounds": [
-
             {
-
                 "type": "tun",
-
                 "tag": "tun-in",
-
                 "interface_name": "easy-vpn-tun",
-
                 "address": [
-
                     "172.19.0.1/30"
-
                 ],
-
                 "auto_route": True,
-
                 "strict_route": True,
-
                 "stack": "mixed"
-
             }
-
         ],
-
         "outbounds": outbounds,
-
         "route": {
-
             "rules": [
-
-                {"port": 53, "action": "hijack-dns"},
-
+                {"port": 53, "action": "hijack-dns"} if proxy_dns else {"port": 53, "outbound": "direct"},
                 {"inbound": ["tun-in"], "outbound": "auto"}
-
             ],
 
             "auto_detect_interface": True,

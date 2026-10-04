@@ -131,6 +131,8 @@ class ModeManager:
         block_quic = cfg.get("tun_block_quic", False)
         smart_route = cfg.get("tun_smart_route", False)
         
+        proxy_dns = cfg.get("proxy_dns_tun_evpn", True)
+        
         config = {
             "log": {"level": "info"},
             "dns": {
@@ -157,7 +159,7 @@ class ModeManager:
             ],
             "route": {
                 "rules": [
-                    {"port": 53, "action": "hijack-dns"}
+                    {"port": 53, "action": "hijack-dns"} if proxy_dns else {"port": 53, "outbound": "direct"}
                 ],
                 "auto_detect_interface": True,
                 "final": "proxy"

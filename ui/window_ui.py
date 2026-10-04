@@ -219,7 +219,7 @@ class MainWindow(QMainWindow):
         
         # Mode Combo
         mode_combo = QComboBox()
-        mode_combo.addItems(["INETCPL", "TUN", "EVPN"])
+        mode_combo.addItems(["EMPTY", "INETCPL", "TUN", "EVPN"])
         mode_combo.setCurrentText(self.main_module.mode_type.upper())
         mode_combo.setStyleSheet("""
             QComboBox { background: #333; border: 1px solid #555; border-radius: 4px; color: white; padding: 5px; min-width: 100px; font-family: 'Segoe UI'; font-size: 13px; }
@@ -268,6 +268,30 @@ class MainWindow(QMainWindow):
                 self.main_module.toggle_auto_start()
         auto_start.clicked.connect(on_auto_start)
         content_layout.addWidget(SettingRow(T("Автозапуск", "Auto Start"), T("Запускать при старте системы", "Run on system startup"), auto_start))
+        
+        # EVPN Encrypted DNS Checkbox
+        evpn_dns = QCheckBox()
+        evpn_dns.setChecked(self.main_module.config.get("evpn_encrypted_dns", False))
+        evpn_dns.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
+        evpn_dns.setCursor(Qt.PointingHandCursor)
+        def on_evpn_dns():
+            self.main_module.config["evpn_encrypted_dns"] = evpn_dns.isChecked()
+            if hasattr(self.main_module, 'config_manager'):
+                self.main_module.config_manager.save_config(self.main_module.config)
+        evpn_dns.clicked.connect(on_evpn_dns)
+        content_layout.addWidget(SettingRow(T("Шифрованный DNS (EVPN)", "Encrypted DNS (EVPN)"), T("Использовать 111.88.96.54/55 (вступит после переподключения)", "Use 111.88.96.54/55 (takes effect on reconnect)"), evpn_dns))
+        
+        # TUN/EVPN Proxy DNS Checkbox
+        proxy_dns = QCheckBox()
+        proxy_dns.setChecked(self.main_module.config.get("proxy_dns_tun_evpn", True))
+        proxy_dns.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
+        proxy_dns.setCursor(Qt.PointingHandCursor)
+        def on_proxy_dns():
+            self.main_module.config["proxy_dns_tun_evpn"] = proxy_dns.isChecked()
+            if hasattr(self.main_module, 'config_manager'):
+                self.main_module.config_manager.save_config(self.main_module.config)
+        proxy_dns.clicked.connect(on_proxy_dns)
+        content_layout.addWidget(SettingRow(T("Проксировать DNS (TUN/EVPN)", "Proxy DNS (TUN/EVPN)"), T("Направлять DNS-запросы через прокси (вступит после переподключения)", "Route DNS requests through proxy (takes effect on reconnect)"), proxy_dns))
         
         # Restart Button
         restart_btn = QPushButton(T("Перезапуск", "Restart App"))
@@ -444,8 +468,23 @@ class MainWindow(QMainWindow):
         add_module("VLESS", T("VLESS прокси (порт 1790)", "VLESS proxy (port 1790)"), m.toggle_vless, lambda: m.vless_mgr.is_running())
         add_module("Noisy", T("Генератор мусорного трафика", "Traffic noise generator"), m.toggle_noisy, lambda: m.noisy_manager.is_running())
         add_module("Tester", T("Тестер прокси", "Proxy tester"), m.toggle_tester, lambda: m.tester_manager.is_running())
-        add_module("Proxifier (TUN)", T("Глобальный TUN роутинг", "Global TUN routing"), m.toggle_proxifier, lambda: m.mode_mgr.tun_running())
+        add_module("Proxifier (TUN)", T("Глобальный TUN роутинг", "Global TUN routing"), m.toggle_proxifier, lambda: m.mode_mgr.proxifier_running())
         
+        # EVPN Section
+        evpn_label = QLabel(T("Опции EVPN", "EVPN Options"))
+        evpn_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
+        content_layout.addWidget(evpn_label)
+        
+        evpn_exclusive_cb = QCheckBox()
+        evpn_exclusive_cb.setChecked(m.config.get("evpn_exclusive_mode", True))
+        evpn_exclusive_cb.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
+        evpn_exclusive_cb.setCursor(Qt.PointingHandCursor)
+        def on_evpn_exclusive():
+            m.config["evpn_exclusive_mode"] = evpn_exclusive_cb.isChecked()
+            if hasattr(m, 'config_manager'):
+                m.config_manager.save_config(m.config)
+        evpn_exclusive_cb.clicked.connect(on_evpn_exclusive)
+        content_layout.addWidget(SettingRow(T("Эксклюзивный EVPN", "Exclusive EVPN"), T("Отключать TOR, BD и др. методы при запуске EVPN", "Disable TOR, BD, etc. when running EVPN"), evpn_exclusive_cb))
         
         # INETCPL section
         inetcpl_label = QLabel(T("INETCPL (Системный прокси)", "INETCPL (System Proxy)"))
