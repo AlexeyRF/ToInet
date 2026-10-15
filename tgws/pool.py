@@ -14,10 +14,12 @@ from .utils import ws_domains, DC_DEFAULT_IPS
 
 log = logging.getLogger('tg-mtproto-proxy')
 
+# TODO: domains handling is broken: wrong is_media flag causes tcp_reset after handshake,
+# but initial connection is still established no matter what is is_media flag is set to
 class _WsPool:
     WS_POOL_MAX_AGE = 120.0
     WS_POOL_CHECK_INTERVAL = 5.0
-    REFILL_BACKOFF_INITIAL = 60.0
+    REFILL_BACKOFF_INITIAL = 1.0
     REFILL_BACKOFF_MAX = 3600.0
     
     def __init__(self):
@@ -26,11 +28,10 @@ class _WsPool:
         self._rotating: Dict[Tuple[int, bool], asyncio.Task] = {}
         self._refill_failures: Dict[Tuple[int, bool], int] = {}
         self._refill_after: Dict[Tuple[int, bool], float] = {}
-        self.try_fronting_first = False
+        self.try_fronting_first = True
 
     async def get(self, dc: int, is_media: bool,
-                  target_ip: str, domains: List[str],
-                  *, allow_refill: bool = True
+                  target_ip: str, domains: List[str]
                   ) -> Optional[RawWebSocket]:
         key = (dc, is_media)
         now = time.monotonic()
@@ -50,13 +51,11 @@ class _WsPool:
             log.debug("WS pool hit DC%d%s (age=%.1fs, left=%d)",
                       dc, 'm' if is_media else '', age, len(bucket))
             self.report_success(dc, is_media)
-            if allow_refill:
-                self._schedule_refill(key, target_ip, domains)
+            self._schedule_refill(key, target_ip, domains)
             return ws
 
         stats.pool_misses += 1
-        if allow_refill:
-            self._schedule_refill(key, target_ip, domains)
+        self._schedule_refill(key, target_ip, domains)
         return None
 
     def _schedule_refill(self, key, target_ip, domains):
@@ -98,7 +97,7 @@ class _WsPool:
                 self._refill_failures[key] = failures
                 delay = min(
                     self.REFILL_BACKOFF_INITIAL
-                    * (2 ** min(failures - 1, 6)),
+                    * (2 ** min(failures - 1, 12)),
                     self.REFILL_BACKOFF_MAX,
                 )
                 self._refill_after[key] = time.monotonic() + delay
@@ -150,6 +149,8 @@ class _WsPool:
                     log.debug(
                         "WS pool rotated DC%d%s: %d stale, %d ready",
                         dc, 'm' if is_media else '', len(expired), len(bucket))
+
+                if len(bucket) < proxy_config.pool_size:
                     self._schedule_refill(key, target_ip, domains)
         finally:
             if self._rotating.get(key) is asyncio.current_task():
@@ -166,7 +167,7 @@ class _WsPool:
                     target_ip, domain, timeout=8)
                 self.try_fronting_first = False
                 return ws
-            except asyncio.TimeoutError:
+            except (asyncio.TimeoutError, ConnectionResetError):
                 if self.try_fronting_first:
                     return None
                 return await self._connect_fronted(target_ip, domain)
@@ -288,7 +289,8 @@ class _CfWorkerPool:
         for worker_domain in self.available_domains(worker_domains):
             try:
                 ws = await RawWebSocket.connect(
-                    worker_domain, worker_domain, timeout=8, path=path)
+                    worker_domain, worker_domain, timeout=8, path=path,
+                    secure=not proxy_config.disable_secure)
                 return ws, worker_domain
             except Exception as exc:
                 self.report_failure(worker_domain, exc)

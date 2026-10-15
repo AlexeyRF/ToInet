@@ -1,35 +1,56 @@
-﻿import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from managers import system_utils as lang
 import os
 import sys
 import json
 
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if CURRENT_DIR not in sys.path:
+    sys.path.insert(0, CURRENT_DIR)
+
 class UpdateInfoFile:
-    def __init__(self, mode): self.mode = mode
-    def __enter__(self): return self
-    def __exit__(self, *args): pass
+    def __init__(self, mode):
+        self.mode = mode
+        self.buffer = ""
+    def __enter__(self):
+        self.buffer = ""
+        return self
+    def __exit__(self, *args):
+        if 'w' in self.mode or 'a' in self.mode:
+            if self.buffer.strip():
+                try:
+                    from managers import config_manager
+                    info = json.loads(self.buffer)
+                    cfg = config_manager.load_config()
+                    for k, v in info.items():
+                        cfg['update_info_' + k] = v
+                    config_manager.save_config(cfg)
+                except Exception as e:
+                    print(f"Failed to save update_info: {e}")
     def read(self):
-        import config_manager, json
+        from managers import config_manager
         cfg = config_manager.load_config()
         info = {k.replace('update_info_', ''): v for k, v in cfg.items() if k.startswith('update_info_')}
         return json.dumps(info)
     def write(self, data):
-        import config_manager, json
-        info = json.loads(data)
-        cfg = config_manager.load_config()
-        for k, v in info.items():
-            cfg['update_info_' + k] = v
-        config_manager.save_config(cfg)
+        self.buffer += data
 
 def _mock_open(path, mode='r', *args, **kwargs):
     if 'update_info.json' in str(path):
         return UpdateInfoFile(mode)
+    p_str = str(path)
+    if os.path.basename(p_str) == "config.json" and "data" not in os.path.dirname(os.path.abspath(p_str)):
+        target = os.path.join(CURRENT_DIR, "data", "config.json")
+        return open(target, mode, *args, **kwargs)
     return open(path, mode, *args, **kwargs)
 
 def _mock_exists(path):
     if 'update_info.json' in str(path):
         return True
-    import os
+    p_str = str(path)
+    if os.path.basename(p_str) == "config.json" and "data" not in os.path.dirname(os.path.abspath(p_str)):
+        target = os.path.join(CURRENT_DIR, "data", "config.json")
+        return os.path.exists(target)
     return os.path.exists(path)
 
 class MockPath:
@@ -119,7 +140,7 @@ class TorUpdaterThread(QThread):
         super().__init__()
         self.channel = channel
         self.archive_path = archive_path
-        self.project_folder = Path(__file__).parent.absolute()
+        self.project_folder = Path(CURRENT_DIR)
         self.tor_latest_dir = self.project_folder / "tor"
         self.backup_dir = self.project_folder / "backup"
 
@@ -532,25 +553,24 @@ class TorrcConfigurator(QMainWindow):
         """)
         
         # Set default paths
-        self.current_dir = os.getcwd()
+        self.current_dir = CURRENT_DIR
         
         # Determine base tor dir from update_info.json
         self.base_tor_dir = self.current_dir
         update_info_path = os.path.join(self.current_dir, "update_info.json")
-        if True:
-            try:
-                with _mock_open(update_info_path, 'r') as f:
-                    info = json.load(f)
-                    folder_name = info.get('use_folder')
-                    if folder_name and os.path.exists(os.path.join(self.current_dir, folder_name)):
-                        self.base_tor_dir = os.path.join(self.current_dir, folder_name)
-            except:
-                pass
+        try:
+            with _mock_open(update_info_path, 'r') as f:
+                info = json.load(f)
+                folder_name = info.get('use_folder')
+                if folder_name and os.path.exists(os.path.join(self.current_dir, folder_name)):
+                    self.base_tor_dir = os.path.join(self.current_dir, folder_name)
+        except:
+            pass
 
         self.data_dir = os.path.join(self.base_tor_dir, "data")
         self.geoip_path = os.path.join(self.base_tor_dir, "data", "geoip")
         self.geoipv6_path = os.path.join(self.base_tor_dir, "data", "geoip6")
-        self.bridges_path = os.path.join(self.current_dir, "data/bridges.txt")
+        self.bridges_path = os.path.join(self.current_dir, "data", "bridges.txt")
         self.pt_config_path = os.path.join(self.base_tor_dir, "tor", "pluggable_transports", "pt_config.json")
         
         self.init_ui()
@@ -862,17 +882,15 @@ class TorrcConfigurator(QMainWindow):
             QMessageBox.information(self, T("Готово", "Done"), T("Конфигурация TOR удалена", "TOR Config deleted"))
 
     def load_pool_settings(self):
-        config_path = os.path.join(self.current_dir, "config.json")
-        if os.path.exists(config_path):
-            try:
-                with open(config_path, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    pool_enabled = config.get("tor_pool_enabled", False)
-                    pool_size = config.get("tor_pool_size", 3)
-                    self.pool_checkbox.setChecked(pool_enabled)
-                    self.pool_spinbox.setValue(pool_size)
-            except:
-                pass
+        try:
+            from managers import config_manager
+            config = config_manager.load_config()
+            pool_enabled = config.get("tor_pool_enabled", False)
+            pool_size = config.get("tor_pool_size", 3)
+            self.pool_checkbox.setChecked(pool_enabled)
+            self.pool_spinbox.setValue(pool_size)
+        except Exception as e:
+            print("Failed to load pool settings:", e)
 
 
     def on_autoupdate_changed(self, state):
@@ -1257,27 +1275,20 @@ class TorrcConfigurator(QMainWindow):
         ])
         
         # Write to file
-        output_path = os.path.join(self.current_dir, "data/torrc")
+        output_path = os.path.join(self.current_dir, "data", "torrc")
         try:
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(torrc_lines))
             
-            # Save pool settings to config.json
-            config_path = os.path.join(self.current_dir, "config.json")
-            config = {}
-            if os.path.exists(config_path):
-                try:
-                    with open(config_path, 'r', encoding='utf-8') as f:
-                        config = json.load(f)
-                except:
-                    pass
-            config["tor_pool_enabled"] = self.pool_checkbox.isChecked()
-            config["tor_pool_size"] = self.pool_spinbox.value()
+            # Save pool settings to data/config.json
             try:
-                with open(config_path, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, indent=2)
-            except:
-                pass
+                from managers import config_manager
+                config = config_manager.load_config()
+                config["tor_pool_enabled"] = self.pool_checkbox.isChecked()
+                config["tor_pool_size"] = self.pool_spinbox.value()
+                config_manager.save_config(config)
+            except Exception as e:
+                print(f"Failed to save pool settings: {e}")
             
             # Show success message with mode info
 

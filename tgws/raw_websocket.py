@@ -1,5 +1,4 @@
 import os
-import ssl
 import logging
 import base64
 import struct
@@ -8,6 +7,7 @@ import socket as _socket
 
 from typing import List, Optional, Tuple
 from .config import proxy_config
+from .utils import create_ssl_context
 
 log = logging.getLogger('tg-mtproto-proxy')
 
@@ -21,10 +21,8 @@ _st_BBQ4s = struct.Struct('>BBQ4s')
 _st_H = struct.Struct('>H')
 _st_Q = struct.Struct('>Q')
 
-_ssl_ctx = ssl.create_default_context()
-_ssl_ctx.check_hostname = False
-_ssl_ctx.verify_mode = ssl.CERT_NONE
-
+_ssl_ctx = create_ssl_context()
+_ssl_ctx_fronting = create_ssl_context(check_hostname=False)
 
 class WsHandshakeError(Exception):
     def __init__(self, status_code: int, status_line: str,
@@ -87,14 +85,24 @@ class RawWebSocket:
     @staticmethod
     async def connect(host: str, domain: str, timeout: float = 10.0,
                       path: str = '/apiws', *,
-                      sni: Optional[str] = None) -> 'RawWebSocket':
+                      sni: Optional[str] = None, secure = True) -> 'RawWebSocket':
+        ssl_context = _ssl_ctx_fronting if sni else _ssl_ctx
+
         if sni is None:
             sni = domain
 
         reader, writer = await asyncio.wait_for(
-            asyncio.open_connection(host, 443, ssl=_ssl_ctx,
-                                    server_hostname=sni),
-            timeout=min(timeout, 10))
+            (
+                asyncio.open_connection(
+                    host, 443,
+                    ssl=ssl_context,
+                    server_hostname=sni,
+                )
+                if secure
+                else asyncio.open_connection(host, 80)
+            ),
+            timeout=min(timeout, 10),
+        )
         
         set_sock_opts(writer.transport, proxy_config.buffer_size)
 

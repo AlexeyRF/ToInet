@@ -1,4 +1,4 @@
-﻿import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 import threading
 import time
 import socket
@@ -48,6 +48,10 @@ class TGWSManager:
             fake_tls = self.config.get("tgws_fake_tls", "")
             tgws_config.proxy_config.fake_tls_domain = fake_tls
             tgws_config.proxy_config.fronting_sni = self.config.get("tgws_fronting_sni", "")
+            tgws_config.proxy_config.fallback_cfproxy = self.config.get("tgws_fallback_cfproxy", True)
+            tgws_config.proxy_config.cfproxy_h2_media = self.config.get("tgws_cfproxy_h2_media", True)
+            tgws_config.proxy_config.cfproxy_user_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_user_domain", ""))
+            tgws_config.proxy_config.cfproxy_worker_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_worker_domain", ""))
             
             tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
             

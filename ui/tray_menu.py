@@ -1,4 +1,4 @@
-﻿import time, os, sys, subprocess
+import time, os, sys, subprocess
 from managers import system_utils as lang
 from PyQt5.QtWidgets import QMenu, QAction, QWidgetAction, QWidget, QHBoxLayout, QLabel, QPushButton, QApplication
 from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
@@ -145,6 +145,10 @@ def _update_menu_impl_unsafe():
             adv_tun_simp = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), m.tray_menu)
             adv_tun_simp.triggered.connect(m.mode_mgr.open_advanced_tun_config)
             m.tray_menu.addAction(adv_tun_simp)
+        elif m.mode_type == "evpn":
+            evpn_next = QAction(m.T("Сменить сервер", "Change server"), m.tray_menu)
+            evpn_next.triggered.connect(m.evpn_mgr.next_server)
+            m.tray_menu.addAction(evpn_next)
        
         m.tray_menu.addSeparator()
         mode_m = QMenu(m.T("Режим", "Mode"), m.tray_menu)
@@ -164,6 +168,38 @@ def _update_menu_impl_unsafe():
         m.log('[Menu] Building advanced mode menu')
         # Продвинутый режим
         
+        if m.mode_type == "inetcpl":
+            tor_cpl = QAction(m.T("Подключиться к TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), m.tray_menu)
+            tor_cpl.triggered.connect(m.toggle_inetcpl_tor)
+            m.tray_menu.addAction(tor_cpl)
+            
+            bd_cpl = QAction(m.T("Подключиться к BD (Inetcpl)", "Connect to BD (Inetcpl)") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), m.tray_menu)
+            bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
+            m.tray_menu.addAction(bd_cpl)
+            
+            opera_cpl = QAction(m.T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), m.tray_menu)
+            opera_cpl.triggered.connect(m.toggle_inetcpl_opera)
+            m.tray_menu.addAction(opera_cpl)
+            m.tray_menu.addSeparator()
+        elif m.mode_type == "tun" and not m.mode_mgr.get_tun_app_path():
+            tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
+            tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
+            m.tray_menu.addAction(tor_tun)
+            
+            bd_tun = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), m.tray_menu)
+            bd_tun.triggered.connect(m.toggle_singbox_tun_bd)
+            m.tray_menu.addAction(bd_tun)
+            
+            opera_tun = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), m.tray_menu)
+            opera_tun.triggered.connect(m.toggle_singbox_tun_opera)
+            m.tray_menu.addAction(opera_tun)
+            
+            adv_tun_simp = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), m.tray_menu)
+            adv_tun_simp.triggered.connect(m.mode_mgr.open_advanced_tun_config)
+            m.tray_menu.addAction(adv_tun_simp)
+            m.tray_menu.addSeparator()
+
+
         # 1. Управление компонентами
         control_menu = QMenu(m.T("Управление компонентами", "Service Control"), m.tray_menu)
         
@@ -210,7 +246,7 @@ def _update_menu_impl_unsafe():
             tg_wa = create_service_action(control_menu, "TGWS", m.tgws_mgr.running, m.toggle_tgws, lambda: (m.tgws_mgr.stop(), time.sleep(1), m.tgws_mgr.start()))
             control_menu.addAction(tg_wa)
             
-        tun_wa = create_service_action(control_menu, m.T("Проксификатор", "Proxifier"), m.mode_mgr.tun_running(), m.toggle_proxifier, m.mode_mgr.restart_tun)
+        tun_wa = create_service_action(control_menu, m.T("Проксификатор", "Proxifier"), m.mode_mgr.proxifier_running(), m.toggle_proxifier, lambda: (m.mode_mgr.stop_proxifier(), time.sleep(1), m.mode_mgr.start_proxifier()))
         control_menu.addAction(tun_wa)
         
         def toggle_ext():
@@ -323,48 +359,6 @@ def _update_menu_impl_unsafe():
 
         m.log('[Menu] Building sys_menu')
         sys_menu = QMenu(m.T("Системные опции", "System Options"), m.tray_menu)
-        sys_menu.addSeparator()
-        
-        inetcpl_sub = QMenu(m.T("Настройки Inetcpl", "Inetcpl Settings"), sys_menu)
-
-        tor_cpl2 = QAction(m.T("Подключиться к TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), inetcpl_sub)
-        tor_cpl2.triggered.connect(m.toggle_inetcpl_tor)
-        inetcpl_sub.addAction(tor_cpl2)
-        
-        bd_cpl2 = QAction(m.T("Подключиться к BD (Inetcpl)", "Connect to BD (Inetcpl)") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), inetcpl_sub)
-        bd_cpl2.triggered.connect(m.toggle_inetcpl_bd)
-        inetcpl_sub.addAction(bd_cpl2)
-        
-        opera_cpl2 = QAction(m.T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), inetcpl_sub)
-        opera_cpl2.triggered.connect(m.toggle_inetcpl_opera)
-        inetcpl_sub.addAction(opera_cpl2)        
-        # vless_cpl2 = QAction(m.T("Подключиться к VLESS (Inetcpl)", "Connect to VLESS (Inetcpl)") if not m.mode_mgr.inetcpl_vless_active else m.T("Отключиться от VLESS (Inetcpl)", "Disconnect from VLESS (Inetcpl)"), inetcpl_sub)
-        # vless_cpl2.triggered.connect(toggle_inetcpl_vless)
-        # inetcpl_sub.addAction(vless_cpl2)
-
-        
-        sys_menu.addMenu(inetcpl_sub)
-        
-        tun_sub = QMenu(m.T("Настройки TUN", "TUN Settings"), sys_menu)
-        tor_tun2 = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), tun_sub)
-        tor_tun2.triggered.connect(m.toggle_singbox_tun_tor)
-        tun_sub.addAction(tor_tun2)
-        
-        bd_tun2 = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), tun_sub)
-        bd_tun2.triggered.connect(m.toggle_singbox_tun_bd)
-        tun_sub.addAction(bd_tun2)
-        
-        opera_tun2 = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), tun_sub)
-        opera_tun2.triggered.connect(m.toggle_singbox_tun_opera)
-        tun_sub.addAction(opera_tun2)
-        
-        tun_sub.addSeparator()
-        adv_tun_act = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), tun_sub)
-        adv_tun_act.triggered.connect(m.mode_mgr.open_advanced_tun_config)
-        tun_sub.addAction(adv_tun_act)
-        
-        sys_menu.addMenu(tun_sub)
-
         sys_menu.addSeparator()
         
         app_logs_act = QAction(m.T("Показать логи приложения", "Show Application Logs"), sys_menu)

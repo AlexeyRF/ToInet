@@ -1,4 +1,4 @@
-﻿from managers import system_utils as lang
+from managers import system_utils as lang
 import sys
 import os
 def _ensure_dependencies():
@@ -12,7 +12,9 @@ def _ensure_dependencies():
         'cryptography': 'cryptography==46.0.5',
         'win32com': 'pywin32',
         'pyperclip': 'pyperclip==1.9.0',
-        'socks': 'pysocks'
+        'socks': 'pysocks',
+        'h2': 'h2',
+        'certifi': 'certifi'
     }
     missing = []
     for mod, pkg in required.items():
@@ -172,53 +174,59 @@ def toggle_all():
                     pip_mgr = bdsher.get_pip_manager(config)
                     pip_mgr.start()
                     bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
-        
-        mode_mgr.inetcpl_tor_active = False
-        mode_mgr.inetcpl_bd_active = False
-        mode_mgr.inetcpl_opera_active = False
-        mode_mgr.inetcpl_vless_active = False
+            
+            mode_mgr.inetcpl_tor_active = False
+            mode_mgr.inetcpl_bd_active = False
+            mode_mgr.inetcpl_opera_active = False
+            mode_mgr.inetcpl_vless_active = False
         
         if mode_type == "tun":
             mode_mgr.start_tun()
         elif mode_type == "evpn":
+            if config.get("evpn_exclusive_mode", True):
+                tor_manager.stop()
+                byedpi_manager.stop()
+                opera_mgr.stop()
+                vless_mgr.stop()
+                tgws_mgr.stop()
+                pip_manager.stop()
+                bdsher.clear_pip_proxy()
+            evpn_mgr.start()
+        elif mode_type == "empty":
+            mode_mgr.start_proxifier()
+        
+        proxy_enabled = True
+    else:
+        if mode_type != "evpn":
             tor_manager.stop()
             byedpi_manager.stop()
             opera_mgr.stop()
             vless_mgr.stop()
             tgws_mgr.stop()
+            
+            # Остановка pip-прокси и очистка глобального pip
             pip_manager.stop()
             bdsher.clear_pip_proxy()
-            evpn_mgr.start()
-        
-        proxy_enabled = True
-    else:
-        tor_manager.stop()
-        byedpi_manager.stop()
-        opera_mgr.stop()
-        vless_mgr.stop()
-        tgws_mgr.stop()
-        
-        # Остановка pip-прокси и очистка глобального pip
-        pip_manager.stop()
-        bdsher.clear_pip_proxy()
-        
-        if mode_mgr.inetcpl_tor_active:
-            mode_mgr.run_cpller(9853, 0)
-            mode_mgr.inetcpl_tor_active = False
-        if mode_mgr.inetcpl_bd_active:
-            mode_mgr.run_cpller(1780, 0)
-            mode_mgr.inetcpl_bd_active = False
-        if mode_mgr.inetcpl_opera_active:
-            mode_mgr.run_cpller(1785, 0)
-            mode_mgr.inetcpl_opera_active = False
-        if mode_mgr.inetcpl_vless_active:
-            mode_mgr.run_cpller(1790, 0)
-            mode_mgr.inetcpl_vless_active = False
+            
+            if mode_mgr.inetcpl_tor_active:
+                mode_mgr.run_cpller(9853, 0)
+                mode_mgr.inetcpl_tor_active = False
+            if mode_mgr.inetcpl_bd_active:
+                mode_mgr.run_cpller(1780, 0)
+                mode_mgr.inetcpl_bd_active = False
+            if mode_mgr.inetcpl_opera_active:
+                mode_mgr.run_cpller(1785, 0)
+                mode_mgr.inetcpl_opera_active = False
+            if mode_mgr.inetcpl_vless_active:
+                mode_mgr.run_cpller(1790, 0)
+                mode_mgr.inetcpl_vless_active = False
         
         if mode_type == "tun":
             mode_mgr.stop_tun()
         elif mode_type == "evpn":
             evpn_mgr.stop()
+        elif mode_type == "empty":
+            mode_mgr.stop_proxifier()
         
         proxy_enabled = False
     
@@ -279,10 +287,10 @@ def toggle_tester():
     update_menu()
 
 def toggle_proxifier():
-    if not mode_mgr.tun_running():
-        mode_mgr.start_tun()
+    if not mode_mgr.proxifier_running():
+        mode_mgr.start_proxifier()
     else:
-        mode_mgr.stop_tun()
+        mode_mgr.stop_proxifier()
     update_proxy_status()
     update_menu()
 
@@ -410,25 +418,41 @@ def set_mode_type(mode):
         
     if mode_type == "evpn" and mode != "evpn":
         evpn_mgr.stop()
+        if proxy_enabled and config.get("evpn_exclusive_mode", True):
+            tor_manager.start()
+            byedpi_manager.start()
+            opera_mgr.start()
+            if not lang._is_en or config.get("enable_ru_features", False):
+                tgws_mgr.start()
+            if config.get("byedpi_pip_enabled", False):
+                if config.get("byedpi_pip_use_tor", False):
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+                else:
+                    pip_mgr = bdsher.get_pip_manager(config)
+                    pip_mgr.start()
+                    bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+
+    if mode_type == "empty" and mode != "empty":
+        mode_mgr.stop_proxifier()
 
     if mode == "tun":
-        path = mode_mgr.get_tun_app_path()
-        if not path or not os.path.exists(path):
-            QMessageBox.warning(None, T("TUN режим", "TUN Mode"), T("Сначала укажите корректный путь к проксификатору в файле proxification_app.txt!", "Please specify correct path to proxifier in proxification_app.txt first!"))
-            update_menu()
-            return
         if proxy_enabled:
             mode_mgr.start_tun()
+
+    if mode == "empty":
+        if proxy_enabled:
+            mode_mgr.start_proxifier()
             
     if mode == "evpn":
         if proxy_enabled:
-            tor_manager.stop()
-            byedpi_manager.stop()
-            opera_mgr.stop()
-            vless_mgr.stop()
-            tgws_mgr.stop()
-            pip_manager.stop()
-            bdsher.clear_pip_proxy()
+            if config.get("evpn_exclusive_mode", True):
+                tor_manager.stop()
+                byedpi_manager.stop()
+                opera_mgr.stop()
+                vless_mgr.stop()
+                tgws_mgr.stop()
+                pip_manager.stop()
+                bdsher.clear_pip_proxy()
             evpn_mgr.start()
 
     mode_type = mode
@@ -596,8 +620,8 @@ def create_tray_menu():
     
     global main_window
     import ui.window_ui as window_ui
-    import ui.window_ui as window_ui
-    
+    if main_window is None:
+        main_window = window_ui.MainWindow(sys.modules[__name__])
     def on_tray_activated(reason):
         if config.get("ui_type", "tray") == "window":
             if reason in (QSystemTrayIcon.Trigger, QSystemTrayIcon.Context, QSystemTrayIcon.DoubleClick):
@@ -617,6 +641,11 @@ def create_tray_menu():
         proxy_enabled = True
         
         tools = config.get("autostart_tools", ["byedpi", "tor", "opera", "tgws", "ext"])
+        
+        if mode_type == "evpn":
+            if config.get("evpn_exclusive_mode", True):
+                tools = [t for t in tools if t not in ["byedpi", "tor", "opera", "vless", "tgws", "proxifier"]]
+            evpn_mgr.start()
         
         if "byedpi" in tools:
             byedpi_manager.start()

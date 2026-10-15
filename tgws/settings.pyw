@@ -81,6 +81,23 @@ class TGWSSettingsDialog(QDialog):
         self.verbose_check.setChecked(self.config.get("tgws_verbose", False))
         layout.addWidget(self.verbose_check)
         
+        # CF Proxy options
+        self.cfproxy_cb = QCheckBox("Включить Cloudflare Proxy (запасной канал)")
+        self.cfproxy_cb.setChecked(self.config.get("tgws_fallback_cfproxy", True))
+        layout.addWidget(self.cfproxy_cb)
+        
+        self.h2_cb = QCheckBox("Включить мультиплексирование медиа (HTTP/2)")
+        self.h2_cb.setChecked(self.config.get("tgws_cfproxy_h2_media", True))
+        layout.addWidget(self.h2_cb)
+        
+        layout.addWidget(QLabel("Свои домены CF Proxy (через запятую):"))
+        self.cf_user_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_user_domain", ""))
+        layout.addWidget(self.cf_user_domain_edit)
+        
+        layout.addWidget(QLabel("Свои домены CF Worker (через запятую):"))
+        self.cf_worker_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_worker_domain", ""))
+        layout.addWidget(self.cf_worker_domain_edit)
+        
 
         
         # Информация
@@ -103,6 +120,23 @@ class TGWSSettingsDialog(QDialog):
         #     subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         # self.tester_btn.clicked.connect(run_tester)
         # layout.addWidget(self.tester_btn)
+
+        # CF Proxy options
+        self.cfproxy_cb = QCheckBox("Включить Cloudflare Proxy (запасной канал)")
+        self.cfproxy_cb.setChecked(self.config.get("tgws_fallback_cfproxy", True))
+        layout.addWidget(self.cfproxy_cb)
+        
+        self.h2_cb = QCheckBox("Включить мультиплексирование медиа (HTTP/2)")
+        self.h2_cb.setChecked(self.config.get("tgws_cfproxy_h2_media", True))
+        layout.addWidget(self.h2_cb)
+        
+        layout.addWidget(QLabel("Свои домены CF Proxy (через запятую):"))
+        self.cf_user_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_user_domain", ""))
+        layout.addWidget(self.cf_user_domain_edit)
+        
+        layout.addWidget(QLabel("Свои домены CF Worker (через запятую):"))
+        self.cf_worker_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_worker_domain", ""))
+        layout.addWidget(self.cf_worker_domain_edit)
 
         btn_layout = QHBoxLayout()
         self.save_btn = QPushButton(T("Сохранить", "Save"))
@@ -158,6 +192,10 @@ class TGWSSettingsDialog(QDialog):
         self.config["tgws_fake_tls"] = self.fake_tls_edit.text().strip()
         self.config["tgws_fronting_sni"] = self.fronting_edit.text().strip()
         self.config["tgws_verbose"] = self.verbose_check.isChecked()
+        self.config["tgws_fallback_cfproxy"] = self.cfproxy_cb.isChecked()
+        self.config["tgws_cfproxy_h2_media"] = self.h2_cb.isChecked()
+        self.config["tgws_cfproxy_user_domain"] = self.cf_user_domain_edit.text()
+        self.config["tgws_cfproxy_worker_domain"] = self.cf_worker_domain_edit.text()
 
         config_manager.save_config(self.config)
         

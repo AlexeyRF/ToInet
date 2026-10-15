@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -38,7 +38,6 @@ try:
 except ImportError:
     byedpi_tester = None
 BYEDPI_EXE_DEFAULT = os.path.join(CURRENT_DIR, r"byedpi\ciadpi.exe")
-BYEDPI_CUSTOM_FILE = os.path.join(CURRENT_DIR, "byedpi_custom.txt")
 SITES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_sites.txt")
 STRATEGIES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_strategies.txt")
 PRIORITY_SITES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_priority_sites.txt")
@@ -1300,59 +1299,57 @@ class ByeDPITesterGUI(QMainWindow):
         
         # Re-inject current SNI back into the template command if {sni} is written
         # Since strategy from self.results_data has template form, let's format it or save as is
-        # Actually, in ToInet-MAX, byedpi is run directly with parameters from BYEDPI_CUSTOM_FILE
-        # Let's format the strategy with the user-defined SNI for writing
         sni = self.sni_edit.text().strip()
         final_params = strategy.replace("{sni}", sni)
         
-        # Ensure SOCKS5 port 1780 is added if not present in parameters
-        params_list = final_params.split()
-        has_port = False
-        for arg in params_list:
-            if arg == '-p' or arg == '--port':
-                has_port = True
-                break
-            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
-                has_port = True
-                break
-        if not has_port:
-            final_params = "-p 1780 " + final_params
+        # Ensure SOCKS5 port 1780 is added if not present in parameters (only for CLI params, not JSON routing map)
+        if not final_params.strip().startswith("{"):
+            params_list = final_params.split()
+            has_port = False
+            for arg in params_list:
+                if arg == '-p' or arg == '--port':
+                    has_port = True
+                    break
+                elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
+                    has_port = True
+                    break
+            if not has_port:
+                final_params = "-p 1780 " + final_params
             
         pip_res = details.get("__pip_test__", (False, "Не проверялось"))
         pip_ok, pip_msg = pip_res
         
         try:
-            # Save strategy to byedpi_custom.txt
-            with open(BYEDPI_CUSTOM_FILE, 'w', encoding='utf-8') as f:
-                f.write("# Установлено автоматически тестером стратегий ByeDPI\n")
-                f.write("# Успешность проверки: %.1f%% (%d из %d сайтов)\n" % (pct, succ, tot))
-                f.write("# Дата установки: %s\n\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
-                f.write(final_params + "\n")
-                
-            # Update configuration to use custom settings
+            # Update configuration to use custom settings in config.json
             if config_manager:
                 config = config_manager.load_config()
-                config["use_custom_settings"] = True
-                
-                if '"TOR"' in final_params and not config.get("tor_enabled", True):
-                    QMessageBox.warning(self, "Внимание", "Выбрана стратегия, использующая маршрутизацию через TOR, "
-                                                          "однако TOR выключен в настройках. Не забудьте включить TOR "
-                                                          "в приложении для работы этой комбинации.")
-                
-                if pip_ok:
-                    reply = QMessageBox.question(
-                        self, T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"),
-                        "Эта стратегия успешно обходит блокировку PyPI (pip работает)!\n\n"
-                        "Желаете настроить отдельный ByeDPI для автоматического проксирования pip "
-                        "через эту стратегию (порт 1781)? Режим будет автоматически запускаться с приложением.",
-                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-                    )
-                    if reply == QMessageBox.Yes:
-                        config["byedpi_pip_enabled"] = True
-                        config["byedpi_pip_use_tor"] = False
-                        
-                        pip_custom_file = os.path.join(os.path.dirname(BYEDPI_CUSTOM_FILE), "byedpi_pip_custom.txt")
-                        pip_params = strategy.replace("{sni}", sni)
+            else:
+                config_file = os.path.join(CURRENT_DIR, "data", "config.json")
+                with open(config_file, 'r', encoding='utf-8') as f:
+                    config = json.load(f)
+
+            config["use_custom_settings"] = True
+            config["byedpi_params"] = final_params
+            
+            if '"TOR"' in final_params and not config.get("tor_enabled", True):
+                QMessageBox.warning(self, "Внимание", "Выбрана стратегия, использующая маршрутизацию через TOR, "
+                                                      "однако TOR выключен в настройках. Не забудьте включить TOR "
+                                                      "в приложении для работы этой комбинации.")
+            
+            if pip_ok:
+                reply = QMessageBox.question(
+                    self, T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"),
+                    "Эта стратегия успешно обходит блокировку PyPI (pip работает)!\n\n"
+                    "Желаете настроить отдельный ByeDPI для автоматического проксирования pip "
+                    "через эту стратегию (порт 1781)? Режим будет автоматически запускаться с приложением.",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                )
+                if reply == QMessageBox.Yes:
+                    config["byedpi_pip_enabled"] = True
+                    config["byedpi_pip_use_tor"] = False
+                    
+                    pip_params = strategy.replace("{sni}", sni)
+                    if not pip_params.strip().startswith("{"):
                         pip_params_list = pip_params.split()
                         pip_has_port = False
                         for arg in pip_params_list:
@@ -1364,59 +1361,70 @@ class ByeDPITesterGUI(QMainWindow):
                                 break
                         if not pip_has_port:
                             pip_params = "-p 1781 " + pip_params
-                            
-                        with open(pip_custom_file, 'w', encoding='utf-8') as f_pip:
-                            f_pip.write("# Установлено автоматически тестером стратегий ByeDPI для PIP\n")
-                            f_pip.write("# Успешность проверки: %.1f%%\n" % pct)
-                            f_pip.write("# Дата установки: %s\n\n" % time.strftime("%Y-%m-%d %H:%M:%S"))
-                            f_pip.write(pip_params + "\n")
-                            
+                    config["byedpi_pip_params"] = pip_params
+                    
+                    try:
                         from managers import bdsher
                         bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+                        pip_mgr = bdsher.get_pip_manager(config)
+                        pip_mgr.stop()
+                        pip_mgr.start()
+                    except Exception as e:
+                        print(f"Error starting pip manager: {e}")
                         
-                        try:
-                            pip_mgr = bdsher.get_pip_manager(config)
-                            pip_mgr.stop()
-                            pip_mgr.start()
-                        except Exception as e:
-                            print(f"Error starting pip manager: {e}")
-                            
-                        QMessageBox.information(
-                            self, T("Успех", "Success"),
-                            "Проксирование pip через отдельный ByeDPI (1781) успешно настроено и запущено!"
-                        )
-                else:
-                    reply = QMessageBox.question(
-                        self, "Проксирование pip через TOR",
-                        "Эта стратегия не смогла восстановить доступ к PyPI для pip.\n\n"
-                        "Желаете настроить автоматическое проксирование pip через сеть TOR (socks5://127.0.0.1:9853)?\n"
-                        "Скачивание пакетов будет работать при запущенном TOR.",
-                        QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                    QMessageBox.information(
+                        self, T("Успех", "Success"),
+                        "Проксирование pip через отдельный ByeDPI (1781) успешно настроено и запущено!"
                     )
-                    if reply == QMessageBox.Yes:
-                        config["byedpi_pip_enabled"] = True
-                        config["byedpi_pip_use_tor"] = True
-                        
+            else:
+                reply = QMessageBox.question(
+                    self, "Проксирование pip через TOR",
+                    "Эта стратегия не смогла восстановить доступ к PyPI для pip.\n\n"
+                    "Желаете настроить автоматическое проксирование pip через сеть TOR (socks5://127.0.0.1:9853)?\n"
+                    "Скачивание пакетов будет работать при запущенном TOR.",
+                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+                )
+                if reply == QMessageBox.Yes:
+                    config["byedpi_pip_enabled"] = True
+                    config["byedpi_pip_use_tor"] = True
+                    
+                    try:
                         from managers import bdsher
                         pip_mgr = bdsher.get_pip_manager(config)
                         pip_mgr.stop()
                         bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
-                        
-                        QMessageBox.information(
-                            self, T("Успех", "Success"),
-                            "Проксирование pip через TOR (9853) успешно настроено и включено!"
-                        )
-                        
+                    except Exception as e:
+                        print(f"Error configuring pip proxy via TOR: {e}")
+                    
+                    QMessageBox.information(
+                        self, T("Успех", "Success"),
+                        "Проксирование pip через TOR (9853) успешно настроено и включено!"
+                    )
+                    
+            if config_manager:
                 config_manager.save_config(config)
+            else:
+                config_file = os.path.join(CURRENT_DIR, "data", "config.json")
+                with open(config_file, 'w', encoding='utf-8') as f:
+                    json.dump(config, f, ensure_ascii=False, indent=2)
+
+            # Update running ByeDPI managers if main module is active
+            try:
+                from managers import bdsher
+                mgr = bdsher.get_manager(config)
+                mgr.update_config(config)
+                main_mod = sys.modules.get('__main__')
+                if main_mod and hasattr(main_mod, 'update_menu'):
+                    main_mod.update_menu()
+            except Exception:
+                pass
                 
             QMessageBox.information(
                 self, T("Успех", "Success"), 
-                "Выбранная стратегия успешно записана в файл %s!\n\n"
+                "Выбранная стратегия успешно сохранена в data\\config.json!\n\n"
                 "Параметры: %s\n\n"
                 "В настройках ToInet-MAX включен режим кастомных настроек ByeDPI.\n"
-                "Пожалуйста, перезапустите ByeDPI из трея для применения изменений." % (
-                    os.path.basename(BYEDPI_CUSTOM_FILE), final_params
-                )
+                "Пожалуйста, перезапустите ByeDPI для применения изменений." % final_params
             )
             
         except Exception as e:

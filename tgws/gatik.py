@@ -11,7 +11,7 @@ import os
 import sys
 
 # Настройка логирования для вывода информации в консоль
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(level=logging.INFO, format='[TGWS] %(message)s')
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 if CURRENT_DIR not in sys.path:
@@ -205,10 +205,8 @@ async def handle_client(reader, writer):
 
 async def main(stop_event=None):
     server = await asyncio.start_server(handle_client, LISTEN_HOST, LISTEN_PORT)
-    logging.info(f"=== Telegram SOCKS5 Router запущен на {LISTEN_HOST}:{LISTEN_PORT} ===")
-    logging.info(f"TOR (Скачивание): {DOWNLOAD_PROXY_HOST}:{DOWNLOAD_PROXY_PORT}")
-    logging.info(f"TGWS (Загрузка):  {UPLOAD_PROXY_HOST}:{UPLOAD_PROXY_PORT}")
-    logging.info("Зайдите в Telegram и укажите SOCKS5 прокси: 127.0.0.1 порт 1777 (без пароля)")
+    logging.info(f"SOCKS5 Router: {LISTEN_HOST}:{LISTEN_PORT} | TOR: {DOWNLOAD_PROXY_HOST}:{DOWNLOAD_PROXY_PORT} | TGWS: {UPLOAD_PROXY_HOST}:{UPLOAD_PROXY_PORT}")
+    logging.info(f"Telegram SOCKS5: 127.0.0.1:{LISTEN_PORT} (без пароля)")
     
     if stop_event:
         await stop_event.wait()

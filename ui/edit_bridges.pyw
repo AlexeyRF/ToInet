@@ -1,10 +1,8 @@
-﻿from managers import system_utils as lang
-
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from managers import system_utils as lang
-import sys
-import os
 import subprocess
+
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QPushButton, QTextEdit, 
                              QMessageBox, QStatusBar, QDialog, QDialogButtonBox,
@@ -182,8 +180,8 @@ class TorBridgeManager(QMainWindow):
         """)
         
         self.changes_made = False
-        self.bridges_file = "data/bridges.txt"
-        self.torrc_file = "torrc"
+        self.bridges_file = os.path.join(CURRENT_DIR, "data", "bridges.txt")
+        self.torrc_file = os.path.join(CURRENT_DIR, "data", "torrc")
         self.maestro_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "maestro.pyw")
         
         self.init_ui()
