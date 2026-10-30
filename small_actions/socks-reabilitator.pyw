@@ -1,4 +1,4 @@
-﻿from managers import system_utils as lang
+from managers import system_utils as lang
 
 import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from managers import system_utils as lang
@@ -355,6 +355,32 @@ class Socks5Gui(QMainWindow):
         if hasattr(self, "running_pid") and is_process_running(self.running_pid):
             QMessageBox.information(self, T("Запуск", "Start"), "Процесс уже запущен.")
             return
+
+        def find_existing_layer_pid():
+            try:
+                import psutil
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        name = (proc.info.get('name') or "").lower()
+                        if 'python' in name:
+                            cmdline = proc.cmdline() or []
+                            if any('socks5_layer.py' in arg for arg in cmdline):
+                                return proc.info['pid']
+                    except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                        continue
+            except Exception:
+                pass
+            return None
+
+        existing_pid = find_existing_layer_pid()
+        if existing_pid:
+            self.running_pid = existing_pid
+            PID_FILE.write_text(str(self.running_pid), "utf-8")
+            self.start_btn.setEnabled(False)
+            self.stop_btn.setEnabled(True)
+            self.log_edit.append(f"Найден уже запущенный слой (PID {self.running_pid}), используем его.")
+            QMessageBox.information(self, T("Запуск", "Start"), f"Найден уже запущенный слой (PID {self.running_pid}), используем его.")
+            return
             
         self.save_current_config()
             
@@ -568,6 +594,21 @@ def handle_cli_args():
                     return
             except Exception:
                 pass
+
+        try:
+            import psutil
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'python' in name:
+                        cmdline = proc.cmdline() or []
+                        if any('socks5_layer.py' in arg for arg in cmdline):
+                            PID_FILE.write_text(str(proc.info['pid']), "utf-8")
+                            return
+                except:
+                    pass
+        except:
+            pass
                 
         # Not running. Load config and start silently if valid
         config = load_config()

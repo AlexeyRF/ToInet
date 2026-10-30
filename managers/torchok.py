@@ -1,4 +1,5 @@
-﻿from managers import system_utils as lang
+from managers import system_utils as lang
+from managers.system_utils import AdoptedProcess
 import sys
 import os
 import subprocess
@@ -10,6 +11,7 @@ from PyQt5.QtWidgets import QMessageBox
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 TORRC_FILE = os.path.join(CURRENT_DIR, "data", "torrc")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
+AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "auto_maestro.pyw"))
 TOR_EXE = os.path.join(CURRENT_DIR, "tor", "tor.exe")
 
 class TorManager:
@@ -18,6 +20,46 @@ class TorManager:
         self.tor_process = None
         self.recreate_torrc = self._read_recreate_torrc()
         self.show_window = False
+
+    def find_existing_process(self):
+        tor_path = os.path.normcase(os.path.normpath(TOR_EXE))
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'tor' in name:
+                        try:
+                            exe_path = proc.exe()
+                            if exe_path and os.path.normcase(os.path.normpath(exe_path)) == tor_path:
+                                return proc.info['pid']
+                        except (psutil.AccessDenied, psutil.NoSuchProcess):
+                            pass
+                        cmdline = proc.cmdline() or []
+                        if any('torrc' in arg.lower() for arg in cmdline) or any('-f' == arg for arg in cmdline):
+                            return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception as e:
+            log(f"Ошибка при поиске существующего процесса TOR: {e}")
+
+        # Проверка порта 9853 (SocksPort по умолчанию)
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            res = sock.connect_ex(('127.0.0.1', 9853))
+            sock.close()
+            if res == 0:
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        if 'tor' in (proc.info.get('name') or "").lower():
+                            return proc.info['pid']
+                    except:
+                        pass
+        except:
+            pass
+        return None
+
 
     def update_config(self, config):
         """Обновляет конфигурацию из основного config"""
@@ -261,14 +303,21 @@ class TorManager:
 
     def start(self):
         """Запуск TOR"""
-        if self.tor_running:
+        if self.is_running():
+            return True
+
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            log(f"Найден уже запущенный процесс TOR с нужными параметрами (PID {existing_pid}), используем его.")
+            self.tor_process = AdoptedProcess(existing_pid)
+            self.tor_running = True
             return True
 
         if self.recreate_torrc == "full":
             self._delete_torrc_files()
             self._generate_torrc_from_bridges()
         elif self.recreate_torrc == "bridges":
-            self._run_script_blocking(UPDATE_BRIDGES_SCRIPT)
+            self._update_bridges_in_torrc()
         # if "none", do nothing
 
         if not os.path.exists(TORRC_FILE):
@@ -381,10 +430,15 @@ class TorManager:
 
     def is_running(self):
         """Возвращает статус работы TOR"""
-        # Проверяем, жив ли процесс, если запускали напрямую
         if self.tor_running and self.tor_process:
             if self.tor_process.poll() is not None:
                 self.tor_running = False
+                self.tor_process = None
+        elif not self.tor_running:
+            existing_pid = self.find_existing_process()
+            if existing_pid:
+                self.tor_process = AdoptedProcess(existing_pid)
+                self.tor_running = True
         return self.tor_running
 
     def toggle_recreate(self):

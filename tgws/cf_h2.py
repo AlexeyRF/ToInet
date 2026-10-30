@@ -16,11 +16,12 @@ from .h2_transport import H2Transport
 from .stats import stats
 from .utils import (
     DC_DEFAULT_IPS, PROTO_TAG_ABRIDGED,
-    PROTO_TAG_SECURE, create_ssl_context,
+    PROTO_TAG_SECURE,
 )
 
 log = logging.getLogger('tg-mtproto-proxy')
 MAX_PACKET = 4 * 1024 * 1024
+MAX_PLAIN_PADDING = 256
 MAX_CHANNEL_REQUESTS = 8
 MAX_CHANNEL_BYTES = 8 * 1024 * 1024
 MAX_LANE_REQUESTS = 64
@@ -79,6 +80,14 @@ class _ReplyBufferFull(BufferError):
     """A local memory limit"""
 
 
+class _MTProtoTransportError(Exception):
+    """An endpoint error that the native client must receive, not just EOF."""
+
+    def __init__(self, code: int, source: str):
+        super().__init__('%d (%s)' % (code, source))
+        self.code = code
+
+
 @dataclass
 class _ReplayPacket:
     sent_at: float
@@ -89,10 +98,11 @@ class _ReplayPacket:
     pending: Optional[asyncio.Task] = None
     originals: Set[asyncio.Task] = field(default_factory=set, repr=False)
     retired: bool = False
+    reply_id: Optional[bytes] = None
 
     @property
     def replayed(self) -> bool:
-        return self.attempts > 0
+        return self.last_attempt_at > 0 or self.attempts > 0
 
 
 async def _read_packet(reader, decryptor, tag: bytes) -> Tuple[bytes, bool]:
@@ -108,16 +118,20 @@ async def _read_packet(reader, decryptor, tag: bytes) -> Tuple[bytes, bool]:
     else:
         value, = struct.unpack('<I', await plaintext(4))
         quick, length = bool(value & 0x80000000), value & 0x7fffffff
-    if not 24 <= length <= MAX_PACKET + (15 if tag == PROTO_TAG_SECURE else 0):
+    if not 24 <= length <= MAX_PACKET + (MAX_PLAIN_PADDING if tag == PROTO_TAG_SECURE else 0):
         raise ValueError('native packet length outside supported range: %d' % length)
     body = await plaintext(length)
     if tag == PROTO_TAG_SECURE:
         if body[:8] == b'\x00' * 8:
             packet_length = 20 + int.from_bytes(body[16:20], 'little')
+            max_padding = MAX_PLAIN_PADDING
         else:
             packet_length = 24 + ((length - 24) // 16) * 16
-        if not 24 <= packet_length <= length or length - packet_length > 15:
-            raise ValueError('invalid padded native packet')
+            max_padding = 15
+        padding = length - packet_length
+        if not 24 <= packet_length <= length or padding > max_padding:
+            raise ValueError('invalid padded native packet: frame=%d packet=%d padding=%d limit=%d' % (
+                length, packet_length, padding, max_padding))
         body = body[:packet_length]
     if len(body) % 4 or len(body) > MAX_PACKET:
         raise ValueError('invalid native packet alignment or size')
@@ -139,6 +153,7 @@ class _HttpChannel:
     def __init__(self, lane, channel_id: int, label: str):
         self.lane, self.channel_id, self.label = lane, channel_id, label
         self.closed = False
+        self.transport_error: Optional[int] = None
         self.pending: Dict[asyncio.Task, int] = {}
         self.pending_since: Dict[asyncio.Task, float] = {}
         self.sent_since: Dict[asyncio.Task, float] = {}
@@ -336,6 +351,8 @@ class _HttpChannel:
     def _fail(self, error: Exception) -> None:
         if self.closed:
             return
+        if isinstance(error, _MTProtoTransportError):
+            self.transport_error = error.code
         self.closed = True
         self.recovery_wakeup.set()
         while not self.queue.empty():
@@ -450,6 +467,9 @@ class _HttpChannel:
             reply = await self.lane._post(body, self.channel_id, replay=replay, channel=self)
             self.last_progress = time.monotonic()
             if reply and not self.closed:
+                if packet is not None and reply[:24] != packet.reply_id:
+                    packet.reply_id = reply[:24]
+                    packet.attempts = 0
                 if self.queue.full() or self.reply_bytes + len(reply) > MAX_CHANNEL_BYTES:
                     raise BufferError('H2 client response queue exceeded bound')
                 self.reply_bytes += len(reply)
@@ -460,14 +480,27 @@ class _HttpChannel:
             if trace is not None:
                 trace.phase = 'cancelled-' + trace.phase
             raise
+        except _MTProtoTransportError as exc:
+            if trace is not None:
+                trace.phase = 'transport-error'
+            stats.h2_errors += 1
+            if not self.closed:
+                log.warning('[%s] H2 lane=%d channel=%d host=%s MTProto transport error=%s '
+                            'request=%d encrypted=%d bytes=%d replay=%d; reporting to client',
+                            self.label, self.lane.lane_id, self.channel_id, self.lane.host, exc,
+                            trace.request if trace is not None else 0,
+                            body[:8] != b'\x00' * 8, len(body), replay)
+            self._fail(exc)
         except Exception as exc:
             if trace is not None:
                 trace.phase = 'error-' + type(exc).__name__
             stats.h2_errors += 1
             if isinstance(exc, (httpx.HTTPError, OSError, ValueError, BufferError)):
                 log.warning('[%s] H2 lane=%d channel=%d request failed: %s: %s; '
+                            'detail=[%s]; '
                             'closing native channel, reconnect may select another domain',
-                            self.label, self.lane.lane_id, self.channel_id, type(exc).__name__, exc)
+                            self.label, self.lane.lane_id, self.channel_id, type(exc).__name__, exc,
+                            trace.summary(time.monotonic()) if trace is not None else '-')
             else:
                 log.exception('[%s] H2 lane=%d channel=%d unexpected request failure',
                               self.label, self.lane.lane_id, self.channel_id)
@@ -501,10 +534,14 @@ class _HttpChannel:
 
     async def _recover(self) -> None:
         while not self.closed:
+            wakeup = asyncio.create_task(self.recovery_wakeup.wait())
             try:
-                await asyncio.wait_for(self.recovery_wakeup.wait(), REPLAY_CHECK_SECONDS)
-            except asyncio.TimeoutError:
-                pass
+                # wait_for can swallow cancellation when the wakeup completes
+                # at the same time on Python 3.8-3.11 (CPython #86296).
+                await asyncio.wait((wakeup,), timeout=REPLAY_CHECK_SECONDS)
+            finally:
+                wakeup.cancel()
+                await asyncio.gather(wakeup, return_exceptions=True)
             self.recovery_wakeup.clear()
             now = time.monotonic()
             self.lane.log_wait(now)
@@ -592,7 +629,7 @@ class _HttpLane:
         self.reply_buffer_bytes = 0
         self.capacity = asyncio.Condition()
         self.client = httpx.AsyncClient(
-            transport=H2Transport(create_ssl_context(), max_streams=MAX_LANE_REQUESTS),
+            transport=H2Transport(max_streams=MAX_LANE_REQUESTS),
             trust_env=False,
             timeout=httpx.Timeout(REQUEST_TIMEOUT, connect=8, pool=REQUEST_TIMEOUT),
         )
@@ -610,8 +647,7 @@ class _HttpLane:
                                      extensions={'trace': self._trace}) as response:
             if response.http_version != 'HTTP/2':
                 raise ValueError('CF /api preflight negotiated ' + response.http_version)
-            if response.status_code in (403, 429) or (response.status_code >= 500
-                                                     and response.status_code != 501):
+            if not (200 <= response.status_code < 300 or response.status_code in (405, 501)):
                 raise ConnectionError('CF /api preflight HTTP %d cf_ray=%s' % (
                     response.status_code, response.headers.get('cf-ray', '-')))
             log.debug('H2 lane=%d ready host=%s status=%d ms=%.0f',
@@ -696,6 +732,9 @@ class _HttpLane:
                 self.max_headers_seconds = max(self.max_headers_seconds, headers_at - started)
                 if response.http_version != 'HTTP/2':
                     raise ValueError('CF /api downgraded to ' + response.http_version)
+                if response.status_code in (403, 404, 429, 444):
+                    raise _MTProtoTransportError(-response.status_code, 'HTTP %d cf_ray=%s' % (
+                        response.status_code, response.headers.get('cf-ray', '-')))
                 if response.status_code != 200:
                     raise ConnectionError('CF /api HTTP %d cf_ray=%s' % (
                         response.status_code, response.headers.get('cf-ray', '-')))
@@ -727,8 +766,9 @@ class _HttpLane:
                 if content and len(content) % 4:
                     raise ValueError('CF /api response is not an aligned MTProto packet')
                 if len(content) == 4:
-                    log.warning('H2 lane=%d channel=%d request=%d MTProto transport error=%d',
-                                self.lane_id, channel_id, request_id, struct.unpack('<i', content)[0])
+                    code, = struct.unpack('<i', content)
+                    if code < 0:
+                        raise _MTProtoTransportError(code, 'HTTP 200 payload')
                 self.responses += 1
                 if channel is not None:
                     channel.http_bytes += received
@@ -750,6 +790,9 @@ class _HttpLane:
                               (headers_at - started) * 1000, body_seconds * 1000,
                               trace.summary(finished) if trace is not None else '-')
                 return bytes(content)
+        except _MTProtoTransportError:
+            self.errors += 1
+            raise
         except _ReplyBufferFull:
             raise
         except (httpx.HTTPError, OSError, ValueError, BufferError):
@@ -930,19 +973,26 @@ async def bridge_h2(reader, writer, channel: _HttpChannel, ctx, tag: bytes) -> N
     tasks = [asyncio.create_task(upload()), asyncio.create_task(download()),
              asyncio.create_task(channel._recover())]
     try:
-        done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
-        for task in done:
-            task.result()
+        try:
+            done, _ = await asyncio.wait(tasks, return_when=asyncio.FIRST_COMPLETED)
+        finally:
+            for task in tasks:
+                task.cancel()
+            await asyncio.gather(*tasks, return_exceptions=True)
+        if channel.transport_error is not None:
+            await write_native(_encode_reply(struct.pack('<i', channel.transport_error), tag))
+            channel.down += 4
+            stats.bytes_down += 4
+        else:
+            for task in done:
+                task.result()
     except asyncio.IncompleteReadError:
         log.debug('[%s] H2 channel=%d native EOF', channel.label, channel.channel_id)
     except _NativeDeliveryError as exc:
         log.debug('[%s] H2 channel=%d native closed: %s', channel.label, channel.channel_id, exc)
-    except (OSError, ValueError, BufferError, asyncio.TimeoutError) as exc:
+    except (httpx.HTTPError, OSError, ValueError, BufferError, asyncio.TimeoutError) as exc:
         if not channel.closed:
             log.warning('[%s] H2 channel=%d bridge ended: %s: %s',
                         channel.label, channel.channel_id, type(exc).__name__, exc)
     finally:
-        for task in tasks:
-            task.cancel()
-        await asyncio.gather(*tasks, return_exceptions=True)
         await channel.close()

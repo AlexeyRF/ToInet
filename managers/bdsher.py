@@ -1,5 +1,6 @@
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from managers import system_utils as lang
+from managers.system_utils import AdoptedProcess
 import os
 import subprocess
 import json
@@ -8,7 +9,7 @@ from PyQt5.QtWidgets import QMessageBox
 from PyQt5.QtCore import QObject, pyqtSignal
 
 # Константы
-BYEDPI_EXE = os.path.join(CURRENT_DIR, r"byedpi\ciadpi.exe")
+BYEDPI_EXE = os.path.join(CURRENT_DIR, "byedpi", "ciadpi.exe")
 
 # Параметры по умолчанию
 DEFAULT_BYEDPI_PARAMS = "-p 1780 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru"
@@ -25,7 +26,49 @@ class ByeDPIManager(QObject):
         self.config_key = config_key
         
     def is_running(self):
+        if self.running and self.process:
+            if self.process.poll() is not None:
+                self.running = False
+                self.process = None
+        elif not self.running:
+            existing_pid = self.find_existing_process()
+            if existing_pid:
+                self.process = AdoptedProcess(existing_pid)
+                self.running = True
         return self.running
+
+    def find_existing_process(self):
+        port_str = str(self.default_port)
+        params = self.get_params()
+        is_router = isinstance(params, str) and params.startswith("{")
+
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if is_router:
+                        if 'python' in name:
+                            cmdline = proc.cmdline() or []
+                            if any('byedpi_router.py' in arg for arg in cmdline) and port_str in cmdline:
+                                return proc.info['pid']
+                    else:
+                        if 'ciadpi' in name:
+                            cmdline = proc.cmdline() or []
+                            matched = False
+                            for i, arg in enumerate(cmdline):
+                                if arg in ('-p', '--port') and i + 1 < len(cmdline) and cmdline[i + 1] == port_str:
+                                    matched = True
+                                    break
+                                elif arg in (f'-p{port_str}', f'--port={port_str}'):
+                                    matched = True
+                                    break
+                            if matched:
+                                return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception as e:
+            print(f"[ByeDPI] Ошибка при поиске существующего процесса: {e}")
+        return None
     
     def get_params(self):
         use_custom = self.config.get("use_custom_settings", True)
@@ -54,7 +97,15 @@ class ByeDPIManager(QObject):
         return params
     
     def start(self):
-        if self.running:
+        if self.is_running():
+            return True
+            
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            print(f"[ByeDPI {self.default_port}] Найден уже запущенный процесс с нужными параметрами (PID {existing_pid}), используем его.")
+            self.process = AdoptedProcess(existing_pid)
+            self.running = True
+            self.status_changed.emit(True)
             return True
             
         params = self.get_params()

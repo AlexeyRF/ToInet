@@ -1,4 +1,5 @@
-﻿from managers import system_utils as lang
+from managers import system_utils as lang
+from managers.system_utils import AdoptedProcess
 
 import os
 
@@ -9,10 +10,34 @@ import json
 import psutil
 
 import platform
+import threading
 
 from PyQt5.QtWidgets import QMessageBox
 
 from PyQt5.QtCore import QObject, pyqtSignal
+
+def _pipe_process_output(proc, prefix="[OperaProxy]"):
+    def reader():
+        try:
+            if not proc or not getattr(proc, 'stdout', None):
+                return
+            for line in iter(proc.stdout.readline, ''):
+                line_str = line.strip()
+                if line_str:
+                    print(f"{prefix} {line_str}")
+        except Exception:
+            pass
+        finally:
+            try:
+                if proc and getattr(proc, 'stdout', None):
+                    proc.stdout.close()
+            except Exception:
+                pass
+
+    t = threading.Thread(target=reader, daemon=True)
+    t.start()
+    return t
+
 
 
 
@@ -38,7 +63,7 @@ def get_opera_proxy_exe():
 
 OPERA_PROXY_EXE = get_opera_proxy_exe()
 
-DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 10"
+DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 10 -server-selection random"
 
 
 
@@ -74,7 +99,116 @@ class OperaProxyManager(QObject):
 
     def is_running(self):
 
+        if self.running and self.process:
+
+            if self.process.poll() is not None:
+
+                self.running = False
+
+                self.process = None
+
+        elif not self.running:
+
+            target_port = 1785
+
+            params = self.get_params()
+
+            for i, p in enumerate(params):
+
+                if p == "-bind-address" and i + 1 < len(params):
+
+                    addr = params[i + 1]
+
+                    if ":" in addr:
+
+                        try:
+
+                            target_port = int(addr.split(":")[1])
+
+                        except:
+
+                            pass
+
+                    break
+
+            existing_pid = self.find_existing_process(target_port)
+
+            if existing_pid:
+
+                self.process = AdoptedProcess(existing_pid)
+
+                self.running = True
+
         return self.running
+
+
+
+
+    def find_existing_process(self, port=1785):
+
+        port_str = str(port)
+
+        exe_name = os.path.basename(OPERA_PROXY_EXE).lower()
+
+        try:
+
+            for proc in psutil.process_iter(['pid', 'name']):
+
+                try:
+
+                    name = (proc.info.get('name') or "").lower()
+
+                    if 'opera-proxy' in name or name == exe_name:
+
+                        cmdline = proc.cmdline() or []
+
+                        if any(port_str in arg for arg in cmdline) or any("-bind-address" in arg for arg in cmdline):
+
+                            return proc.info['pid']
+
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+
+                    continue
+
+        except Exception:
+
+            pass
+
+
+
+        try:
+
+            import socket
+
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+            sock.settimeout(0.5)
+
+            res = sock.connect_ex(('127.0.0.1', port))
+
+            sock.close()
+
+            if res == 0:
+
+                for proc in psutil.process_iter(['pid', 'name']):
+
+                    try:
+
+                        name = (proc.info.get('name') or "").lower()
+
+                        if 'opera-proxy' in name or name == exe_name:
+
+                            return proc.info['pid']
+
+                    except:
+
+                        pass
+
+        except:
+
+            pass
+
+        return None
 
 
 
@@ -90,110 +224,114 @@ class OperaProxyManager(QObject):
 
     def start(self):
 
-        if self.running:
+        if self.is_running():
 
             return True
 
             
 
-        if not os.path.exists(OPERA_PROXY_EXE):
+        params = self.get_params()
 
-            self.error_occurred.emit(lang.T("Файл opera-proxy.exe не найден!", "opera-proxy.exe not found!"))
+        target_port = 1785
 
-            return False
+        for i, p in enumerate(params):
+
+            if p == "-bind-address" and i + 1 < len(params):
+
+                addr = params[i + 1]
+
+                if ":" in addr:
+
+                    try:
+
+                        target_port = int(addr.split(":")[1])
+
+                    except:
+
+                        pass
+
+                break
+
+
+
+        existing_pid = self.find_existing_process(target_port)
+
+        if existing_pid:
+
+            print(f"[OperaProxy] Найден уже запущенный процесс (PID {existing_pid}), используем его.")
+
+            self.process = AdoptedProcess(existing_pid)
+
+            self.running = True
+
+            self.status_changed.emit(True)
+
+            return True
+
 
             
 
+        if not os.path.exists(OPERA_PROXY_EXE):
+            err = lang.T("Файл opera-proxy.exe не найден!", "opera-proxy.exe not found!")
+            print(f"[OperaProxy] {err}")
+            self.error_occurred.emit(err)
+            return False
+
         params = self.get_params()
 
-        
-
         pool_enabled = self.config.get("opera_pool_enabled", False)
-
         pool_size = int(self.config.get("opera_pool_size", 3))
 
-        
-
         try:
-
             if not pool_enabled or pool_size <= 1:
-
                 print(f"[OperaProxy] Запуск: {' '.join([OPERA_PROXY_EXE] + params)}")
-
                 self.process = subprocess.Popen(
-
                     [OPERA_PROXY_EXE] + params,
-
-                    stdout=subprocess.DEVNULL,
-
-                    stderr=subprocess.DEVNULL,
-
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    encoding='utf-8',
+                    errors='replace',
+                    bufsize=1,
                     creationflags=subprocess.CREATE_NO_WINDOW
-
                 )
-
+                _pipe_process_output(self.process, "[OperaProxy]")
             else:
-
                 # Pool mode
-
                 self.pool_processes = []
-
                 # Extract original port
-
                 original_port = 1785
-
                 for i, p in enumerate(params):
-
                     if p == "-bind-address" and i+1 < len(params):
-
                         addr = params[i+1]
-
                         if ":" in addr:
-
                             original_port = int(addr.split(":")[1])
-
                         break
-
-                        
 
                 upstream_ports = [original_port + 1000 + i for i in range(pool_size)]
 
-                
-
                 print(f"[OperaProxy] Запуск пула из {pool_size} экземпляров...")
-
                 for i, port in enumerate(upstream_ports):
-
                     # Create custom params for each instance
-
                     instance_params = list(params)
-
                     for j, p in enumerate(instance_params):
-
                         if p == "-bind-address" and j+1 < len(instance_params):
-
                             addr = instance_params[j+1]
-
                             ip = addr.split(":")[0] if ":" in addr else "127.0.0.1"
-
                             instance_params[j+1] = f"{ip}:{port}"
-
                             break
 
-                            
-
                     proc = subprocess.Popen(
-
                         [OPERA_PROXY_EXE] + instance_params,
-
-                        stdout=subprocess.DEVNULL,
-
-                        stderr=subprocess.DEVNULL,
-
+                        stdout=subprocess.PIPE,
+                        stderr=subprocess.STDOUT,
+                        text=True,
+                        encoding='utf-8',
+                        errors='replace',
+                        bufsize=1,
                         creationflags=subprocess.CREATE_NO_WINDOW
-
                     )
-
+                    _pipe_process_output(proc, f"[OperaProxy] [Pool {i+1}]")
                     self.pool_processes.append(proc)
 
                     
@@ -294,23 +432,7 @@ class OperaProxyManager(QObject):
 
                 
 
-            # Kill stray processes if any
 
-            exe_name = os.path.basename(OPERA_PROXY_EXE).lower()
-
-            for proc in psutil.process_iter(['name', 'pid']):
-
-                try:
-
-                    if proc.info['name'] and proc.info['name'].lower() == exe_name:
-
-                        p = psutil.Process(proc.info['pid'])
-
-                        p.kill()
-
-                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-
-                    pass
 
                     
 

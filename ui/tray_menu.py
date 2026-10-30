@@ -117,30 +117,47 @@ def _update_menu_impl_unsafe():
         m.tray_menu.addAction(all_act)
         
         if m.mode_type == "inetcpl":
-            tor_cpl = QAction(m.T("Подключиться к TOR", "Connect to TOR") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR", "Disconnect from TOR"), m.tray_menu)
-            tor_cpl.triggered.connect(m.toggle_inetcpl_tor)
-            m.tray_menu.addAction(tor_cpl)
+            if m.tor_manager.is_running() or m.mode_mgr.inetcpl_tor_active:
+                tor_cpl = QAction(m.T("Подключиться к TOR", "Connect to TOR") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR", "Disconnect from TOR"), m.tray_menu)
+                tor_cpl.triggered.connect(m.toggle_inetcpl_tor)
+                m.tray_menu.addAction(tor_cpl)
             
-            bd_cpl = QAction(m.T("Подключиться к BD", "Connect to BD") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD", "Disconnect from BD"), m.tray_menu)
-            bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
-            m.tray_menu.addAction(bd_cpl)
+            if m.byedpi_manager.is_running() or m.mode_mgr.inetcpl_bd_active:
+                bd_cpl = QAction(m.T("Подключиться к BD", "Connect to BD") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD", "Disconnect from BD"), m.tray_menu)
+                bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
+                m.tray_menu.addAction(bd_cpl)
             
-            opera_cpl = QAction(m.T("Подключиться к Opera", "Connect to Opera") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera", "Disconnect from Opera"), m.tray_menu)
-            opera_cpl.triggered.connect(m.toggle_inetcpl_opera)
-            m.tray_menu.addAction(opera_cpl)            
+            if m.opera_mgr.is_running() or m.mode_mgr.inetcpl_opera_active:
+                opera_cpl = QAction(m.T("Подключиться к Opera", "Connect to Opera") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera", "Disconnect from Opera"), m.tray_menu)
+                opera_cpl.triggered.connect(m.toggle_inetcpl_opera)
+                m.tray_menu.addAction(opera_cpl)
+
+            if m.ssh_mgr.is_running() or getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
+                ssh_cpl = QAction(m.T("Подключиться к SSH", "Connect to SSH") if not getattr(m.mode_mgr, 'inetcpl_ssh_active', False) else m.T("Отключиться от SSH", "Disconnect from SSH"), m.tray_menu)
+                ssh_cpl.triggered.connect(m.toggle_inetcpl_ssh)
+                m.tray_menu.addAction(ssh_cpl)            
 
         elif m.mode_type == "tun" and not m.mode_mgr.get_tun_app_path():
-            tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
-            tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
-            m.tray_menu.addAction(tor_tun)
+            if m.tor_manager.is_running() or m.mode_mgr.tun_proxy_port == 9853:
+                tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
+                tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
+                m.tray_menu.addAction(tor_tun)
             
-            bd_tun = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), m.tray_menu)
-            bd_tun.triggered.connect(m.toggle_singbox_tun_bd)
-            m.tray_menu.addAction(bd_tun)
+            if m.byedpi_manager.is_running() or m.mode_mgr.tun_proxy_port == 1780:
+                bd_tun = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), m.tray_menu)
+                bd_tun.triggered.connect(m.toggle_singbox_tun_bd)
+                m.tray_menu.addAction(bd_tun)
             
-            opera_tun = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), m.tray_menu)
-            opera_tun.triggered.connect(m.toggle_singbox_tun_opera)
-            m.tray_menu.addAction(opera_tun)
+            if m.opera_mgr.is_running() or m.mode_mgr.tun_proxy_port == 1785:
+                opera_tun = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), m.tray_menu)
+                opera_tun.triggered.connect(m.toggle_singbox_tun_opera)
+                m.tray_menu.addAction(opera_tun)
+
+            ssh_port = int(m.config.get("ssh_socks_port", 1770))
+            if m.ssh_mgr.is_running() or m.mode_mgr.tun_proxy_port == ssh_port:
+                ssh_tun = QAction(m.T("Подключиться к SSH (TUN)", "Connect to SSH (TUN)") if m.mode_mgr.tun_proxy_port != ssh_port else m.T("Отключиться от SSH (TUN)", "Disconnect from SSH (TUN)"), m.tray_menu)
+                ssh_tun.triggered.connect(m.toggle_singbox_tun_ssh)
+                m.tray_menu.addAction(ssh_tun)
             
             adv_tun_simp = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), m.tray_menu)
             adv_tun_simp.triggered.connect(m.mode_mgr.open_advanced_tun_config)
@@ -149,9 +166,13 @@ def _update_menu_impl_unsafe():
             evpn_next = QAction(m.T("Сменить сервер", "Change server"), m.tray_menu)
             evpn_next.triggered.connect(m.evpn_mgr.next_server)
             m.tray_menu.addAction(evpn_next)
+        elif m.mode_type == "empty":
+            proxi_act = QAction(m.T("Отключить Проксификатор", "Disconnect Proxifier") if m.mode_mgr.proxifier_running() else m.T("Подключить Проксификатор", "Connect Proxifier"), m.tray_menu)
+            proxi_act.triggered.connect(m.toggle_proxifier)
+            m.tray_menu.addAction(proxi_act)
        
         m.tray_menu.addSeparator()
-        mode_m = QMenu(m.T("Режим", "Mode"), m.tray_menu)
+        mode_m = QMenu(m.T("Режим", "Mode", "Mode"), m.tray_menu)
         for mode_val in ["empty", "inetcpl", "tun", "evpn"]:
             act = QAction(mode_val.capitalize() + (" режим" if mode_val=="tun" or mode_val=="evpn" else ""), mode_m)
             act.setCheckable(True)
@@ -162,46 +183,14 @@ def _update_menu_impl_unsafe():
         m.tray_menu.addSeparator()
         
         set_act = QAction(m.T("Настройки", "Settings"), m.tray_menu); set_act.triggered.connect(m.toggle_mode); m.tray_menu.addAction(set_act)
-        restart_act = QAction(m.T("Перезапуск", "Restart"), m.tray_menu); restart_act.triggered.connect(m.restart_app); m.tray_menu.addAction(restart_act)
-        exit_act = QAction(m.T("Выход", "Exit"), m.tray_menu); exit_act.triggered.connect(m.exit_app); m.tray_menu.addAction(exit_act)
+        restart_act = QAction(m.T("Перезапуск", "Restart", "Redémarrer"), m.tray_menu); restart_act.triggered.connect(m.restart_app); m.tray_menu.addAction(restart_act)
+        exit_act = QAction(m.T("Выход", "Exit", "Quitter"), m.tray_menu); exit_act.triggered.connect(m.exit_app); m.tray_menu.addAction(exit_act)
     else:
         m.log('[Menu] Building advanced mode menu')
-        # Продвинутый режим
-        
-        if m.mode_type == "inetcpl":
-            tor_cpl = QAction(m.T("Подключиться к TOR (Inetcpl)", "Connect to TOR (Inetcpl)") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR (Inetcpl)", "Disconnect from TOR (Inetcpl)"), m.tray_menu)
-            tor_cpl.triggered.connect(m.toggle_inetcpl_tor)
-            m.tray_menu.addAction(tor_cpl)
-            
-            bd_cpl = QAction(m.T("Подключиться к BD (Inetcpl)", "Connect to BD (Inetcpl)") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD (Inetcpl)", "Disconnect from BD (Inetcpl)"), m.tray_menu)
-            bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
-            m.tray_menu.addAction(bd_cpl)
-            
-            opera_cpl = QAction(m.T("Подключиться к Opera (Inetcpl)", "Connect to Opera (Inetcpl)") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera (Inetcpl)", "Disconnect from Opera (Inetcpl)"), m.tray_menu)
-            opera_cpl.triggered.connect(m.toggle_inetcpl_opera)
-            m.tray_menu.addAction(opera_cpl)
-            m.tray_menu.addSeparator()
-        elif m.mode_type == "tun" and not m.mode_mgr.get_tun_app_path():
-            tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
-            tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
-            m.tray_menu.addAction(tor_tun)
-            
-            bd_tun = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), m.tray_menu)
-            bd_tun.triggered.connect(m.toggle_singbox_tun_bd)
-            m.tray_menu.addAction(bd_tun)
-            
-            opera_tun = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), m.tray_menu)
-            opera_tun.triggered.connect(m.toggle_singbox_tun_opera)
-            m.tray_menu.addAction(opera_tun)
-            
-            adv_tun_simp = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), m.tray_menu)
-            adv_tun_simp.triggered.connect(m.mode_mgr.open_advanced_tun_config)
-            m.tray_menu.addAction(adv_tun_simp)
-            m.tray_menu.addSeparator()
-
+        # Продвинутый режим (дублёры простого режима убраны)
 
         # 1. Управление компонентами
-        control_menu = QMenu(m.T("Управление компонентами", "Service Control"), m.tray_menu)
+        control_menu = QMenu(m.T("Управление компонентами", "Service Control", "Contrôle des services"), m.tray_menu)
         
         tor_wa = create_service_action(control_menu, "TOR", m.tor_manager.is_running(), m.toggle_tor, m.tor_manager.restart, is_tor=True)
         control_menu.addAction(tor_wa)
@@ -241,12 +230,15 @@ def _update_menu_impl_unsafe():
         
         opera_wa = create_service_action(control_menu, "Opera Proxy", m.opera_mgr.is_running(), m.toggle_opera, lambda: (m.opera_mgr.stop(), time.sleep(1), m.opera_mgr.start()))
         control_menu.addAction(opera_wa)
+
+        ssh_wa = create_service_action(control_menu, "SSH Tunnel", m.ssh_mgr.is_running(), m.toggle_ssh, m.ssh_mgr.restart)
+        control_menu.addAction(ssh_wa)
         
         if not lang._is_en or m.config.get("enable_ru_features", False):
             tg_wa = create_service_action(control_menu, "TGWS", m.tgws_mgr.running, m.toggle_tgws, lambda: (m.tgws_mgr.stop(), time.sleep(1), m.tgws_mgr.start()))
             control_menu.addAction(tg_wa)
             
-        tun_wa = create_service_action(control_menu, m.T("Проксификатор", "Proxifier"), m.mode_mgr.proxifier_running(), m.toggle_proxifier, lambda: (m.mode_mgr.stop_proxifier(), time.sleep(1), m.mode_mgr.start_proxifier()))
+        tun_wa = create_service_action(control_menu, m.T("Проксификатор", "Proxifier"), m.mode_mgr.proxifier_running(), m.toggle_proxifier, m.mode_mgr.restart_proxifier)
         control_menu.addAction(tun_wa)
         
         def toggle_ext():
@@ -259,10 +251,11 @@ def _update_menu_impl_unsafe():
         m.tray_menu.addMenu(control_menu)
         
         # 2. Настройки Компонентов
-        settings_menu = QMenu(m.T("Настройки компонентов", "Component Settings"), m.tray_menu)
-        settings_menu.addAction(m.T("Настройки TOR", "TOR Settings"), m.tor_manager.open_settings)
+        settings_menu = QMenu(m.T("Настройки компонентов", "Component Settings", "Paramètres des composants"), m.tray_menu)
+        settings_menu.addAction(m.T("Настройки TOR", "TOR Settings", "Paramètres TOR"), m.tor_manager.open_settings)
         
-        settings_menu.addAction(m.T("Настройки BD", "BD Settings"), m.byedpi_manager.open_settings)
+        settings_menu.addAction(m.T("Настройки BD", "BD Settings", "Paramètres ByeDPI"), m.byedpi_manager.open_settings)
+        settings_menu.addAction(m.T("Настройки SSH Туннеля", "SSH Tunnel Settings", "Paramètres du tunnel SSH"), m.ssh_mgr.open_settings)
         # settings_menu.addAction(m.T("Настройки VLESS", "VLESS Settings"), lambda: m.utils.run_script("evpn/vless_settings.pyw"))
         # settings_menu.addAction(m.T("Настройки Opera Proxy", "Opera Proxy Settings"), m.opera_mgr.open_settings)
         
@@ -272,19 +265,20 @@ def _update_menu_impl_unsafe():
         if not lang._is_en or m.config.get("enable_ru_features", False):
             settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: m.utils.run_script("tgws/settings.pyw"))
             
-        settings_menu.addAction(m.T("Настройка Проксификатора", "Configure Proxifier"), m.mode_mgr.open_proxifier_config)
-        settings_menu.addAction(m.T("Настройка доп. программ", "Configure Ext. Programs"), m.ext_programs_manager.open_config)
+        settings_menu.addAction(m.T("Пути программ", "Program Paths", "Chemins des programmes"), m.mode_mgr.open_proxifier_config)
         m.tray_menu.addMenu(settings_menu)
         
         
         # 4. Добавить в Telegram
-        tg_menu = QMenu(m.T("Добавить в Telegram", "Telegram Integration"), m.tray_menu)
+        tg_menu = QMenu(m.T("Добавить в Telegram", "Telegram Integration", "Intégration Telegram"), m.tray_menu)
         if not lang._is_en or m.config.get("enable_ru_features", False):
             tg_menu.addAction(m.T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), lambda: m.utils.add_proxy_to_telegram(m.config.get("tgws_port", 1480)))
             tg_menu.addAction(m.T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), lambda: m.utils.add_mtproto_to_telegram(m.config.get("tgws_port", 1480), m.config.get("tgws_secret", "0"*32), m.config.get("tgws_fake_tls", "")))
             tg_menu.addAction(m.T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(m.T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: m.utils.add_proxy_to_telegram(9853))
         tg_menu.addAction(m.T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1780))
+        ssh_port_val = int(m.config.get("ssh_socks_port", 1770))
+        tg_menu.addAction(m.T(f"Добавить SSH ({ssh_port_val}) в Telegram", f"Add SSH ({ssh_port_val}) to Telegram"), lambda: m.utils.add_proxy_to_telegram(int(m.config.get("ssh_socks_port", 1770))))
         # tg_menu.addAction(m.T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1790))
         m.tray_menu.addMenu(tg_menu)
         
@@ -365,12 +359,12 @@ def _update_menu_impl_unsafe():
         app_logs_act.triggered.connect(lambda: m.app_log_window.show() if m.app_log_window else None)
         sys_menu.addAction(app_logs_act)
         
-        ast_act = QAction(m.T("Настройки автозапуска", "Autostart Settings"), sys_menu)
+        ast_act = QAction(m.T("Настройки автозапуска", "Autostart Settings", "Paramètres de démarrage"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
-        sys_menu.addAction(m.T("Очистка кеша", "Clear Cache"), lambda: m.utils.run_script(m.CACHER_SCRIPT))
-        sys_menu.addAction(m.T("Открыть папку проекта", "Open Project Folder"), lambda: m.utils.open_project_folder(m.CURRENT_DIR))
-        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut"), lambda: m.utils.run_script(os.path.join(m.CURRENT_DIR, "managers", "system_utils.py"), ["yarlik", os.path.basename(__file__)]))
+        sys_menu.addAction(m.T("Очистка кеша", "Clear Cache", "Vider le cache"), lambda: m.utils.run_script(m.CACHER_SCRIPT))
+        sys_menu.addAction(m.T("Открыть папку проекта", "Open Project Folder", "Ouvrir le dossier du projet"), lambda: m.utils.open_project_folder(m.CURRENT_DIR))
+        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut", "Créer un raccourci sur le bureau"), lambda: m.utils.run_script(os.path.join(m.CURRENT_DIR, "managers", "system_utils.py"), ["yarlik", os.path.basename(__file__)]))
         sys_menu.addAction(m.T("Открыть свойства браузера", "Open Browser Properties"), m.utils.open_browser_properties)
         # Управление DNS
         dns_menu = QMenu(m.T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), sys_menu)
@@ -379,13 +373,13 @@ def _update_menu_impl_unsafe():
         comms_dns_act.triggered.connect(lambda: m.set_dns("comms"))
         dns_menu.addAction(comms_dns_act)
 
-        xbox_dns_act = QAction(m.T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
-        xbox_dns_act.triggered.connect(lambda: m.set_dns("xbox"))
-        dns_menu.addAction(xbox_dns_act)
-        
-        xbox_ipv6_dns_act = QAction(m.T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
-        xbox_ipv6_dns_act.triggered.connect(lambda: m.set_dns("xbox_ipv6"))
-        dns_menu.addAction(xbox_ipv6_dns_act)
+        # xbox_dns_act = QAction(m.T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
+        # xbox_dns_act.triggered.connect(lambda: m.set_dns("xbox"))
+        # dns_menu.addAction(xbox_dns_act)
+        # 
+        # xbox_ipv6_dns_act = QAction(m.T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
+        # xbox_ipv6_dns_act.triggered.connect(lambda: m.set_dns("xbox_ipv6"))
+        # dns_menu.addAction(xbox_ipv6_dns_act)
 
         dns_menu.addSeparator()
 
@@ -394,6 +388,26 @@ def _update_menu_impl_unsafe():
         dns_menu.addAction(reset_dns_act)
         
         sys_menu.addMenu(dns_menu)
+        # Language submenu
+        lang_menu = QMenu(m.T("Язык интерфейса", "Language", "Langue"), sys_menu)
+        cur_lang = m.config.get("language", "auto")
+        for l_code, l_name in [("auto", m.T("Авто (Система)", "Auto (System)", "Auto (Système)")),
+                                ("ru", "Русский"),
+                                ("en", "English"),
+                                ("fr", "Français")]:
+            l_act = QAction(l_name, lang_menu)
+            l_act.setCheckable(True)
+            l_act.setChecked(cur_lang == l_code)
+            def _make_lang_cb(c):
+                def _apply():
+                    m.config["language"] = c
+                    m.config_manager.save_config(m.config)
+                    m.update_menu()
+                return _apply
+            l_act.triggered.connect(_make_lang_cb(l_code))
+            lang_menu.addAction(l_act)
+        sys_menu.addMenu(lang_menu)
+
 
         
         if lang._is_en:
@@ -423,7 +437,7 @@ def _update_menu_impl_unsafe():
         m.tray_menu.addSeparator()
         
         m_act = QAction(m.T("Перейти в простой режим", "Switch to Simple Mode"), m.tray_menu); m_act.triggered.connect(m.toggle_mode); m.tray_menu.addAction(m_act)
-        restart_act = QAction(m.T("Перезапуск", "Restart"), m.tray_menu); restart_act.triggered.connect(m.restart_app); m.tray_menu.addAction(restart_act)
+        restart_act = QAction(m.T("Перезапуск", "Restart", "Redémarrer"), m.tray_menu); restart_act.triggered.connect(m.restart_app); m.tray_menu.addAction(restart_act)
         e_act = QAction(m.T("Выход", "Exit"), m.tray_menu); e_act.triggered.connect(m.exit_app); m.tray_menu.addAction(e_act)
 
 

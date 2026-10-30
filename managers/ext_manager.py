@@ -60,55 +60,15 @@ class ExtProgramsManager:
         print("[Ext] Дополнительные программы перезапущены")
 
     def open_config(self):
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QTextEdit, QPushButton, QFileDialog
-        
-        config = config_manager.load_config()
-        ext_programs = config.get("ext_programs", [])
-        current_text = "\n".join(ext_programs)
-        
-        dialog = QDialog()
-        dialog.setWindowTitle("Дополнительные программы")
-        dialog.resize(500, 300)
-        
-        layout = QVBoxLayout(dialog)
-        
-        label = QLabel("Укажите полные пути к программам (по одной на строку):")
-        layout.addWidget(label)
-        
-        text_edit = QTextEdit()
-        text_edit.setPlainText(current_text)
-        layout.addWidget(text_edit)
-        
-        h_layout = QHBoxLayout()
-        add_btn = QPushButton("Добавить файл...")
-        def add_file():
-            path, _ = QFileDialog.getOpenFileName(dialog, "Выберите исполняемый файл", "", "Executables (*.exe *.bat *.cmd);;All Files (*)")
-            if path:
-                current = text_edit.toPlainText()
-                if current and not current.endswith("\n"):
-                    current += "\n"
-                text_edit.setPlainText(current + path + "\n")
-        add_btn.clicked.connect(add_file)
-        
-        h_layout.addWidget(add_btn)
-        h_layout.addStretch()
-        
-        ok_btn = QPushButton("ОК")
-        cancel_btn = QPushButton("Отмена")
-        ok_btn.clicked.connect(dialog.accept)
-        cancel_btn.clicked.connect(dialog.reject)
-        
-        h_layout.addWidget(ok_btn)
-        h_layout.addWidget(cancel_btn)
-        
-        layout.addLayout(h_layout)
-        
-        if dialog.exec_() == QDialog.Accepted:
-            lines = text_edit.toPlainText().split("\n")
-            programs = [line.strip() for line in lines if line.strip()]
-            config["ext_programs"] = programs
-            config_manager.save_config(config)
-            QMessageBox.information(None, "Успех", "Настройки сохранены. Перезапустите доп. программы.")
+        import sys
+        CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        exe_path = os.path.join(CURRENT_DIR, "bin", "programs_settings.exe")
+        script_path = os.path.join(CURRENT_DIR, ".dev", "programs_settings.pyw")
+        creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+        if os.path.exists(exe_path):
+            subprocess.Popen([exe_path], creationflags=creationflags)
+        else:
+            subprocess.Popen([sys.executable, script_path], creationflags=creationflags)
 
 _manager = None
 def get_manager():

@@ -6,7 +6,7 @@ import socket as _socket
 import threading
 
 from dataclasses import dataclass, field
-from typing import Dict, List
+from typing import Dict, List, Optional
 from urllib.request import Request
 
 from .balancer import balancer
@@ -186,10 +186,11 @@ def refresh_cfproxy_domains() -> None:
 
 
 _refresh_stop: threading.Event = threading.Event()
+_refresh_thread: Optional[threading.Thread] = None
 
 
 def start_cfproxy_domain_refresh() -> None:
-    global _refresh_stop
+    global _refresh_stop, _refresh_thread
     _refresh_stop.set()
     _refresh_stop = threading.Event()
     stop = _refresh_stop
@@ -197,11 +198,22 @@ def start_cfproxy_domain_refresh() -> None:
     balancer.update_domains_list(CFPROXY_DEFAULT_DOMAINS)
 
     def _loop():
-        refresh_cfproxy_domains()
+        if not stop.is_set():
+            refresh_cfproxy_domains()
         while not stop.wait(timeout=3600):
+            if stop.is_set():
+                break
             refresh_cfproxy_domains()
 
-    threading.Thread(target=_loop, daemon=True, name='cfproxy-domains-refresh').start()
+    _refresh_thread = threading.Thread(target=_loop, daemon=True, name='cfproxy-domains-refresh')
+    _refresh_thread.start()
+
+
+def stop_cfproxy_domain_refresh() -> None:
+    global _refresh_stop, _refresh_thread
+    if _refresh_stop:
+        _refresh_stop.set()
+    _refresh_thread = None
 
 
 def parse_dc_ip_list(dc_ip_list: List[str]) -> Dict[int, str]:

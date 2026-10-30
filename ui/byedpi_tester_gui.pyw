@@ -1,48 +1,512 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from managers import system_utils as lang
+"""
+ByeByeDPI Strategy Tester GUI (Standalone & Full-featured)
+==========================================================
+Self-contained utility to test ByeDPI (ciadpi) circumvention strategies 
+against selected domain lists (including official YouTube & GoogleVideo CDN lists 
+from romanvht/ByeByeDPI repository).
+"""
+
 import sys
 import os
 import time
 import json
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, QCheckBox, 
+import socket
+import ssl
+import http.client
+import urllib.parse
+import subprocess
+import struct
+import shutil
+from concurrent.futures import ThreadPoolExecutor, as_completed
+
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QProgressBar, QSpinBox, QDoubleSpinBox, 
-                             QGroupBox, QFileDialog, QMessageBox, QTabWidget, QTabBar)
+                             QGroupBox, QFileDialog, QMessageBox)
 from PyQt5.QtGui import QIcon, QFont, QColor
 from PyQt5.QtCore import Qt, QThread, pyqtSignal
 
-import sys, os
+# Base Directory Resolution
 if getattr(sys, 'frozen', False):
-    CURRENT_DIR = os.path.dirname(sys.executable)
-    TOOLS_DIR = os.path.join(CURRENT_DIR, "byedpi")
+    SCRIPT_DIR = os.path.dirname(sys.executable)
 else:
-    CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    TOOLS_DIR = os.path.join(CURRENT_DIR, "byedpi")
+    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-if CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+# Optional ToInet-MAX integration fallbacks
+try:
+    from managers import system_utils as lang
+except ImportError:
+    lang = None
 
-# Import project config manager
+def T(ru: str, en: str = "") -> str:
+    if lang and hasattr(lang, "T"):
+        try:
+            return lang.T(ru, en)
+        except Exception:
+            pass
+    return ru
+
 try:
     from managers import config_manager
 except ImportError:
     config_manager = None
 
-# Import byedpi_tester functions
-try:
-    from byedpi import byedpi_tester
-except ImportError:
-    byedpi_tester = None
-BYEDPI_EXE_DEFAULT = os.path.join(CURRENT_DIR, r"byedpi\ciadpi.exe")
-SITES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_sites.txt")
-STRATEGIES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_strategies.txt")
-PRIORITY_SITES_FILE = os.path.join(TOOLS_DIR, "byedpi_tester_priority_sites.txt")
+# Smart binary locator
+def find_ciadpi_executable():
+    candidates = [
+        os.path.join(SCRIPT_DIR, "ciadpi.exe"),
+        os.path.join(SCRIPT_DIR, "byedpi", "ciadpi.exe"),
+        r"D:\Documents\ToInet-MAX\byedpi\ciadpi.exe",
+        r"C:\Program Files\byedpi\ciadpi.exe",
+        r"C:\Program Files (x86)\byedpi\ciadpi.exe",
+    ]
+    which_bin = shutil.which("ciadpi.exe") or shutil.which("ciadpi")
+    if which_bin:
+        candidates.insert(0, which_bin)
+    for c in candidates:
+        if os.path.isfile(c):
+            return os.path.normpath(c)
+    return os.path.join(SCRIPT_DIR, "ciadpi.exe")
 
-# Stylesheet for premium dark mode
+BYEDPI_EXE_DEFAULT = find_ciadpi_executable()
+
+# Configuration / Data text files
+SITES_FILE = os.path.join(SCRIPT_DIR, "byedpi_tester_sites.txt")
+STRATEGIES_FILE = os.path.join(SCRIPT_DIR, "byedpi_tester_strategies.txt")
+PRIORITY_SITES_FILE = os.path.join(SCRIPT_DIR, "byedpi_tester_priority_sites.txt")
+
+# If files don't exist in SCRIPT_DIR, check byedpi subfolder
+if not os.path.exists(SITES_FILE) and os.path.exists(os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_sites.txt")):
+    SITES_FILE = os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_sites.txt")
+if not os.path.exists(STRATEGIES_FILE) and os.path.exists(os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_strategies.txt")):
+    STRATEGIES_FILE = os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_strategies.txt")
+if not os.path.exists(PRIORITY_SITES_FILE) and os.path.exists(os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_priority_sites.txt")):
+    PRIORITY_SITES_FILE = os.path.join(SCRIPT_DIR, "byedpi", "byedpi_tester_priority_sites.txt")
+
+
+# --- Lists from ByeByeDPI Repository ---
+YOUTUBE_SITES = [
+    "youtube.com",
+    "youtu.be",
+    "www.youtube.com",
+    "i.ytimg.com",
+    "i9.ytimg.com",
+    "yt3.ggpht.com",
+    "yt4.ggpht.com",
+    "googleapis.com",
+    "jnn-pa.googleapis.com",
+    "googleusercontent.com",
+    "signaler-pa.youtube.com",
+    "youtubei.googleapis.com",
+    "manifest.googlevideo.com",
+    "yt3.googleusercontent.com"
+]
+
+GOOGLEVIDEO_SITES = [
+    "rr1---sn-4axm-n8vs.googlevideo.com",
+    "rr1---sn-gvnuxaxjvh-o8ge.googlevideo.com",
+    "rr1---sn-ug5onuxaxjvh-p3ul.googlevideo.com",
+    "rr1---sn-ug5onuxaxjvh-n8v6.googlevideo.com",
+    "rr4---sn-q4flrnsl.googlevideo.com",
+    "rr10---sn-gvnuxaxjvh-304z.googlevideo.com",
+    "rr14---sn-n8v7kn7r.googlevideo.com",
+    "rr16---sn-axq7sn76.googlevideo.com",
+    "rr1---sn-8ph2xajvh-5xge.googlevideo.com",
+    "rr1---sn-gvnuxaxjvh-5gie.googlevideo.com",
+    "rr12---sn-gvnuxaxjvh-bvwz.googlevideo.com",
+    "rr5---sn-n8v7knez.googlevideo.com",
+    "rr1---sn-u5uuxaxjvhg0-ocje.googlevideo.com",
+    "rr2---sn-q4fl6ndl.googlevideo.com",
+    "rr5---sn-gvnuxaxjvh-n8vk.googlevideo.com",
+    "rr4---sn-jvhnu5g-c35d.googlevideo.com",
+    "rr1---sn-q4fl6n6y.googlevideo.com",
+    "rr2---sn-hgn7ynek.googlevideo.com",
+    "rr1---sn-xguxaxjvh-gufl.googlevideo.com"
+]
+
+GENERAL_SITES = [
+    "rutracker.org",
+    "nyaa.si",
+    "rutor.org",
+    "nnmclub.to",
+    "speedtest.net"
+]
+
+DEFAULT_SITES = GENERAL_SITES + YOUTUBE_SITES + GOOGLEVIDEO_SITES
+
+# --- Embedded Curated Strategies (Cleaned of Linux-only -S/-Y, 100% verified for Windows ciadpi) ---
+DEFAULT_STRATEGIES = [
+    '-f-200 -Qr -s3:5+sm -a1 -As -d1 -s4+sm -s8+s -f-300 -d6+s -a1 -At,r,s -o2 -f-30 -As -r5 -Mh -r6+s -f-250 -s2:7+s -s3:6+sm -a1 -At,r,s -s3:5+sm -s6+s -s7:9+s -q30+sm -a1',
+    '-d1 -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -r1+s -a1 -As -d1 -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -a1',
+    '-q2 -s2 -s3+s -r3 -s4 -r4 -s5+s -r5+s -s6 -s7+s -r8 -s9+s -Qr -Mh,d,r -a1 -At,r -s2+s -r2 -d2 -s3 -r3 -r4 -s4 -d5+s -r5 -d6 -s7+s -d7 -a1',
+    '-o1 -d1 -a1 -At,r,s -s1 -d1 -s5+s -s10+s -s15+s -s20+s -r1+s -a1 -As -s1 -d1 -s5+s -s10+s -s15+s -s20+s -a1',
+    '-n {sni} -Qr -f-204 -s1:5+sm -a1 -As -d1 -s3+s -s5+s -q7 -a1 -As -o2 -f-43 -a1 -As -r5 -Mh -s1:5+s -s3:7+sm -a1',
+    '-n {sni} -Qr -f-205 -a1 -As -s1:3+sm -a1 -As -s5:8+sm -a1 -As -d3 -q7 -o2 -f-43 -f-85 -f-165 -r5 -Mh -a1',
+    '-d1+s -s50+s -a1 -As -f20 -r2+s -a1 -At -d2 -s1+s -s5+s -s10+s -s15+s -s25+s -s35+s -s50+s -s60+s -a1',
+    '-o1 -a1 -At,r,s -f-1 -a1 -At,r,s -d1:11+sm -a1 -At,r,s -n {sni} -Qr -f1 -d1:11+sm -s1:11+sm -a1',
+    '-d1 -s1 -q1 -a1 -Ar -s5 -o1+s -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -a1',
+    '-f1+nm -t6 -a1 -As -n {sni} -Qr -s1:6+sm -a1 -As -s5:12+sm -a1 -As -d3 -q7 -r6 -Mh -a1',
+    '-d1 -s1+s -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -a1',
+    '-d1 -s1+s -d1+s -s3+s -d6+s -s12+s -d14+s -s20+s -d24+s -s30+s -a1',
+    '-o1 -a1 -At,r,s -f-1 -a1 -Ar,s -o1 -a1 -At -r1+s -f-1 -t6 -a1',
+    '-d1 -s1+s -s3+s -s6+s -s9+s -s12+s -s15+s -s20+s -s30+s -a1',
+    '-d1 -d3+s -s6+s -d6+s -s7+s -d8+s -s10+s -a1 -t12 -At,s -r3',
+    '-f1 -t5 -n {sni} -q3+h -Qr -f2 -q1 -r1+s -t15 -q1 -o2 -a1',
+    '-n {sni} -d2:5:2+h -f-3 -r2+sm -o2 -o50+s -r2+s -f-4 -a1',
+    '-f-1 -Qr -s1+sm -d3+s -s5+sm -o2 -a1 -As -r1+s -d8+s -a1',
+    '-r-1+s -o20+sm -s3:7+sm -d5:3+sm -f300+s -Qr -f-1 -a1',
+    '-o2 -O4 -s1 -q1 -a1 -Ar -s5 -o1+s -f1+s -r20+s -a1',
+    '-o1 -r-5+se -a1 -At,r,s -d1 -n {sni} -Qr -f-1 -a1',
+    '--fake -1 --ttl 8 --split 1+s --disorder 3+s -a1',
+    '-n {sni} -Qr -f6+nr -d2 -d11 -f9+hm -o3 -t7 -a1',
+    '-r5+s -s25+s -a1 -At,r,s -s50 -r5+s -s50+s -a1',
+    '-d1 -d3+s -s6+s -d9+s -s20+s -d25+s -s30+s -a1',
+    '-d9+s -q20+s -s25+s -t5 -a1 -At,r,s -r1+h -a1',
+    '-q1+s -s29+s -s30+s -s14+s -o5+s -f-1 -a1',
+    '-d1 -s1+s -r1+s -e1 -m1 -o1+s -f-1 -t2 -a1',
+    '-d1 -o1 -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-d1 -s4 -d8 -s1+s -d5+s -s10+s -d20+s -a1',
+    '-f-1 -n {sni} -Qr -s2+s -r3 -o20 -t4 -a1',
+    '-n {sni} -Qr -d5+sm -f3+sm -o2 -t4 -a1',
+    '-o1 -a1 -Ar -q1 -a1 -At -f-1 -r1+s -a1',
+    '-q1 -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-s4+s -r9+s -Qr -n {sni} -a1',
+    '-o1 -d1 -r1+s -s1+s -d3+s -a1',
+    '-q1+s -s29+s -o5+s -f-1 -a1',
+    '-n {sni} -Qr -m2 -f-1 -d7 -a1',
+    '-d1 -s1+s -r1+s -f-1 -t8 -a1',
+    '-o1 -a1 -An -f1+nm -t6 -a1',
+    '-n {sni} -Qr -f-1 -r1+s -a1',
+    '-n {sni} -Qr -d1:3 -f-1 -a1',
+    '-s1 -d3+s -a1 -At -r1+s -a1',
+    '-f-1 -t8 -n {sni} -s1+s -a1',
+    '-n {sni} -Qr -d1 -f-1 -a1',
+    '-f64+se -n {sni} -t5 -a1',
+    '-o1 -a1 -At,r,s -d1 -a1',
+    '-d1+s -o2 -s5 -r5 -a1',
+    '-r8 -o2 -s7 -q4+s -a1',
+    '-o1 -f-1 -r-5+se -a1',
+    '-d6+s -q4+hm -o2 -a1',
+    '-s5+s -s35+s -m4 -a1',
+    '-f-1+sm -t7 -m2 -a1',
+    '-o1 -r-5+se -a1',
+    '-o1+s -d3+s -a1',
+    '-o1 -s4 -s6 -a1',
+    '-q1 -r25+s -a1',
+    '-d1 -s3+s -a1',
+    '-o3 -d7 -a1',
+    '-d7 -s2 -a1',
+    '-l:"\\xC2\\x00\\x00\\x00\\x01\\x14\\x2E\\xE3\\xE3\\x5F\\x6B\\xBB\\x23\\xA8\\xE6\\x5D\\xA9\\x78\\x21\\xCF\\xC2\\x72\\x4C\\x8F\\xC4\\x5E\\x14\\x00\\x00\\x00\\x00\\xC5\\x00\\x00\\x00\\x00\\x4C\\x00\\xA7\\x00\\x00\\x00\\x00\\x00\\x00\\x44\\x00\\x00\\x80\\x00\\x00\\x00\\x0D\\xFC\\xFA\\x1D\\xCD\\x73\\xBA\\x2A\\x90\\x93\\xB3\\xEE\\xF7\\x43\\xC5\\x85\\xDA\\xFF\\x45\\x3C\\x00\\x00\\x00\\x00\\x00\\x00\\x7C\\x00\\x9B\\x00\\xF6\\x00\\x00\\xDD\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x59\\xA8\\xE4\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x7B\\x00\\x0F\\x00\\x00\\x00\\x48\\x4E\\x00\\x00\\x00\\x06\\xF3\\x00\\x00\\x00\\x00\\xD9\\x5A\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00" -a3 -t12 -d1 -s0+h -d3+s -s6+s -d5+s -s8+s -d7+s -s10+s -d3 -At,s -r3',
+    '-f-200 -Qr -s3:5+sm -a1 -As -d1 -s4+sm -s8+sh -f-300 -d6+sh -a1 -At,r,s -o2 -f-30 -As -r5 -Mh -r6+sh -f-250 -s2:7+s -s3:6+sm -a1 -At,r,s -s3:5+sm -s6+s -s7:9+s -q30+sm -a1',
+    '-Ku -l:"\\xe3\\x00\\x06\\xec\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00\\x00" -a3 -An -f64+se -n {sni} -t5',
+    '-f1+nme -t6 -a1 -As -n {sni} -Qr -s1:6+sm -a1 -As -s5:12+sm -a1 -As -d3 -q7 -r6 -Mh -a1',
+    '-s1 -o1 -a1 -Ar -s5 -o1+s -a1 -At -f-1 -r1+s -a1 -As -s1 -o1+s -s-1 -a1',
+    '-s1 -d1 -a1 -Ar -d5 -o1+s -a1 -At -f-1 -r1+s -a1 -As -d1 -o1+s -s-1 -a1',
+    '-s1 -q1 -a1 -Ar -a1 -s5 -o2 -At -f-1 -r1+s -a1 -As -s1 -o1+s -s-1 -a1',
+    '-s1 -q1 -a1 -Ar -s5 -o1+s -a1 -At -f-1 -d1+s -a1 -As -s1 -o1+s -s-1 -a1',
+    '-s1 -q1 -a1 -Ar -s5 -o2 -a1 -At -f-1 -r1+s -a1 -As -s1 -o1+s -s-1 -a1',
+    '-s1 -q1 -a1 -At -a1 -f-1 -r1+s -a1 -As -d1+s -O1 -s29+s -a1',
+    '-s25 -r5+s -s25+s -a1 -At,r,s -s50 -r5+s -s50+s -a1',
+    '-o2 -O4 -s1 -q1 -a2 -Ar -s5 -o1+s -f1+s -r20+s -a2',
+    '-s1 -d1 -r1+s -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-s1 -q1 -r1+s -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-s1 -o1 -r1+s -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-s1 -d1 -o1 -a1 -Ar -o3 -a1 -At -f-1 -r1+s -a1',
+    '-s1 -o1 -a1 -Ar -o1 -a1 -At -f-1 -r1+s -a1',
+    '-s1 -q1 -a1 -At,r,s -f-1 -r1+s -a1',
+    '-s1 -o1 -a1 -At,r,s -f-1 -r1+s -a1',
+    '-s1 -d1 -a1 -At,r,s -f-1 -r1+s -a1',
+    '-n {sni} -Qr -f209 -s1+sm -R1-3 -a1',
+    '-s4+sn -r9+s -Qr -n {sni} -a1',
+    '-d1 -r1+s -f-1 -t8 -o3+s -a1',
+    '-o1 -a1 -An -f1+nme -t6 -a1',
+    '-f-1 -t8 -n {sni} -s1+s -a5'
+]
+
+# --- STANDALONE SOCKS5 & BYEDPI PROBING ENGINE ---
+def shell_split(string: str) -> list:
+    tokens = []
+    quote_char = ' '
+    escaping = False
+    quoting = False
+    last_close_quote_index = -999999
+    current = []
+
+    for i in range(len(string)):
+        c = string[i]
+        if escaping:
+            current.append(c)
+            escaping = False
+        elif c == '\\' and quoting:
+            if i + 1 < len(string) and string[i + 1] == quote_char:
+                escaping = True
+            else:
+                current.append(c)
+        elif quoting and c == quote_char:
+            quoting = False
+            last_close_quote_index = i
+        elif not quoting and (c == "'" or c == '"'):
+            quoting = True
+            quote_char = c
+        elif not quoting and c.isspace():
+            if current or last_close_quote_index == i - 1:
+                tokens.append("".join(current))
+                current = []
+        else:
+            current.append(c)
+
+    if current or last_close_quote_index == len(string) - 1:
+        tokens.append("".join(current))
+
+    # Strip Linux-only unsupported flags on Windows
+    if os.name == 'nt':
+        tokens = [t for t in tokens if t not in ('-S', '-Y')]
+
+    return tokens
+
+def check_ip_and_port_in_cmd(cmd_args: list) -> tuple:
+    def get_arg_value(keys: list):
+        for i in range(len(cmd_args)):
+            arg = cmd_args[i]
+            for key in keys:
+                if key.startswith("--"):
+                    if arg == key and i + 1 < len(cmd_args):
+                        return cmd_args[i + 1]
+                    elif arg.startswith(key + "="):
+                        return arg.split('=', 1)[1]
+                elif key.startswith("-"):
+                    if arg.startswith(key) and len(arg) > len(key):
+                        return arg[len(key):]
+                    elif arg == key and i + 1 < len(cmd_args):
+                        return cmd_args[i + 1]
+        return None
+
+    cmd_ip = get_arg_value(["--ip", "-i"])
+    cmd_port = get_arg_value(["--port", "-p"])
+    return cmd_ip, cmd_port
+
+def connect_socks5(proxy_host, proxy_port, dest_host, dest_port, timeout=5):
+    s = socket.create_connection((proxy_host, proxy_port), timeout=timeout)
+    s.sendall(b'\x05\x01\x00')
+    resp = s.recv(2)
+    if len(resp) != 2 or resp[0] != 5 or resp[1] != 0:
+        s.close()
+        raise Exception("SOCKS5 negotiation failed")
+
+    try:
+        ip_bytes = socket.inet_aton(dest_host)
+        addr_type = 1
+        addr_bytes = ip_bytes
+    except socket.error:
+        try:
+            ip_bytes = socket.inet_pton(socket.AF_INET6, dest_host)
+            addr_type = 4
+            addr_bytes = ip_bytes
+        except socket.error:
+            addr_type = 3
+            host_bytes = dest_host.encode('utf-8')
+            addr_bytes = bytes([len(host_bytes)]) + host_bytes
+
+    req = struct.pack('!BBBB', 5, 1, 0, addr_type) + addr_bytes + struct.pack('!H', dest_port)
+    s.sendall(req)
+
+    resp = s.recv(4)
+    if len(resp) < 4 or resp[0] != 5 or resp[1] != 0:
+        s.close()
+        raise Exception(f"SOCKS5 connection failed: code {resp[1] if len(resp) >= 2 else 'unknown'}")
+
+    bnd_addr_type = resp[3]
+    if bnd_addr_type == 1:
+        s.recv(6)
+    elif bnd_addr_type == 3:
+        len_byte = s.recv(1)
+        if len_byte:
+            s.recv(ord(len_byte) + 2)
+    elif bnd_addr_type == 4:
+        s.recv(18)
+
+    return s
+
+class SOCKS5HTTPConnection(http.client.HTTPConnection):
+    def __init__(self, proxy_host, proxy_port, host, port=None, timeout=5, **kwargs):
+        super().__init__(host, port, timeout=timeout, **kwargs)
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
+
+    def connect(self):
+        self.sock = connect_socks5(self.proxy_host, self.proxy_port, self.host, self.port or 80, self.timeout)
+
+class SOCKS5HTTPSConnection(http.client.HTTPSConnection):
+    def __init__(self, proxy_host, proxy_port, host, port=None, timeout=5, context=None, **kwargs):
+        super().__init__(host, port, timeout=timeout, context=context, **kwargs)
+        self.proxy_host = proxy_host
+        self.proxy_port = proxy_port
+
+    def connect(self):
+        self.sock = connect_socks5(self.proxy_host, self.proxy_port, self.host, self.port or 443, self.timeout)
+        if self._tunnel_host:
+            self._tunnel()
+
+        if self._context is None:
+            self._context = ssl.create_default_context()
+            self._context.check_hostname = False
+            self._context.verify_mode = ssl.CERT_NONE
+
+        self.sock = self._context.wrap_socket(self.sock, server_hostname=self.host)
+
+def check_url(proxy_host, proxy_port, url_str, timeout=5):
+    parsed = urllib.parse.urlparse(url_str)
+    scheme = parsed.scheme.lower()
+    host = parsed.hostname
+    port = parsed.port
+    path = parsed.path or "/"
+    if parsed.query:
+        path += "?" + parsed.query
+
+    redirects_limit = 5
+    current_url = url_str
+
+    for _ in range(redirects_limit):
+        if scheme == 'https':
+            conn = SOCKS5HTTPSConnection(proxy_host, proxy_port, host, port or 443, timeout=timeout)
+        elif scheme == 'http':
+            conn = SOCKS5HTTPConnection(proxy_host, proxy_port, host, port or 80, timeout=timeout)
+        else:
+            return False, f"Unsupported scheme {scheme}"
+
+        try:
+            conn.request("GET", path, headers={
+                "Connection": "close",
+                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36"
+            })
+            resp = conn.getresponse()
+
+            declared_len = resp.getheader('content-length')
+            declared_len = int(declared_len) if declared_len is not None else -1
+
+            actual_len = 0
+            limit = declared_len if declared_len > 0 else 1024 * 1024
+
+            while actual_len < limit:
+                chunk = resp.read(min(8192, limit - actual_len))
+                if not chunk:
+                    break
+                actual_len += len(chunk)
+
+            if resp.status in (301, 302, 303, 307, 308):
+                loc = resp.getheader('Location')
+                if loc:
+                    current_url = urllib.parse.urljoin(current_url, loc)
+                    parsed = urllib.parse.urlparse(current_url)
+                    scheme = parsed.scheme.lower()
+                    host = parsed.hostname
+                    port = parsed.port
+                    path = parsed.path or "/"
+                    if parsed.query:
+                        path += "?" + parsed.query
+                    conn.close()
+                    continue
+
+            if declared_len <= 0 or actual_len >= declared_len:
+                return True, f"Success ({resp.status})"
+            else:
+                return False, f"Block detected (read {actual_len} bytes, declared {declared_len})"
+        except Exception as e:
+            return False, str(e)
+        finally:
+            conn.close()
+
+    return False, "Too many redirects"
+
+def start_byedpi(executable, strategy_args):
+    try:
+        startupinfo = None
+        if hasattr(subprocess, 'STARTUPINFO'):
+            startupinfo = subprocess.STARTUPINFO()
+            startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+            startupinfo.wShowWindow = subprocess.SW_HIDE
+
+        proc = subprocess.Popen(
+            [executable] + strategy_args,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            startupinfo=startupinfo,
+            text=True
+        )
+        return proc
+    except Exception as e:
+        return None
+
+def stop_byedpi(proc):
+    if proc is None:
+        return
+    try:
+        proc.terminate()
+        try:
+            proc.wait(timeout=1.0)
+        except subprocess.TimeoutExpired:
+            proc.kill()
+            proc.wait(timeout=1.0)
+    except Exception:
+        pass
+
+def wait_for_proxy_port(proc, ip, port, timeout=4.0):
+    """Waits for proxy port to open while actively monitoring process health."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        # Check if the process exited prematurely
+        if proc.poll() is not None:
+            err = ""
+            try:
+                _, err_bytes = proc.communicate(timeout=0.3)
+                err = err_bytes.strip()
+            except Exception:
+                pass
+            return False, f"Ошибка ciadpi (код {proc.returncode}): {err or 'процесс аварийно завершился'}"
+            
+        try:
+            s = socket.create_connection((ip, port), timeout=0.25)
+            s.close()
+            return True, "OK"
+        except Exception:
+            time.sleep(0.08)
+            
+    return False, f"Порт {ip}:{port} не открылся (таймаут {timeout} сек)"
+
+def wait_for_port_closed(ip, port, timeout=2.5):
+    """Ensures socket is fully unbound and closed before next test cycle."""
+    start_time = time.time()
+    while time.time() - start_time < timeout:
+        try:
+            s = socket.create_connection((ip, port), timeout=0.15)
+            s.close()
+            time.sleep(0.08)
+        except (socket.error, OSError):
+            return True
+    return False
+
+def ensure_port_available(ip, port):
+    """Cleans up any orphaned ciadpi or conflicting process occupying target port."""
+    try:
+        s = socket.create_connection((ip, port), timeout=0.2)
+        s.close()
+        if os.name == 'nt':
+            subprocess.run(
+                ["taskkill", "/F", "/IM", "ciadpi.exe"],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                creationflags=subprocess.CREATE_NO_WINDOW
+            )
+            time.sleep(0.3)
+    except (socket.error, OSError):
+        pass
+
+
+# --- Dark Stylesheet ---
 DARK_STYLESHEET = """
 QMainWindow {
     background-color: #1a1a1a;
@@ -133,6 +597,20 @@ QPushButton#apply_btn:disabled {
     color: #666666;
     border-color: #2a2a2a;
 }
+QPushButton#copy_btn {
+    background-color: #3a334d;
+    border-color: #4e4466;
+    padding: 10px;
+}
+QPushButton#copy_btn:hover {
+    background-color: #473e5e;
+    border-color: #5f537d;
+}
+QPushButton#copy_btn:disabled {
+    background-color: #222222;
+    color: #666666;
+    border-color: #2a2a2a;
+}
 QListWidget {
     background-color: #222222;
     border: 1px solid #2d2d2d;
@@ -189,8 +667,6 @@ QLabel#status_desc_lbl {
     font-style: italic;
     color: #888888;
 }
-
-/* Стилизация скроллбаров под темную тему */
 QScrollBar:vertical {
     border: none;
     background: #1e1e1e;
@@ -205,15 +681,6 @@ QScrollBar::handle:vertical {
 QScrollBar::handle:vertical:hover {
     background: #555555;
 }
-QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
-    border: none;
-    background: none;
-    height: 0px;
-}
-QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
-    background: none;
-}
-
 QScrollBar:horizontal {
     border: none;
     background: #1e1e1e;
@@ -228,42 +695,11 @@ QScrollBar::handle:horizontal {
 QScrollBar::handle:horizontal:hover {
     background: #555555;
 }
-QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {
-    border: none;
-    background: none;
-    width: 0px;
-}
-QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {
-    background: none;
-}
-
-/* Стилизация QTabWidget и QTabBar */
-QTabWidget::panel {
-    border: 1px solid #2d2d2d;
-    background-color: #222222;
-    border-radius: 6px;
-}
-QTabBar::tab {
-    background-color: #1a1a1a;
-    border: 1px solid #2d2d2d;
-    border-bottom: none;
-    border-top-left-radius: 4px;
-    border-top-right-radius: 4px;
-    padding: 6px 12px;
-    color: #a0a0a0;
-}
-QTabBar::tab:selected, QTabBar::tab:hover {
-    background-color: #222222;
-    color: #ffffff;
-}
-QTabBar::tab:selected {
-    border-bottom: 1px solid #222222;
-}
 """
 
 class WorkerThread(QThread):
-    progress_changed = pyqtSignal(int, int, str)  # current, total, strategy_cmd
-    strategy_completed = pyqtSignal(str, float, int, int, dict)  # strategy, success_rate, success_count, total, details
+    progress_changed = pyqtSignal(int, int, str)
+    strategy_completed = pyqtSignal(str, float, int, int, dict)
     finished = pyqtSignal(list)
     error = pyqtSignal(str)
 
@@ -279,7 +715,6 @@ class WorkerThread(QThread):
         results = []
         total = len(self.strategies)
         
-        # Extract options
         sni = self.options.get('sni', 'google.com')
         proxy_ip = self.options.get('ip', '127.0.0.1')
         proxy_port = int(self.options.get('port', 1080))
@@ -287,28 +722,19 @@ class WorkerThread(QThread):
         timeout = self.options.get('timeout', 4.0)
         delay = self.options.get('delay', 0.2)
 
-        if not byedpi_tester:
-            self.error.emit("Модуль byedpi_tester не может быть импортирован.")
-            return
-
         for idx, strategy_template in enumerate(self.strategies):
             if self.is_cancelled:
                 break
             
-            # Format SNI in the strategy
             strategy_cmd = strategy_template.replace("{sni}", f'"{sni}"')
             self.progress_changed.emit(idx + 1, total, strategy_cmd)
 
-            # Parse command line to list of args
-            parsed_args = byedpi_tester.shell_split(strategy_cmd)
-            
-            # Detect if ip/port already defined in the command
-            cmd_ip, cmd_port = byedpi_tester.check_ip_and_port_in_cmd(parsed_args)
+            parsed_args = shell_split(strategy_cmd)
+            cmd_ip, cmd_port = check_ip_and_port_in_cmd(parsed_args)
             
             p_ip = cmd_ip or proxy_ip
             p_port = int(cmd_port or proxy_port)
             
-            # Prepend IP and Port if not defined in the cmd
             final_args = []
             if cmd_ip is None:
                 final_args.extend(["--ip", p_ip])
@@ -317,38 +743,38 @@ class WorkerThread(QThread):
                 
             final_args.extend(parsed_args)
 
-            # Start daemon
-            proc = byedpi_tester.start_byedpi(self.byedpi_path, final_args)
+            # Ensure port is clean before launch
+            ensure_port_available(p_ip, p_port)
+
+            proc = start_byedpi(self.byedpi_path, final_args)
             if not proc:
-                err_details = {site: (False, "Ошибка запуска демона ciadpi") for site in self.sites}
+                err_details = {site: (False, "Ошибка запуска процесса ciadpi") for site in self.sites}
                 self.strategy_completed.emit(strategy_template, 0.0, 0, len(self.sites), err_details)
                 results.append((strategy_template, 0.0, 0, len(self.sites), err_details))
                 continue
 
-            # Wait for port to open
-            if not byedpi_tester.wait_for_proxy_port(p_ip, p_port, timeout=3.0):
-                byedpi_tester.stop_byedpi(proc)
-                err_details = {site: (False, f"Порт {p_ip}:{p_port} не открылся") for site in self.sites}
+            port_ok, port_err = wait_for_proxy_port(proc, p_ip, p_port, timeout=4.0)
+            if not port_ok:
+                stop_byedpi(proc)
+                err_details = {site: (False, port_err) for site in self.sites}
                 self.strategy_completed.emit(strategy_template, 0.0, 0, len(self.sites), err_details)
                 results.append((strategy_template, 0.0, 0, len(self.sites), err_details))
+                wait_for_port_closed(p_ip, p_port, timeout=1.5)
                 continue
 
             if self.is_cancelled:
-                byedpi_tester.stop_byedpi(proc)
+                stop_byedpi(proc)
                 break
 
-            # Give daemon additional breathing room
             time.sleep(delay)
 
-            # Parallel test sites
             success_count = 0
             checked_details = {}
             
-            from concurrent.futures import ThreadPoolExecutor, as_completed
             with ThreadPoolExecutor(max_workers=concurrency) as executor:
                 futures = {
                     executor.submit(
-                        byedpi_tester.check_url, 
+                        check_url, 
                         p_ip, 
                         p_port, 
                         f"https://{site}", 
@@ -369,7 +795,7 @@ class WorkerThread(QThread):
                     except Exception as e:
                         checked_details[site] = (False, str(e))
 
-             # Stop daemon
+            # PIP PyPI accessibility check
             pypi_domains = ["pypi.org", "files.pythonhosted.org", "pypi.python.org", "pythonhosted.org"]
             pypi_accessible = True
             for domain in pypi_domains:
@@ -383,10 +809,6 @@ class WorkerThread(QThread):
             
             if pypi_accessible and not self.is_cancelled:
                 import tempfile
-                import shutil
-                import subprocess
-                import sys
-                
                 temp_dir = tempfile.mkdtemp()
                 try:
                     cmd = [
@@ -426,13 +848,14 @@ class WorkerThread(QThread):
                         
             checked_details["__pip_test__"] = (pip_success, pip_msg)
 
-            byedpi_tester.stop_byedpi(proc)
-            time.sleep(0.3)  # wait for port to completely unbind
+            stop_byedpi(proc)
+            wait_for_port_closed(p_ip, p_port, timeout=2.5)
+            time.sleep(0.1)
 
             if self.is_cancelled:
                 break
 
-            pct = (success_count / len(self.sites)) * 100
+            pct = (success_count / len(self.sites)) * 100 if self.sites else 0.0
             self.strategy_completed.emit(strategy_template, pct, success_count, len(self.sites), checked_details)
             results.append((strategy_template, pct, success_count, len(self.sites), checked_details))
 
@@ -446,14 +869,13 @@ class ByeDPITesterGUI(QMainWindow):
     def __init__(self):
         super().__init__()
         self.worker = None
-        self.results_data = [] # Stores (strat, pct, succ, total, details)
+        self.results_data = []
         self.load_domains()
         self.load_strategies()
         self.load_priority_sites()
         self.init_ui()
 
     def load_domains(self):
-        """Load domains from file or set defaults if file not exists."""
         self.domains = []
         if os.path.exists(SITES_FILE):
             try:
@@ -466,14 +888,10 @@ class ByeDPITesterGUI(QMainWindow):
                 print(f"Ошибка загрузки доменов: {e}")
         
         if not self.domains:
-            if byedpi_tester and hasattr(byedpi_tester, 'DEFAULT_SITES'):
-                self.domains = list(byedpi_tester.DEFAULT_SITES)
-            else:
-                self.domains = ['youtube.com', 'rutracker.org', 'nyaa.si', 'speedtest.net']
+            self.domains = list(DEFAULT_SITES)
             self.save_domains()
 
     def save_domains(self):
-        """Save domains list to file."""
         try:
             with open(SITES_FILE, 'w', encoding='utf-8') as f:
                 f.write("# Список сайтов/доменов для проверки ByeDPI стратегий\n")
@@ -484,7 +902,6 @@ class ByeDPITesterGUI(QMainWindow):
             print(f"Ошибка сохранения доменов: {e}")
 
     def load_strategies(self):
-        """Load strategies from file or set defaults if file not exists."""
         self.strategies = []
         if os.path.exists(STRATEGIES_FILE):
             try:
@@ -492,23 +909,20 @@ class ByeDPITesterGUI(QMainWindow):
                     for line in f:
                         line = line.strip()
                         if line and not line.startswith('#'):
-                            self.strategies.append(line)
+                            # Strip unsupported Linux-only parameters
+                            if os.name == 'nt':
+                                tokens = [t for t in line.split() if t not in ('-S', '-Y')]
+                                line = ' '.join(tokens)
+                            if line:
+                                self.strategies.append(line)
             except Exception as e:
                 print(f"Ошибка загрузки стратегий: {e}")
         
         if not self.strategies:
-            if byedpi_tester and hasattr(byedpi_tester, 'DEFAULT_STRATEGIES'):
-                self.strategies = list(byedpi_tester.DEFAULT_STRATEGIES)
-            else:
-                self.strategies = [
-                    '-d1 -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -r1+s -S -a1',
-                    '-o1 -d1 -a1 -At,r,s -s1 -d1 -s5+s -s10+s -s15+s -s20+s -r1+s -S -a1',
-                    '-s1 -q1 -a1 -Y -Ar -a1 -s5 -o2 -At -f-1 -r1+s -a1'
-                ]
+            self.strategies = list(DEFAULT_STRATEGIES)
             self.save_strategies()
 
     def save_strategies(self):
-        """Save strategies list to file."""
         try:
             with open(STRATEGIES_FILE, 'w', encoding='utf-8') as f:
                 f.write("# Список стратегий ByeDPI для тестирования\n")
@@ -519,7 +933,6 @@ class ByeDPITesterGUI(QMainWindow):
             print(f"Ошибка сохранения стратегий: {e}")
 
     def load_priority_sites(self):
-        """Load priority sites from file or set defaults if file not exists."""
         self.priority_sites = []
         if os.path.exists(PRIORITY_SITES_FILE):
             try:
@@ -531,13 +944,15 @@ class ByeDPITesterGUI(QMainWindow):
             except Exception as e:
                 print(f"Ошибка загрузки приоритетных сайтов: {e}")
         
-        # If empty, default to checking all domains
         if not self.priority_sites:
-            self.priority_sites = list(self.domains)
+            self.priority_sites = [
+                s for s in self.domains if 'youtube' in s or 'googlevideo' in s or 'rutracker' in s
+            ]
+            if not self.priority_sites:
+                self.priority_sites = list(self.domains)
             self.save_priority_sites()
 
     def save_priority_sites(self):
-        """Save priority sites list to file."""
         try:
             with open(PRIORITY_SITES_FILE, 'w', encoding='utf-8') as f:
                 f.write("# Список приоритетных сайтов для проверки\n")
@@ -547,36 +962,22 @@ class ByeDPITesterGUI(QMainWindow):
         except Exception as e:
             print(f"Ошибка сохранения приоритетных сайтов: {e}")
 
-    def on_tor_fallback_toggled(self, checked):
-        try:
-            from managers import config_manager
-            config = config_manager.load_config()
-            config["byedpi_proxytest_tor_fallback"] = checked
-            config_manager.save_config(config)
-        except Exception as e:
-            print("Failed to save tor_fallback state:", e)
-
     def init_ui(self):
-        self.setWindowTitle(T("Тестер стратегий ByeDPI", "ByeDPI Strategies Tester"))
-        self.setFixedSize(1000, 700)
+        self.setWindowTitle(T("Тестер стратегий ByeByeDPI (Автономный)", "ByeByeDPI Strategies Tester (Standalone)"))
+        self.setFixedSize(1040, 720)
         self.setStyleSheet(DARK_STYLESHEET)
         
-        # Main widget and layouts
         main_widget = QWidget()
         main_layout = QVBoxLayout()
         main_layout.setContentsMargins(15, 15, 15, 15)
         main_layout.setSpacing(10)
         
-        # Header Row
         header_layout = QHBoxLayout()
         title_lbl = QLabel("Тестер стратегий ByeByeDPI")
         title_lbl.setObjectName("title_lbl")
         header_layout.addWidget(title_lbl)
-        
-        # Optional: project icon
         main_layout.addLayout(header_layout)
         
-        # Fixed layout container to prevent resizing panels
         panels_container = QWidget()
         panels_layout = QHBoxLayout()
         panels_layout.setContentsMargins(0, 0, 0, 0)
@@ -593,10 +994,9 @@ class ByeDPITesterGUI(QMainWindow):
         settings_layout = QVBoxLayout()
         settings_layout.setSpacing(8)
         
-        # Path to executable
         path_layout = QHBoxLayout()
         self.path_edit = QLineEdit(BYEDPI_EXE_DEFAULT)
-        self.path_edit.setToolTip("Путь к исполняемому файлу ciadpi.exe / byedpi")
+        self.path_edit.setToolTip("Путь к исполняемому файлу ciadpi.exe")
         self.browse_btn = QPushButton("Обзор")
         self.browse_btn.clicked.connect(self.browse_executable)
         path_layout.addWidget(self.path_edit)
@@ -604,7 +1004,6 @@ class ByeDPITesterGUI(QMainWindow):
         settings_layout.addWidget(QLabel("Путь к ciadpi.exe:"))
         settings_layout.addLayout(path_layout)
         
-        # SNI and Port
         sni_port_layout = QHBoxLayout()
         vbox_sni = QVBoxLayout()
         self.sni_edit = QLineEdit("google.com")
@@ -620,7 +1019,6 @@ class ByeDPITesterGUI(QMainWindow):
         sni_port_layout.addLayout(vbox_port)
         settings_layout.addLayout(sni_port_layout)
         
-        # Numeric parameters row
         num_layout = QHBoxLayout()
         vbox_conc = QVBoxLayout()
         self.conc_spin = QSpinBox()
@@ -650,16 +1048,10 @@ class ByeDPITesterGUI(QMainWindow):
         num_layout.addLayout(vbox_delay)
         settings_layout.addLayout(num_layout)
         
-        self.tor_fallback_check = QCheckBox("Использовать Tor для недоступных")
-        if config_manager:
-            self.tor_fallback_check.setChecked(config_manager.load_config().get("byedpi_proxytest_tor_fallback", False))
-        self.tor_fallback_check.toggled.connect(self.on_tor_fallback_toggled)
-        settings_layout.addWidget(self.tor_fallback_check)
-        
         settings_group.setLayout(settings_layout)
         left_layout.addWidget(settings_group)
         
-        # 2. Domains Manager Group (with checkable priority checkboxes)
+        # 2. Domains Manager Group
         domains_group = QGroupBox("Проверяемые домены (отметьте приоритетные)")
         domains_layout = QVBoxLayout()
         domains_layout.setSpacing(8)
@@ -669,7 +1061,6 @@ class ByeDPITesterGUI(QMainWindow):
         self.refresh_domains_list()
         domains_layout.addWidget(self.domains_list)
         
-        # Add domain row
         add_layout = QHBoxLayout()
         self.new_domain_edit = QLineEdit()
         self.new_domain_edit.setPlaceholderText("Добавить новый домен...")
@@ -680,16 +1071,28 @@ class ByeDPITesterGUI(QMainWindow):
         add_layout.addWidget(self.add_domain_btn)
         domains_layout.addLayout(add_layout)
         
-        # Remove and Reset buttons
-        btn_row = QHBoxLayout()
+        btn_row1 = QHBoxLayout()
         self.remove_domain_btn = QPushButton("Удалить выбранный")
         self.remove_domain_btn.clicked.connect(self.remove_domain)
-        self.reset_domains_btn = QPushButton("Сброс")
-        self.reset_domains_btn.setToolTip("Восстановить список по умолчанию")
+        self.reset_domains_btn = QPushButton("Все (сброс)")
+        self.reset_domains_btn.setToolTip("Восстановить полный список по умолчанию")
         self.reset_domains_btn.clicked.connect(self.reset_domains)
-        btn_row.addWidget(self.remove_domain_btn)
-        btn_row.addWidget(self.reset_domains_btn)
-        domains_layout.addLayout(btn_row)
+        btn_row1.addWidget(self.remove_domain_btn)
+        btn_row1.addWidget(self.reset_domains_btn)
+        domains_layout.addLayout(btn_row1)
+
+        btn_row2 = QHBoxLayout()
+        self.add_yt_btn = QPushButton("+ YouTube & CDN")
+        self.add_yt_btn.setToolTip("Добавить домены YouTube и GoogleVideo CDN из ByeByeDPI")
+        self.add_yt_btn.clicked.connect(self.preset_add_youtube)
+        
+        self.only_yt_btn = QPushButton("Только YouTube")
+        self.only_yt_btn.setToolTip("Оставить только домены YouTube и GoogleVideo CDN")
+        self.only_yt_btn.clicked.connect(self.preset_only_youtube)
+        
+        btn_row2.addWidget(self.add_yt_btn)
+        btn_row2.addWidget(self.only_yt_btn)
+        domains_layout.addLayout(btn_row2)
         
         domains_group.setLayout(domains_layout)
         left_layout.addWidget(domains_group)
@@ -703,7 +1106,6 @@ class ByeDPITesterGUI(QMainWindow):
         right_layout.setContentsMargins(0, 0, 0, 0)
         right_layout.setSpacing(10)
         
-        # Real-time Controller Block
         control_layout = QHBoxLayout()
         self.start_btn = QPushButton("Запустить проверку")
         self.start_btn.setObjectName("start_btn")
@@ -718,7 +1120,6 @@ class ByeDPITesterGUI(QMainWindow):
         control_layout.addWidget(self.stop_btn)
         right_layout.addLayout(control_layout)
         
-        # Progress Indicators
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("Готов к тестированию")
@@ -728,13 +1129,11 @@ class ByeDPITesterGUI(QMainWindow):
         self.status_desc.setObjectName("status_desc_lbl")
         right_layout.addWidget(self.status_desc)
         
-        # Results Layout to prevent resizing panels
         results_container = QWidget()
         results_vlayout = QVBoxLayout()
         results_vlayout.setContentsMargins(0, 0, 0, 0)
         results_vlayout.setSpacing(10)
         
-        # Strategies results Table
         table_group = QGroupBox("Таблица результатов (сортировка по клику на заголовок)")
         table_layout = QVBoxLayout()
         table_layout.setContentsMargins(5, 5, 5, 5)
@@ -757,7 +1156,6 @@ class ByeDPITesterGUI(QMainWindow):
         table_group.setFixedHeight(300)
         results_vlayout.addWidget(table_group)
         
-        # Domain Detail View
         detail_group = QGroupBox("Подробный лог доменов для выбранной стратегии")
         detail_layout = QVBoxLayout()
         detail_layout.setContentsMargins(5, 5, 5, 5)
@@ -772,27 +1170,34 @@ class ByeDPITesterGUI(QMainWindow):
         results_container.setLayout(results_vlayout)
         right_layout.addWidget(results_container)
         
-        # Bottom Actions
-        self.apply_btn = QPushButton("Применить выбранную стратегию как основную для ByeDPI")
+        # Bottom Action Buttons
+        actions_layout = QHBoxLayout()
+        self.apply_btn = QPushButton("Применить как основную стратегию ByeDPI")
         self.apply_btn.setObjectName("apply_btn")
         self.apply_btn.setEnabled(False)
         self.apply_btn.clicked.connect(self.apply_selected_strategy)
-        right_layout.addWidget(self.apply_btn)
+        
+        self.copy_btn = QPushButton("Скопировать команду")
+        self.copy_btn.setObjectName("copy_btn")
+        self.copy_btn.setEnabled(False)
+        self.copy_btn.clicked.connect(self.copy_selected_command)
+        
+        actions_layout.addWidget(self.apply_btn, stretch=3)
+        actions_layout.addWidget(self.copy_btn, stretch=1)
+        right_layout.addLayout(actions_layout)
         
         right_widget.setLayout(right_layout)
         panels_layout.addWidget(right_widget)
         
-        # Fixed column widths instead of splitter to lock panel sizes
-        left_widget.setFixedWidth(330)
+        left_widget.setFixedWidth(340)
         panels_container.setLayout(panels_layout)
         main_layout.addWidget(panels_container)
         
         main_widget.setLayout(main_layout)
         self.setCentralWidget(main_widget)
         
-        # Verify ByeDPI binary
         if not os.path.exists(self.path_edit.text()):
-            self.status_desc.setText("Внимание: Файл ciadpi.exe не найден по умолчанию. Пожалуйста, укажите верный путь.")
+            self.status_desc.setText("Внимание: Файл ciadpi.exe не найден автоматически. Пожалуйста, укажите путь кнопкой 'Обзор'.")
             self.path_edit.setStyleSheet("border: 1.5px solid #e74c3c;")
 
     def browse_executable(self):
@@ -833,12 +1238,9 @@ class ByeDPITesterGUI(QMainWindow):
             return
             
         for row in range(self.results_table.rowCount()):
-            # Column 5 contains strategy parameters in the results table now
             strategy = self.results_table.item(row, 5).text()
-            # Find matching result in results_data
             for strat, pct, succ, tot, details in self.results_data:
                 if strat == strategy:
-                    # Calculate priority success
                     priority_succ = 0
                     priority_tot = 0
                     for site in self.priority_sites:
@@ -857,7 +1259,6 @@ class ByeDPITesterGUI(QMainWindow):
                     item_pri = self.results_table.item(row, 2)
                     if item_pri:
                         item_pri.setText(text)
-                        # Color highlight (muted shades)
                         if pri_pct >= 80.0:
                             item_pri.setForeground(QColor("#a8c3a8"))
                         elif pri_pct >= 40.0:
@@ -871,7 +1272,6 @@ class ByeDPITesterGUI(QMainWindow):
         if not domain:
             return
         
-        # Basic validation
         if '.' not in domain or len(domain) < 4:
             QMessageBox.warning(self, "Неверный домен", "Пожалуйста, введите корректное доменное имя (например, google.com).")
             return
@@ -911,40 +1311,72 @@ class ByeDPITesterGUI(QMainWindow):
     def reset_domains(self):
         reply = QMessageBox.question(
             self, "Сбросить домены", 
-            "Вы уверены, что хотите сбросить список доменов к списку по умолчанию?",
+            "Восстановить полный список доменов по умолчанию (включая YouTube и CDN)?",
             QMessageBox.Yes | QMessageBox.No, QMessageBox.No
         )
         if reply == QMessageBox.Yes:
-            if byedpi_tester and hasattr(byedpi_tester, 'DEFAULT_SITES'):
-                self.domains = list(byedpi_tester.DEFAULT_SITES)
-            else:
-                self.domains = ['youtube.com', 'rutracker.org', 'nyaa.si', 'speedtest.net']
+            self.domains = list(DEFAULT_SITES)
+            self.priority_sites = [s for s in self.domains if 'youtube' in s or 'googlevideo' in s or 'rutracker' in s]
+            self.save_domains()
+            self.save_priority_sites()
+            self.refresh_domains_list()
+            self.status_desc.setText("Список доменов сброшен к полному набору по умолчанию.")
+            self.recalculate_table_priority_percentages()
+
+    def preset_add_youtube(self):
+        added = 0
+        for d in (YOUTUBE_SITES + GOOGLEVIDEO_SITES):
+            if d not in self.domains:
+                self.domains.append(d)
+                self.priority_sites.append(d)
+                added += 1
+        self.save_domains()
+        self.save_priority_sites()
+        self.refresh_domains_list()
+        self.status_desc.setText("Добавлено %d доменов YouTube и GoogleVideo CDN." % added)
+        self.recalculate_table_priority_percentages()
+        QMessageBox.information(self, "YouTube пресет", "Добавлено %d новых доменов YouTube/GoogleVideo!" % added)
+
+    def preset_only_youtube(self):
+        reply = QMessageBox.question(
+            self, "Только YouTube", 
+            "Заменить текущий список доменов на эксклюзивный список YouTube & GoogleVideo CDN из ByeByeDPI?",
+            QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
+        )
+        if reply == QMessageBox.Yes:
+            self.domains = list(YOUTUBE_SITES + GOOGLEVIDEO_SITES)
             self.priority_sites = list(self.domains)
             self.save_domains()
             self.save_priority_sites()
             self.refresh_domains_list()
-            self.status_desc.setText("Список доменов сброшен к настройкам по умолчанию.")
+            self.status_desc.setText("Установлен список: Только YouTube & GoogleVideo CDN (%d доменов)." % len(self.domains))
             self.recalculate_table_priority_percentages()
 
     def start_testing(self):
         byedpi_path = self.path_edit.text().strip()
         if not os.path.exists(byedpi_path):
-            QMessageBox.critical(self, T("Ошибка", "Error"), "Исполняемый файл ciadpi.exe не найден по указанному пути:\n%s" % byedpi_path)
+            QMessageBox.critical(self, T("Ошибка", "Error"), "Исполняемый файл ciadpi.exe не найден по указанному пути:\n%s\n\nПожалуйста, нажмите 'Обзор' и укажите ciadpi.exe." % byedpi_path)
             return
 
         if not self.domains:
             QMessageBox.warning(self, "Нет доменов", "Список проверяемых доменов пуст. Добавьте хотя бы один домен.")
             return
 
-        # Forcefully stop ByeDPI from the main app to prevent port conflicts
+        # Force stop running instances to release port
         try:
             from managers import bdsher
             bdsher.stop_byedpi()
             bdsher.get_pip_manager().stop()
         except:
             pass
+            
+        port_num = 1080
+        try:
+            port_num = int(self.port_edit.text().strip())
+        except ValueError:
+            pass
+        ensure_port_available('127.0.0.1', port_num)
 
-        # Prepare UI
         self.results_data = []
         self.results_table.setRowCount(0)
         self.detail_list.clear()
@@ -953,8 +1385,8 @@ class ByeDPITesterGUI(QMainWindow):
         self.start_btn.setEnabled(False)
         self.stop_btn.setEnabled(True)
         self.apply_btn.setEnabled(False)
+        self.copy_btn.setEnabled(False)
         
-        # Disable settings to prevent editing during run
         self.path_edit.setEnabled(False)
         self.sni_edit.setEnabled(False)
         self.port_edit.setEnabled(False)
@@ -965,18 +1397,18 @@ class ByeDPITesterGUI(QMainWindow):
         self.add_domain_btn.setEnabled(False)
         self.remove_domain_btn.setEnabled(False)
         self.reset_domains_btn.setEnabled(False)
+        self.add_yt_btn.setEnabled(False)
+        self.only_yt_btn.setEnabled(False)
 
-        # Collect options
         options = {
             'sni': self.sni_edit.text().strip(),
             'ip': '127.0.0.1',
-            'port': self.port_edit.text().strip(),
+            'port': str(port_num),
             'concurrency': self.conc_spin.value(),
             'timeout': self.timeout_spin.value(),
             'delay': self.delay_spin.value()
         }
 
-        # Start thread
         self.worker = WorkerThread(byedpi_path, self.strategies, self.domains, options)
         self.worker.progress_changed.connect(self.on_progress_changed)
         self.worker.strategy_completed.connect(self.on_strategy_completed)
@@ -997,7 +1429,6 @@ class ByeDPITesterGUI(QMainWindow):
         self.status_desc.setText("Активная стратегия: %s" % strategy_cmd)
 
     def on_strategy_completed(self, strategy, success_rate, success_count, total, details):
-        # Insert into results table
         row = self.results_table.rowCount()
         self.results_table.insertRow(row)
         
@@ -1010,11 +1441,11 @@ class ByeDPITesterGUI(QMainWindow):
         item_pct = QTableWidgetItem("%.1f%%" % success_rate)
         item_pct.setTextAlignment(Qt.AlignCenter)
         if success_rate >= 80.0:
-            item_pct.setForeground(QColor("#a8c3a8")) # soft muted gray-green
+            item_pct.setForeground(QColor("#a8c3a8"))
         elif success_rate >= 40.0:
-            item_pct.setForeground(QColor("#c3b5a8")) # soft muted gray-orange
+            item_pct.setForeground(QColor("#c3b5a8"))
         else:
-            item_pct.setForeground(QColor("#c3a8a8")) # soft muted gray-red
+            item_pct.setForeground(QColor("#c3a8a8"))
         self.results_table.setItem(row, 1, item_pct)
         
         # Column 2: Успешность (приор.)
@@ -1054,45 +1485,38 @@ class ByeDPITesterGUI(QMainWindow):
         item_pip = QTableWidgetItem("OK" if pip_ok else (T("Ошибка", "Error") if T("Ошибка", "Error") in pip_msg or "Таймаут" in pip_msg else "-"))
         item_pip.setTextAlignment(Qt.AlignCenter)
         if pip_ok:
-            item_pip.setForeground(QColor("#a8c3a8")) # soft green
+            item_pip.setForeground(QColor("#a8c3a8"))
         else:
-            item_pip.setForeground(QColor("#c3a8a8")) # soft red
+            item_pip.setForeground(QColor("#c3a8a8"))
         self.results_table.setItem(row, 4, item_pip)
         
         # Column 5: Параметры стратегии
         item_strat = QTableWidgetItem(strategy)
         self.results_table.setItem(row, 5, item_strat)
         
-        # Save results in list
         self.results_data.append((strategy, success_rate, success_count, total, details))
-        
-        # Scroll to bottom row automatically
         self.results_table.scrollToBottom()
 
     def refresh_results_table(self):
-        """Redraw results table from self.results_data."""
         self.results_table.setRowCount(0)
         for idx, (strategy, success_rate, success_count, total, details) in enumerate(self.results_data):
             row = self.results_table.rowCount()
             self.results_table.insertRow(row)
             
-            # Column 0: Index
             item_idx = QTableWidgetItem(str(row + 1))
             item_idx.setTextAlignment(Qt.AlignCenter)
             self.results_table.setItem(row, 0, item_idx)
             
-            # Column 1: Успешность (все)
             item_pct = QTableWidgetItem("%.1f%%" % success_rate)
             item_pct.setTextAlignment(Qt.AlignCenter)
             if success_rate >= 80.0:
-                item_pct.setForeground(QColor("#a8c3a8")) # soft muted gray-green
+                item_pct.setForeground(QColor("#a8c3a8"))
             elif success_rate >= 40.0:
-                item_pct.setForeground(QColor("#c3b5a8")) # soft muted gray-orange
+                item_pct.setForeground(QColor("#c3b5a8"))
             else:
-                item_pct.setForeground(QColor("#c3a8a8")) # soft muted gray-red
+                item_pct.setForeground(QColor("#c3a8a8"))
             self.results_table.setItem(row, 1, item_pct)
             
-            # Column 2: Успешность (приор.)
             priority_succ = 0
             priority_tot = 0
             for site in self.priority_sites:
@@ -1118,23 +1542,20 @@ class ByeDPITesterGUI(QMainWindow):
                 item_pri.setForeground(QColor("#c3a8a8"))
             self.results_table.setItem(row, 2, item_pri)
             
-            # Column 3: Успешно
             item_succ = QTableWidgetItem("%d / %d" % (success_count, total))
             item_succ.setTextAlignment(Qt.AlignCenter)
             self.results_table.setItem(row, 3, item_succ)
             
-            # Column 4: Тест PIP
             pip_res = details.get("__pip_test__", (False, "Не проверялось"))
             pip_ok, pip_msg = pip_res
             item_pip = QTableWidgetItem("OK" if pip_ok else (T("Ошибка", "Error") if T("Ошибка", "Error") in pip_msg or "Таймаут" in pip_msg else "-"))
             item_pip.setTextAlignment(Qt.AlignCenter)
             if pip_ok:
-                item_pip.setForeground(QColor("#a8c3a8")) # soft green
+                item_pip.setForeground(QColor("#a8c3a8"))
             else:
-                item_pip.setForeground(QColor("#c3a8a8")) # soft red
+                item_pip.setForeground(QColor("#c3a8a8"))
             self.results_table.setItem(row, 4, item_pip)
             
-            # Column 5: Параметры стратегии
             item_strat = QTableWidgetItem(strategy)
             self.results_table.setItem(row, 5, item_strat)
 
@@ -1142,7 +1563,6 @@ class ByeDPITesterGUI(QMainWindow):
         self.progress_bar.setValue(self.progress_bar.maximum())
         self.progress_bar.setFormat("Проверка завершена!")
         
-        # Re-enable inputs
         self.start_btn.setEnabled(True)
         self.stop_btn.setEnabled(False)
         self.path_edit.setEnabled(True)
@@ -1155,12 +1575,13 @@ class ByeDPITesterGUI(QMainWindow):
         self.add_domain_btn.setEnabled(True)
         self.remove_domain_btn.setEnabled(True)
         self.reset_domains_btn.setEnabled(True)
+        self.add_yt_btn.setEnabled(True)
+        self.only_yt_btn.setEnabled(True)
 
         if not results:
             self.status_desc.setText("Проверка остановлена или не дала результатов.")
             return
 
-        # Sort results: primary key = priority success %, secondary key = overall success %
         def get_sort_score(item):
             strat, overall_pct, succ, tot, details = item
             priority_succ = 0
@@ -1174,60 +1595,14 @@ class ByeDPITesterGUI(QMainWindow):
             return (pri_pct, overall_pct)
             
         self.results_data.sort(key=get_sort_score, reverse=True)
-        
-        # Suggest combinations if best is not 100%
-        if self.results_data:
-            best_strat, overall_pct, succ, tot, details = self.results_data[0]
-            if overall_pct < 100.0:
-                domain_strategies = {}
-                for strat, strat_pct, strat_succ, strat_tot, strat_details in self.results_data:
-                    if strat.startswith("{"): continue
-                    for site, (success, msg) in strat_details.items():
-                        if site == "__pip_test__": continue
-                        if success and site not in domain_strategies:
-                            domain_strategies[site] = strat
-                
-                # Assign TOR to any domain that doesn't have a working strategy ONLY if allowed
-                use_tor_fallback = False
-                if config_manager:
-                    config = config_manager.load_config()
-                    use_tor_fallback = config.get("byedpi_proxytest_tor_fallback", False)
-
-                for site in self.domains:
-                    if site not in domain_strategies and use_tor_fallback:
-                        domain_strategies[site] = "TOR"
-                
-                # Check if we should even generate this combo (it must have at least one strategy)
-                if domain_strategies:
-
-                
-                    combination_json = json.dumps(domain_strategies)
-                    if not any(item[0] == combination_json for item in self.results_data):
-                        combo_details = {}
-                        overall_succ = 0
-                        for site in self.domains:
-                            if domain_strategies[site] == "TOR":
-                                combo_details[site] = (True, "Combined from TOR (fallback)")
-                                overall_succ += 1
-                            else:
-                                combo_details[site] = (True, "Combined from " + domain_strategies[site])
-                                overall_succ += 1
-                        combo_details["__pip_test__"] = (False, "Не проверялось для комбинации")
-                    
-                        # We consider the combination 100% successful since it routes unbypassable domains through Tor
-                        self.results_data.insert(0, (combination_json, 100.0, overall_succ, len(self.domains), combo_details))
-
-        # Redraw table in sorted order
         self.refresh_results_table()
 
-        # Find best strategy (now it is the first one in sorted results_data)
         if not self.results_data:
             self.status_desc.setText("Нет результатов.")
             return
             
         best_strat, overall_pct, succ, tot, details = self.results_data[0]
         
-        # Calculate best priority success %
         priority_succ = 0
         priority_tot = 0
         for site in self.priority_sites:
@@ -1242,12 +1617,12 @@ class ByeDPITesterGUI(QMainWindow):
                 best_strat, best_pri_pct, overall_pct
             ))
             self.apply_btn.setEnabled(True)
-            
-            # Select the first row (the best strategy) automatically
+            self.copy_btn.setEnabled(True)
             self.results_table.selectRow(0)
         else:
             self.status_desc.setText("Ни одна из проверенных стратегий не сработала.")
             self.apply_btn.setEnabled(False)
+            self.copy_btn.setEnabled(False)
 
         QMessageBox.information(self, "Проверка завершена", "Тестирование всех стратегий успешно завершено!")
 
@@ -1256,11 +1631,11 @@ class ByeDPITesterGUI(QMainWindow):
         self.on_testing_finished([])
 
     def strategy_selection_changed(self):
-        # Update detailed list of domain statuses
         selected_ranges = self.results_table.selectedRanges()
         if not selected_ranges:
             self.detail_list.clear()
             self.apply_btn.setEnabled(False)
+            self.copy_btn.setEnabled(False)
             return
 
         row = selected_ranges[0].topRow()
@@ -1270,20 +1645,62 @@ class ByeDPITesterGUI(QMainWindow):
         strategy, pct, succ, tot, details = self.results_data[row]
         self.detail_list.clear()
         
-        # Populate details list
         for site, (success, msg) in details.items():
             prefix = "OK" if success else "ERR"
             item_text = "[%s]  %s   :   %s" % (prefix, site, msg)
             self.detail_list.addItem(item_text)
             
-            # Color list item with extremely muted tones
             list_item = self.detail_list.item(self.detail_list.count() - 1)
             if success:
-                list_item.setForeground(QColor("#a8c3a8")) # soft gray-green
+                list_item.setForeground(QColor("#a8c3a8"))
             else:
-                list_item.setForeground(QColor("#c3a8a8")) # soft gray-red
+                list_item.setForeground(QColor("#c3a8a8"))
                 
         self.apply_btn.setEnabled(True)
+        self.copy_btn.setEnabled(True)
+
+    def get_selected_cmd(self):
+        selected_ranges = self.results_table.selectedRanges()
+        if not selected_ranges:
+            return None, None
+        row = selected_ranges[0].topRow()
+        if row >= len(self.results_data):
+            return None, None
+        strategy, pct, succ, tot, details = self.results_data[row]
+        
+        sni = self.sni_edit.text().strip()
+        final_params = strategy.replace("{sni}", sni)
+        
+        params_list = final_params.split()
+        has_port = False
+        for arg in params_list:
+            if arg == '-p' or arg == '--port':
+                has_port = True
+                break
+            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
+                has_port = True
+                break
+        if not has_port:
+            final_params = f"-p {self.port_edit.text().strip()} " + final_params
+                
+        return strategy, final_params
+
+    def copy_selected_command(self):
+        strategy, final_params = self.get_selected_cmd()
+        if not final_params:
+            return
+            
+        exe_path = self.path_edit.text().strip()
+        full_command = f'"{exe_path}" {final_params}'
+        
+        clipboard = QApplication.clipboard()
+        clipboard.setText(full_command)
+        
+        self.status_desc.setText("Команда запуска скопирована в буфер обмена!")
+        QMessageBox.information(
+            self, "Команда скопирована", 
+            "Готовая команда запуска ByeDPI скопирована в буфер обмена:\n\n%s" % full_command
+        )
 
     def apply_selected_strategy(self):
         selected_ranges = self.results_table.selectedRanges()
@@ -1296,139 +1713,71 @@ class ByeDPITesterGUI(QMainWindow):
             return
             
         strategy, pct, succ, tot, details = self.results_data[row]
-        
-        # Re-inject current SNI back into the template command if {sni} is written
-        # Since strategy from self.results_data has template form, let's format it or save as is
         sni = self.sni_edit.text().strip()
         final_params = strategy.replace("{sni}", sni)
         
-        # Ensure SOCKS5 port 1780 is added if not present in parameters (only for CLI params, not JSON routing map)
-        if not final_params.strip().startswith("{"):
-            params_list = final_params.split()
-            has_port = False
-            for arg in params_list:
-                if arg == '-p' or arg == '--port':
-                    has_port = True
-                    break
-                elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
-                    has_port = True
-                    break
-            if not has_port:
-                final_params = "-p 1780 " + final_params
+        params_list = final_params.split()
+        has_port = False
+        for arg in params_list:
+            if arg == '-p' or arg == '--port':
+                has_port = True
+                break
+            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
+                has_port = True
+                break
+        if not has_port:
+            final_params = "-p 1780 " + final_params
             
-        pip_res = details.get("__pip_test__", (False, "Не проверялось"))
-        pip_ok, pip_msg = pip_res
-        
+        exe_path = self.path_edit.text().strip()
+        full_cmd = f'"{exe_path}" {final_params}'
+        QApplication.clipboard().setText(full_cmd)
+
+        saved_to_project = False
         try:
-            # Update configuration to use custom settings in config.json
+            config = None
             if config_manager:
                 config = config_manager.load_config()
             else:
-                config_file = os.path.join(CURRENT_DIR, "data", "config.json")
-                with open(config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
+                config_candidates = [
+                    os.path.join(SCRIPT_DIR, "data", "config.json"),
+                    os.path.join(SCRIPT_DIR, "config.json"),
+                    r"D:\Documents\ToInet-MAX\data\config.json"
+                ]
+                for c_path in config_candidates:
+                    if os.path.exists(c_path):
+                        with open(c_path, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                            config_target_path = c_path
+                            break
 
-            config["use_custom_settings"] = True
-            config["byedpi_params"] = final_params
-            
-            if '"TOR"' in final_params and not config.get("tor_enabled", True):
-                QMessageBox.warning(self, "Внимание", "Выбрана стратегия, использующая маршрутизацию через TOR, "
-                                                      "однако TOR выключен в настройках. Не забудьте включить TOR "
-                                                      "в приложении для работы этой комбинации.")
-            
-            if pip_ok:
-                reply = QMessageBox.question(
-                    self, T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"),
-                    "Эта стратегия успешно обходит блокировку PyPI (pip работает)!\n\n"
-                    "Желаете настроить отдельный ByeDPI для автоматического проксирования pip "
-                    "через эту стратегию (порт 1781)? Режим будет автоматически запускаться с приложением.",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-                )
-                if reply == QMessageBox.Yes:
-                    config["byedpi_pip_enabled"] = True
-                    config["byedpi_pip_use_tor"] = False
-                    
-                    pip_params = strategy.replace("{sni}", sni)
-                    if not pip_params.strip().startswith("{"):
-                        pip_params_list = pip_params.split()
-                        pip_has_port = False
-                        for arg in pip_params_list:
-                            if arg == '-p' or arg == '--port':
-                                pip_has_port = True
-                                break
-                            elif arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit():
-                                pip_has_port = True
-                                break
-                        if not pip_has_port:
-                            pip_params = "-p 1781 " + pip_params
-                    config["byedpi_pip_params"] = pip_params
-                    
-                    try:
-                        from managers import bdsher
-                        bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
-                        pip_mgr = bdsher.get_pip_manager(config)
-                        pip_mgr.stop()
-                        pip_mgr.start()
-                    except Exception as e:
-                        print(f"Error starting pip manager: {e}")
-                        
-                    QMessageBox.information(
-                        self, T("Успех", "Success"),
-                        "Проксирование pip через отдельный ByeDPI (1781) успешно настроено и запущено!"
-                    )
-            else:
-                reply = QMessageBox.question(
-                    self, "Проксирование pip через TOR",
-                    "Эта стратегия не смогла восстановить доступ к PyPI для pip.\n\n"
-                    "Желаете настроить автоматическое проксирование pip через сеть TOR (socks5://127.0.0.1:9853)?\n"
-                    "Скачивание пакетов будет работать при запущенном TOR.",
-                    QMessageBox.Yes | QMessageBox.No, QMessageBox.Yes
-                )
-                if reply == QMessageBox.Yes:
-                    config["byedpi_pip_enabled"] = True
-                    config["byedpi_pip_use_tor"] = True
-                    
-                    try:
-                        from managers import bdsher
-                        pip_mgr = bdsher.get_pip_manager(config)
-                        pip_mgr.stop()
-                        bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
-                    except Exception as e:
-                        print(f"Error configuring pip proxy via TOR: {e}")
-                    
-                    QMessageBox.information(
-                        self, T("Успех", "Success"),
-                        "Проксирование pip через TOR (9853) успешно настроено и включено!"
-                    )
-                    
-            if config_manager:
-                config_manager.save_config(config)
-            else:
-                config_file = os.path.join(CURRENT_DIR, "data", "config.json")
-                with open(config_file, 'w', encoding='utf-8') as f:
-                    json.dump(config, f, ensure_ascii=False, indent=2)
-
-            # Update running ByeDPI managers if main module is active
-            try:
-                from managers import bdsher
-                mgr = bdsher.get_manager(config)
-                mgr.update_config(config)
-                main_mod = sys.modules.get('__main__')
-                if main_mod and hasattr(main_mod, 'update_menu'):
-                    main_mod.update_menu()
-            except Exception:
-                pass
+            if config is not None:
+                config["use_custom_settings"] = True
+                config["byedpi_params"] = final_params
                 
-            QMessageBox.information(
-                self, T("Успех", "Success"), 
-                "Выбранная стратегия успешно сохранена в data\\config.json!\n\n"
-                "Параметры: %s\n\n"
-                "В настройках ToInet-MAX включен режим кастомных настроек ByeDPI.\n"
-                "Пожалуйста, перезапустите ByeDPI для применения изменений." % final_params
-            )
-            
+                if config_manager:
+                    config_manager.save_config(config)
+                else:
+                    with open(config_target_path, 'w', encoding='utf-8') as f:
+                        json.dump(config, f, ensure_ascii=False, indent=2)
+                saved_to_project = True
+
+                try:
+                    from managers import bdsher
+                    mgr = bdsher.get_manager(config)
+                    mgr.update_config(config)
+                except Exception:
+                    pass
         except Exception as e:
-            QMessageBox.critical(self, "Ошибка сохранения", "Не удалось применить стратегию:\n%s" % e)
+            print(f"Non-fatal config save notification: {e}")
+
+        msg = "Стратегия выбрана и скопирована в буфер обмена!\n\n"
+        msg += f"Команда запуска:\n{full_cmd}\n\n"
+        if saved_to_project:
+            msg += "Также параметры сохранены в конфигурационный файл ToInet-MAX."
+        else:
+            msg += "Вы можете вставить эту команду в командную строку или ярлык запуска ciadpi."
+            
+        QMessageBox.information(self, "Стратегия применена", msg)
 
 
 def main():
@@ -1439,5 +1788,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-

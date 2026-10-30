@@ -3,7 +3,7 @@ import logging
 import struct
 import time
 
-from typing import List, Optional
+from typing import Dict, List, Optional, Set, Tuple
 from urllib.parse import urlencode
 
 from .utils import *
@@ -12,15 +12,29 @@ from .balancer import balancer
 from .config import proxy_config
 from .raw_websocket import RawWebSocket
 from .pool import cf_worker_pool
-from ._aes import Cipher, algorithms, modes
 from .network_debug import WsActivity
 from .cf_h2 import bridge_h2
+
+try:
+    from .accel import fast_find_packets as _c_fast_find_packets
+except Exception:
+    _c_fast_find_packets = None
 
 
 log = logging.getLogger('tg-mtproto-proxy')
 _st_I_le = struct.Struct('<I')
 
-ZERO_64 = b'\x00' * 64
+TCP_BACKOFF_INITIAL = 30.0
+TCP_BACKOFF_MAX = 3600.0
+_tcp_failures: Dict[Tuple[str, int], int] = {}
+_tcp_retry_after: Dict[Tuple[str, int], float] = {}
+_tcp_connecting: Set[Tuple[str, int]] = set()
+
+
+def reset_tcp_backoff() -> None:
+    _tcp_failures.clear()
+    _tcp_retry_after.clear()
+    _tcp_connecting.clear()
 
 
 class CryptoCtx:
@@ -38,44 +52,54 @@ class MsgSplitter:
     Splits TCP stream data into individual MTProto transport packets
     so each can be sent as a separate WS frame.
     """
-    __slots__ = ('_dec', '_proto', '_cipher_buf', '_plain_buf', '_disabled')
+    __slots__ = ('_proto', '_cipher_buf', '_plain_buf', '_disabled')
 
-    def __init__(self, relay_init: bytes, proto_int: int):
-        cipher = Cipher(algorithms.AES(relay_init[8:40]),
-                        modes.CTR(relay_init[40:56]))
-        self._dec = cipher.encryptor()
-        self._dec.update(ZERO_64)
+    def __init__(self, proto_int: int):
         self._proto = proto_int
         self._cipher_buf = bytearray()
         self._plain_buf = bytearray()
         self._disabled = False
 
-    def split(self, chunk: bytes) -> List[bytes]:
+    def split(self, chunk: bytes, plain: bytes) -> List[bytes]:
         if not chunk:
             return []
         if self._disabled:
             return [chunk]
 
         self._cipher_buf.extend(chunk)
-        self._plain_buf.extend(self._dec.update(chunk))
+        self._plain_buf.extend(plain)
 
         parts = []
         offset = 0
         buf_len = len(self._cipher_buf)
-        # Walk the buffer with an offset instead of deleting each packet from
-        # the front. Front-deletion on a bytearray shifts the remaining bytes,
-        # so a chunk holding many small packets degrades to O(N^2); a single
-        # trailing del keeps splitting O(N).
+
+        if _c_fast_find_packets is not None:
+            count, packets = _c_fast_find_packets(self._proto, self._plain_buf, offset)
+            if count == -1:
+                parts.append(bytes(self._cipher_buf[offset:]))
+                offset = buf_len
+                self._disabled = True
+            elif count > 0:
+                for p_off, p_len in packets:
+                    if p_off == 0 and p_len == buf_len:
+                        parts.append(bytes(self._cipher_buf))
+                    else:
+                        parts.append(bytes(self._cipher_buf[p_off:p_off + p_len]))
+                    offset = p_off + p_len
+
         while offset < buf_len:
             packet_len = self._next_packet_len(offset, buf_len - offset)
             if packet_len is None:
                 break
             if packet_len <= 0:
-                parts.append(bytes(self._cipher_buf[offset:]))
+                parts.append(bytes(self._cipher_buf) if offset == 0 else bytes(self._cipher_buf[offset:]))
                 offset = buf_len
                 self._disabled = True
                 break
-            parts.append(bytes(self._cipher_buf[offset:offset + packet_len]))
+            if offset == 0 and packet_len == buf_len:
+                parts.append(bytes(self._cipher_buf))
+            else:
+                parts.append(bytes(self._cipher_buf[offset:offset + packet_len]))
             offset += packet_len
 
         if offset:
@@ -178,8 +202,6 @@ async def do_fallback(reader, writer, relay_init, label,
             if ok:
                 return True
         elif method == 'tcp' and fallback_dst:
-            log.info("[%s] DC%d%s -> TCP fallback to %s:443",
-                     label, dc, media_tag, fallback_dst)
             ok = await _tcp_fallback(
                 reader, writer, fallback_dst, 443,
                 relay_init, label, ctx)
@@ -334,19 +356,45 @@ async def _tor_fallback(reader, writer, dst, port, relay_init, label, ctx: Crypt
 
 
 async def _tcp_fallback(reader, writer, dst, port, relay_init, label, ctx: CryptoCtx):
-    try:
-        rr, rw = await asyncio.wait_for(
-            asyncio.open_connection(dst, port), timeout=10)
-    except Exception as exc:
-        log.warning("[%s] TCP fallback to %s:%d failed: %s",
-                    label, dst, port, repr(exc))
+    key = (dst, port)
+    if key in _tcp_connecting or time.monotonic() < _tcp_retry_after.get(key, 0):
+        log.debug("[%s] TCP fallback to %s:%d skipped (backoff or connecting)",
+                  label, dst, port)
         return False
 
-    stats.connections_tcp_fallback += 1
-    rw.write(relay_init)
-    await rw.drain()
-    await _bridge_tcp_reencrypt(reader, writer, rr, rw, label, ctx)
-    return True
+    _tcp_connecting.add(key)
+    rw = None
+    try:
+        try:
+            log.info("[%s] TCP fallback to %s:%d", label, dst, port)
+            rr, rw = await asyncio.wait_for(
+                asyncio.open_connection(dst, port), timeout=10)
+            rw.write(relay_init)
+            await rw.drain()
+        except Exception as exc:
+            failures = _tcp_failures.get(key, 0) + 1
+            _tcp_failures[key] = failures
+            delay = min(TCP_BACKOFF_INITIAL * 2 ** min(failures - 1, 7),
+                        TCP_BACKOFF_MAX)
+            _tcp_retry_after[key] = time.monotonic() + delay
+            log.warning("[%s] TCP fallback to %s:%d failed: %r; retry in %.0fs",
+                        label, dst, port, exc, delay)
+            return False
+        finally:
+            _tcp_connecting.discard(key)
+
+        _tcp_failures.pop(key, None)
+        _tcp_retry_after.pop(key, None)
+        stats.connections_tcp_fallback += 1
+        await _bridge_tcp_reencrypt(reader, writer, rr, rw, label, ctx)
+        return True
+    finally:
+        if rw is not None:
+            rw.close()
+            try:
+                await rw.wait_closed()
+            except (OSError, ConnectionError):
+                pass
 
 
 async def bridge_ws_reencrypt(reader, writer, ws: RawWebSocket, label,
@@ -392,7 +440,7 @@ async def bridge_ws_reencrypt(reader, writer, ws: RawWebSocket, label,
                 plain = ctx.clt_dec.update(chunk)
                 chunk = ctx.tg_enc.update(plain)
                 if splitter:
-                    parts = splitter.split(chunk)
+                    parts = splitter.split(chunk, plain)
                     if not parts:
                         continue
                     if activity is not None:

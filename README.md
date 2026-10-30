@@ -1,323 +1,347 @@
-# ToInet - Лаунчер для СОБ (ByeDPI, TGWS и ЛМ)
+# ToInet-MAX — Лаунчер для СОБ (ByeDPI, TGWS, Tor, Opera, VLESS, EVPN, SSH)
 
-**ToInet** - это комплексный менеджер для обеспечения свободного веб-доступа в операционной системе Windows (Доступна также [версия для Android](https://github.com/AlexeyRF/ToInet-Mobile)). Программа объединяет в едином интерфейсе несколько инструментов обхода: **ByeDPI**, **Tor**, **Telegram WebSocket Proxy**, **vk-turn-proxy**, **Socksreabilitator**, **Умный шлюз-маршрутизатор Gatik** и автоматизированный генератор фонового трафика.
+<p align="center">
+  <img src="icon.ico" width="128" height="128" alt="ToInet Logo">
+</p>
+
+**ToInet-MAX** — это менеджер для обеспечения свободного и быстрого доступа в интернет в операционной системе Windows (доступна также [версия для Android](https://github.com/AlexeyRF/ToInet-Mobile)). Программа объединяет в едином интерфейсе передовые инструменты обхода блокировок: **ByeDPI**, **Tor**, **Telegram WebSocket Proxy (TGWS)**, **Умный шлюз-маршрутизатор Gatik**, **Opera Proxy**, **VLESS / EVPN (sing-box)**, **Защищенный SSH SOCKS5 Туннель**, **SOCKS-реабилитатор** и фоновый генератор сетевого шума.
+
+---
+
+## Основная цель проекта
+
+> [!IMPORTANT]
+> **Главная миссия ToInet-MAX** — предоставление свободного, стабильного и безопасного доступа к интернету широким массам пользователей без необходимости обладать глубокими техническими знаниями, а также **максимальная экономия трафика, отправляемого на собственный VPS**.
+> 
+> Большинство коммерческих VPN и приватных серверов имеют строгие лимиты пропускной способности или тарифицируются за каждый переданный гигабайт. ToInet-MAX решает эту проблему за счет интеллектуальной гибридной маршрутизации:
+> 1. **Локальный DPI-обход (ByeDPI):** тяжелый контент (видеохостинги, стриминг, веб-серфинг) разблокируется прямо на вашем компьютере с помощью фрагментации и модификации TCP/HTTP/TLS пакетов без передачи внешнего трафика на ваш сервер.
+> 2. **Бесплатные внешние шлюзы (Tor, Opera Proxy, TGWS, Gatik):** сервисы обхода, не расходующие лимиты вашего VPS.
+> 3. **Точечный туннелинг (SSH / VLESS):** защищенное подключение к собственному VPS используется только при необходимости, обеспечивая колоссальную экономию сетевого трафика и расходов на серверную инфраструктуру.
 
 ---
 
 ## Основные возможности
 
 *   **DPI-обход через ByeDPI (`ciadpi.exe`):**
-    *   Запуск локального SOCKS5-прокси для модификации пакетов и обхода систем глубокого анализа трафика (DPI).
-    *   Возможность тонкой настройки параметров запуска с помощью кастомного файла конфигурации `byedpi_custom.txt` или встроенных стратегий.
-    *   **Отдельное проксирование для Pip (PyPI)**
+    *   Локальный SOCKS5-прокси, модифицирующий сетевые пакеты для обхода систем глубокого анализа трафика (DPI/ТСПУ).
+    *   Гибкая настройка параметров запуска через кастомные профили или встроенные стратегии.
+    *   **Отдельное проксирование для Pip (PyPI):** ускорение и разблокировка установки пакетов Python.
 *   **Интеграция с Tor (`tor.exe`):**
-    *   Автоматическое управление локальным луковым маршрутизатором.
-    *   Поддержка мостов
-    *   Управление цепочками
-*   **Telegram WebSocket Proxy (TGWS) & Smart Proxy:**
-    *   Встроенный локальный прокси-сервер, который туннелирует трафик мессенджера Telegram через WebSocket соединения.
-    *   **Умное мультиплексирование:** TGWS работает одновременно как **SOCKS5** и как **MTProto** прокси на одном порту (`1480`), автоматически распознавая тип входящего подключения по первому байту.
-    *   Поддержка настройки **MTProto Secret** и **Fake TLS** домена через удобный графический интерфейс.
-    *   Быстрое добавление прокси в один клик из меню трея напрямую в клиент Telegram (поддерживаются как SOCKS5, так и MTProto ссылки).
-*   **Умный шлюз Gatik для Telegram:**
-    *   Собственная разработка представляющая из себя динамический маршрутизатор трафика, объединяющий преимущества Tor и TGWS.
-    *   Автоматически анализирует поток данных "на лету" и бесшовно переключает активные соединения на оптимальный прокси-сервер.
-    *   **Новое:** Полностью интегрирован в общий асинхронный цикл программы для максимальной стабильности и производительности.
+    *   Автоматизированное управление локальным луковым маршрутизатором.
+    *   Поддержка подключаемых транспортов (obfs4, webtunnel, snowflake) и встроенный редактор мостов (`bridges.txt`).
+    *   Управление цепочками (запрос нового маршрута `/NEWNYM` в один клик или сочетанием клавиш).
+*   **Защищенный SSH SOCKS5 Туннель (`ssh_tunnel.exe` на C++):**
+    *   Высокопроизводительный нативный C++ туннель через системный OpenSSH Windows (`ssh.exe -D`).
+    *   **Полная конфигурируемость без хардкода:** хост, SSH-порт, логин, пароль и локальный SOCKS-порт настраиваются через удобное графическое окно или файл конфигурации.
+    *   **Безопасный AskPass:** пароли безопасно передаются напрямую в процесс SSH без интерактивных консольных окон.
+    *   Автопереподключение при обрыве связи и привязка к Windows Job Object (чистое фоновое завершение всех процессов).
+*   **Telegram WebSocket Proxy (TGWS) & MTProto:**
+    *   Локальный прокси-сервер для туннелирования трафика Telegram через WebSocket и HTTPS.
+    *   **Умное мультиплексирование:** одновременная работа в режимах **SOCKS5** и **MTProto** на едином порту (`1480`).
+    *   Поддержка секретов MTProto и маскировки под Fake TLS домены.
+    *   Мгновенное добавление прокси в Telegram Desktop в один клик.
+*   **Умный шлюз-маршрутизатор Gatik (`gatik.exe` на C++):**
+    *   Нативная C++ разработка для динамической маршрутизации и ускорения трафика Telegram.
+    *   Анализирует соединения "на лету" и балансирует поток данных между различными шлюзами.
+*   **Opera Proxy (`opera-proxy.windows-amd64.exe`):**
+    *   Локальный SOCKS5/HTTP прокси, использующий защищенную инфраструктуру Opera.
+    *   Поддержка пула соединений (Load Balancing) и выбора региона (Европа, Америка, Азия).
+*   **VLESS и EVPN (ядро `sing-box`):**
+    *   Поддержка современных протоколов VLESS Reality, Trojan, ShadowTLS.
+    *   Менеджер подписок EVPN с поддержкой динамической ротации серверов, проверки задержки и защищенного DNS.
 *   **Тестер стратегий ByeDPI (`byedpi_tester_gui.pyw`):**
-    *   Позволяет автоматически найти стратегию обхода, работающую у вашего провайдера, и сохранить её.
+    *   Автоматический перебор и тестирование стратегий обхода под особенности вашего интернет-провайдера.
 *   **Генератор сетевого шума Noisy (`noisy.py`):**
-    *   Фоновый веб-краулер, имитирующий случайный веб-серфинг по доверенным сайтам.
-    *   Маскирует ваш реальный зашифрованный трафик от систем DPI и анализаторов провайдера, создавая поток «белого шума».
-*   **Opera Proxy (`opera-proxy`):**
-    *   Локальный прокси-сервер, использующий инфраструктуру встроенного VPN (ОСУЖДАЮ) браузера Opera.
-    *   Позволяет легко и быстро обходить блокировки без сложной настройки конфигураций.
-*   **VK-Turn-Proxy** (пока в beta формате)
+    *   Создает правдоподобный фоновый трафик для маскировки паттернов активности пользователя от провайдерских систем анализа.
+*   **Системные утилиты C++:**
+    *   `cpller.exe` — мгновенное переключение системных параметров прокси Windows (WinINet / Internet Settings).
+    *   Управление системным DNS (Comms DNS, Xbox DNS, сброс) и фикс сервисов Google Antigravity (Agy Fix).
+
+---
+
+## Интерфейс приложения
+
+ToInet-MAX поддерживает два режима графического интерфейса:
+1. **Современное окно приложения (Modern Window):** стильный минималистичный интерфейс на PyQt5 с центральной кнопкой включения, выбором режимов, мониторингом статуса и быстрым доступом ко всем модулям.
+2. **Продвинутое меню трея (System Tray):** компактный доступ ко всем функциям через значок в системном трее Windows:
+   * **Простой режим:** запуск и остановка всех инструментов в один клик, быстрое подключение системного прокси к выбранному источнику (TOR, ByeDPI, Opera, SSH).
+   * **Продвинутый режим:** индивидуальное управление каждым сервисом (запуск, остановка, перезапуск), открытие настроек, быстрая отправка прокси в Telegram.
 
 ---
 
 ## Режимы маршрутизации трафика
 
-В программе реализованы три различных режима работы с сетевыми настройками ОС Windows:
+В программе реализованы четыре ключевых режима работы с сетью:
 
-1.  **Empty (Пустой режим):**
-    *   Приложение запускает выбранные инструменты обхода (`ByeDPI`, `Tor`, `TGWS` и другие) в фоне на локальных портах.
-    *   Системные настройки сети не изменяются.
-    *   *Для чего:* Удобно, если вы настраиваете проксирование в конкретных приложениях (например, в настройках браузера через расширения или в самом Telegram).
-2.  **Inetcpl (Свойства браузера):**
-    *   Автоматически прописывает локальный прокси в системные настройки Windows (Internet Options / Свойства браузера) с помощью утилиты `cpller.pyw`.
-    *   *Для чего:* Обеспечивает мгновенный доступ к сайтам через браузеры, использующие системные настройки прокси (Chrome, Edge, Opera, Firefox (с настройками по умолчанию)). При отключении прокси настройки автоматически сбрасываются.
-3.  **TUN (Режим полного туннелирования):**
-    *   Использует внешнюю утилиту-проксификатор (например, **Proxybridge**) для перенаправления всего трафика операционной системы через запущенные инструменты.
-    *   *Для чего:* Необходим для прозрачного обхода ограничений в играх, лаунчерах и десктопных приложениях (Discord, Spotify, Steam и др.), которые не поддерживают ручную настройку прокси.
-    *   *Настройка:* Путь к исполняемому файлу проксификатора должен быть указан в файле `proxification_app.txt`.
+1. **Empty (Пустой режим):**
+   * Все выбранные инструменты работают на локальных портах в фоне.
+   * Системные сетевые параметры Windows не изменяются.
+   * *Применение:* индивидуальная настройка конкретных приложений (браузерные расширения FoxyProxy/SwitchyOmega, Telegram, торрент-клиенты).
+2. **Inetcpl (Свойства браузера Windows):**
+   * Автоматически прописывает локальный прокси в системные параметры Windows через нативную утилиту `cpller.exe`.
+   * *Применение:* браузеры (Chrome, Edge, Yandex, Opera, Firefox) сразу начинают работать через выбранный шлюз без дополнительных плагинов. При выходе настройки корректно сбрасываются.
+3. **TUN (Режим полного туннелирования):**
+   * Направляет весь сетевой стек операционной системы через ядро `sing-box` или внешний проксификатор (**Proxifier**).
+   * *Применение:* игры, лаунчеры, голосовые чаты (Discord, Steam, Spotify), не имеющие встроенных настроек прокси.
+4. **EVPN (Режим подписок):**
+   * Глобальная маршрутизация трафика через пулы проверенных VLESS-узлов с автоматическим переключением при сбоях.
 
 ---
 
-## Порты по умолчанию
+## Сетевые порты по умолчанию
 
-Для бесконфликтной работы все модули ToInet используют фиксированные сетевые порты:
-
-| Инструмент / Протокол | Порт | Тип соединения | Описание |
+| Модуль / Протокол | Порт | Тип прокси | Назначение |
 | :--- | :--- | :--- | :--- |
-| **ByeDPI (Главный)** | `1780` | SOCKS5 | Основной прокси-сервер для обхода в браузерах |
+| **ByeDPI (Главный)** | `1780` | SOCKS5 | Основной локальный DPI-обходчик |
 | **ByeDPI (HTTP)** | `1782` | HTTP | HTTP-мост для ByeDPI |
-| **Tor (Главный)** | `9853` | SOCKS5 | Анонимный доступ через сеть Tor |
-| **Tor (HTTP)** | `9854` | HTTP | HTTP-мост для Tor |
-| **Tor Control Port** | `9851` | TCP | Порт управления Tor (смена цепочки) |
-| **Telegram WS Proxy** | `1480` | SOCKS5 & MTPROTO | Прокси, специально для Telegram Desktop |
-| **Gatik Router** |`1777`| SOCKS5 | Роутер для ускорения Telegram |
-| **Opera Proxy** | `1785` | HTTP | Быстрый прокси через VPN (ОСУЖДАЮ НА ТЕРРИТОРИИ РОССИЙСКОЙ ФЕДЕРАЦИИ) инфраструктуру Opera |
-| **Opera Proxy (SOCKS5)**| `1785` | SOCKS5 | SOCKS5-мост для Opera |
-| **Pip ByeDPI** | `1781` | SOCKS5 | Выделенный прокси-сервер для установки пакетов Python |
+| **ByeDPI (Pip PyPI)**| `1781` | SOCKS5 | Выделенный порт для пакетного менеджера pip |
+| **Tor (Главный)** | `9853` | SOCKS5 | Луковый маршрутизатор Tor |
+| **Tor (HTTP)** | `9854` | HTTP | HTTP-мост для сети Tor |
+| **Tor Control Port** | `9851` | TCP | Управление цепочками и смена IP Tor |
+| **SSH Tunnel** | `1770` | SOCKS5 | Защищенный SSH-туннель к вашему серверу (C++ / OpenSSH) |
+| **Opera Proxy** | `1785` | HTTP / SOCKS5 | Скоростной прокси через инфраструктуру Opera |
+| **Telegram WS (TGWS)**| `1480`| SOCKS5 & MTProto | Мультиплексированный прокси для Telegram Desktop |
+| **Gatik Router** | `1777` | SOCKS5 | C++ балансировщик и акселератор для Telegram |
+| **VLESS / EVPN** | `1790` | SOCKS5 | Прокси через внешние VLESS-серверы sing-box |
+| **SOCKS-реабилитатор**| `1788` | SOCKS5 | Сервис восстановления нестабильных socks-соединений |
 
 ---
 
-## Требования и установка
+## Установка и запуск
 
 ### Системные требования:
-*   Операционная система: **Windows 10 / 11** (архитектура amd64 / arm64).
-*   Установленный интерпретатор **Python 3.8+** (с добавлением в переменную среды `PATH`).
+* Операционная система: **Windows 10 / Windows 11** (x64 / ARM64).
+* OpenSSH Client (встроен в Windows по умолчанию в «Дополнительных компонентах»).
+* Для Python-версии: **Python 3.8+** (с отметкой «Add Python to PATH»).
 
-### Инструкция по установке:
+### Быстрый старт:
+1. Скачайте архив релиза (или клонируйте репозиторий).
+2. Для запуска из исходников запустите `install.bat` (установит зависимости `PyQt5`, `psutil`, `requests`, `cryptography` и др.), затем `launch.bat`.
+3. Для Portable-версии просто запустите `ToInet.exe`.
 
-1.  Скачайте релиз
-2.  (Python версия) Запустите скрипт установки зависимостей **`install.bat`**, затем запустите через **`launch.bat`**, в Portable версии достаточно запустить ToInet.exe
-3.  Если вы планируете использовать **TUN режим**:
-    *   Установите программу-проксификатор.
-    *   Откройте файл `proxification_app.txt` и пропишите абсолютный путь к исполняемому файлу программы. Например:
-        ```text
-        C:\Program Files\Proxifier\Proxifier.exe
-        ```
-4.  В системном трее Windows (возле часов или в меню на ^) появится иконка **ToInet-MAX**.
-5.  **Первичная настройка трея:**
-    *   Правой кнопкой мыши нажмите на иконку.
-    *   По умолчанию включен **Inetcpl режим** меню, позволяющий быстро запускать/останавливать все сервисы разом и подключаться к TOR или Byedpi через свойства браузера. 
-    *   Нажмите **«Настройки»**, чтобы переключиться в **Продвинутый режим**. Здесь вам откроется полный спектр возможностей ручного управления каждым компонентом отдельно, очистка кэша, конфигураторы и утилиты.
+### Сборка C++ утилит:
+Скомпилировать нативные высокоскоростные утилиты (`cpller.exe`, `gatik.exe`, `ssh_tunnel.exe`) можно одним кликом через:
+```cmd
+cpp\build.bat
+```
+Скрипт автоматически найдет установленный Visual Studio MSVC (`cl.exe`) или `g++` и соберет оптимизированные бинарники в папку `bin/`.
 
-### Полезные инструменты в Продвинутом меню:
-*   **Тестер стратегий ByeDPI:** открывает графическую утилиту для автоматического подбора параметров ByeDPI под вашего провайдера.
-*   **Изменить мосты:** визуальный редактор файла `bridges.txt` для ручного добавления обходных мостов Tor.
-*   **Автозапуск приложения:** включает или выключает автоматический старт ToInet-MAX при загрузке Windows.
-*   **Создать ярлык на рабочем столе:** автоматически генерирует ярлык.
-*   **Добавить в Telegram:** мгновенная отправка ссылки-настройки прокси напрямую в открытый Telegram.
-*   **Agy Фикс (Agy Fix):** вызов утилиты от создателей xbox-dns для разблокировки Antigravity в РФ
-*   **Управление DNS:** установка кастомных DNS-серверов (Comms DNS, Xbox DNS с поддержкой IPv4/IPv6) или сброс на системные (требуются права администратора).
-*   **Логи приложения:** окно с выводом системных логов в реальном времени.
+---
+
+## Настройка SSH Туннеля
+
+Для подключения к вашему VPS:
+1. Откройте **«Настройки SSH Туннеля»** из меню трея или через окно настроек приложения.
+2. Введите параметры вашего сервера:
+   * **Хост / IP:** адрес вашего VPS.
+   * **SSH Порт:** порт службы SSH (по умолчанию `22`).
+   * **Логин:** ваш пользователь (например, `root`).
+   * **Пароль:** пароль учетной записи.
+   * **Локальный порт:** порт локального SOCKS5-прокси (по умолчанию `1770`).
+3. Нажмите **«Сохранить»** и **«Запустить туннель»**.
+4. Доступны быстрые кнопки:
+   * **«Добавить в Telegram»** — моментально открывает Telegram Desktop с преднастроенным SOCKS5.
+   * **«Направить систему (inetcpl)»** — переключает глобальный системный браузерный интернет на ваш SSH SOCKS5.
+   * **«Скопировать SOCKS5»** — помещает адрес `socks5://127.0.0.1:1770` в буфер обмена.
 
 ---
 
 ## Решение проблем
 
-> [!IMPORTANT]
-> **Не работает Tor. Бесконечное подключение.**
-> Скорее всего, ваш провайдер блокирует подключение к сети Tor с моими мостами. Перейдите в Продвинутое меню -> нажмите **«Изменить мосты»** и добавьте мосты. Мосты можно получить у бота `@GetBridgesBot` в Telegram.
-> Если не помогло - попробуйте проксировать трафик TOR через byedpi (ищите это в "настройки TOR"), если всё ещё не работает, то напишите в Issues с приложением скриншота окна TOR со включённой настройкой "Показывать окно Tor при запуске"
+> [!TIP]
+> **При аварийном закрытии пропал интернет:**
+> Если приложение было завершено аварийно в режиме `inetcpl`, снимите галочку системного прокси: *Параметры Windows -> Сеть и Интернет -> Прокси-сервер -> Использовать прокси-сервер (Откл)*, либо запустите ToInet снова и выполните пункт *Очистка кеша*.
 
-> [!IMPORTANT]
-> Если у вас нет TGWS, настроек byedpi, vk-turn или шумогенератора, то возможно в вашей системе включён английский язык, включите unsupported функции и они у вас появятся.
-
-> [!WARNING]
-> **Приложение закрылось аварийно, и пропал интернет.**
-> Если программа завершила работу некорректно во время работы режима `inetcpl`, системные прокси-настройки могли остаться активными. 
-> *Решение:* Запустите программу снова и штатно закройте её, либо зайдите в *Свойства браузера* Windows -> вкладка *Подключения* -> кнопка *Настройка сети* -> снимите галочку «Использовать прокси-сервер». Также можно воспользоваться утилитой очистки кэша прокси через меню трея.
-
-> [!NOTE]
-> **Конфликты портов.**
-> Если в логах появляется ошибка `Address already in use` (порт занят), убедитесь, что у вас не запущены другие экземпляры ByeDPI, Tor или сторонние приложения на портах `1780`, `1781`, `9853`, `1777` или `1480`. 
-
----
-Все права принадлежат тем, кому они принадлежат:<br>
-https://github.com/hufrea/byedpi - ByeDPI<br>
-https://torproject.org - ЛМ<br>
-https://www.python.org/ - Python<br>
-https://github.com/Flowseal/tg-ws-proxy - TgWS Proxy<br>
-https://github.com/romanvht/ByeByeDPI - оригинальный подбор стратегий<br>
-https://github.com/cacggghp/vk-turn-proxy - маршрутизация через VK<br>
-https://github.com/Alexey71/opera-proxy - opera proxy<br>
-https://xbox-dns.ru/ - Agy Fix + dns<br><br>
----
-В случае расследования какой-либо федеральной структуры или подобного, я не имею никакого отношения к этой группе или к людям в ней, я не знаю, как я здесь оказался, возможно, добавлен третьей стороной, я не поддерживаю никаких действий членов этой группы.
----
-
- <br>Планы на следующие версии: <br>
- 1. Реализация механизма нейтрализации цифровых угроз суверинитета
+> [!TIP]
+> **Бесконечное подключение Tor:**
+> Провайдер может блокировать стандартные публичные узлы. Откройте пункт *«Изменить мосты»* в расширенном меню и добавьте свежие мосты (их можно получить у бота `@GetBridgesBot` в Telegram).
 
 ---
 
+## Правовая оговорка и благодарности
+
+Проект создан исключительно в целях обеспечения надежного доступа к информации и оптимизации расхода серверных мощностей:
+* https://github.com/hufrea/byedpi — ByeDPI
+* https://torproject.org — The Tor Project
+* https://github.com/Flowseal/tg-ws-proxy — TG WS Proxy
+* https://github.com/SagerNet/sing-box — Sing-box core
+* https://github.com/Alexey71/opera-proxy — Opera proxy
 
 ---
+---
+
 # English Translation
 
-## ToInet - Bypass Launcher (ByeDPI & TOR)
+## ToInet-MAX — Censorship Bypass Launcher & Traffic Saver
 
+<p align="center">
+  <img src="icon.ico" width="128" height="128" alt="ToInet Logo">
+</p>
 
-**ToInet** is a comprehensive manager for bypassing internet censorship and ensuring free web access on Windows OS (Also available: [Android version](https://github.com/AlexeyRF/ToInet-Mobile)). The program combines several bypass tools into a single system tray interface (based on PyQt5): **ByeDPI**, **Tor**.
-
-The application allows for fine-tuning routing - from regular browser proxying to transparently redirecting all system traffic (TUN mode) through external utilities.
-
-### Internet Censorship and Blocking in the UK
-Various forms of internet censorship and website blocking have been implemented in the United Kingdom, often mandated by High Court rulings or the Digital Economy Act. Internet service providers (ISPs) in the UK frequently use deep packet inspection (DPI) and DNS blocking to restrict access to certain websites, including file-sharing platforms, streaming sites, truth-telling sites (so called "Russian propaganda"), and adult content. These blocks are typically implemented at the network level through SNI (Server Name Indication) analysis or DNS response manipulation to prevent users from accessing desired resources.
-
-### Internet Censorship in the European Union
-In addition to the UK, the European Union is pushing legislation to make all interpersonal correspondence readable (breaking end-to-end encryption under the guise of chat control). Furthermore, there are initiatives seeking to block access to social media platforms for people without a government-verified passport or ID.
-
-Remember: Big Brother is watching you, but Big Russian Bratan is in his way.
-
-### How This Program Works
-ToInet tackles these restrictions by leveraging several interconnected technologies:
-1. **ByeDPI**: Manipulates TCP and HTTP packets at the SOCKS5 proxy level to confuse deep packet inspection (DPI) systems used by ISPs. It alters the structure of requests (e.g., modifying the Host header or splitting the SNI payload) so the ISP's filters cannot recognize the destination and block the connection.
-2. **Tor Integration**: Tunnels traffic through the decentralized Tor network, encrypting the connection and routing it through multiple relays. For networks with aggressive Tor blocking, the program utilizes Pluggable Transports and Bridges, making Tor traffic appear as regular noise.
+**ToInet-MAX** is a comprehensive network manager and multi-tool designed to restore open, unrestricted, and privacy-respecting Internet access on Windows OS (also available: [Android version](https://github.com/AlexeyRF/ToInet-Mobile)). The application unites the most effective anti-censorship and tunneling tools into a single coherent interface: **ByeDPI**, **Tor**, **Telegram WebSocket Proxy (TGWS)**, **Gatik Smart Gateway Router**, **Opera Proxy**, **VLESS / EVPN (sing-box core)**, **Secure SSH SOCKS5 Tunnel**, **SOCKS Rehabilitator**, and background traffic obfuscation.
 
 ---
 
-## Core Features
+## 🎯 Primary Project Mission: Mass Access & VPS Bandwidth Savings
+
+> [!IMPORTANT]
+> **The primary goal of ToInet-MAX** is to bring seamless, free Internet access to the general public while **drastically saving bandwidth on your personal VPS**.
+>
+> Most private VPS providers and commercial VPN services impose strict monthly data quotas or charge per gigabyte. ToInet-MAX eliminates excessive server costs via smart hybrid routing:
+> 1. **Local DPI Evasion (ByeDPI):** Heavy bandwidth consumers (streaming platforms, video hostings, web media) are unblocked locally on your machine via TCP/HTTP/TLS packet manipulation, avoiding any VPS traffic consumption.
+> 2. **Free External Pathways (Tor, Opera Proxy, TGWS, Gatik):** Public and resilient routing backends that require zero VPS resources.
+> 3. **Targeted Tunneling (SSH / VLESS):** Your private VPS is utilized only when encrypted off-shore tunneling is strictly necessary, conserving your VPS bandwidth and minimizing hosting costs.
+
+---
+
+## 🌟 Core Features
 
 *   **DPI Bypass via ByeDPI (`ciadpi.exe`):**
-    *   Runs a local SOCKS5 proxy to modify packets and bypass Deep Packet Inspection (DPI).
-    *   Fine-tune launch parameters using `byedpi_custom.txt` or built-in strategies.
+    *   Runs a local SOCKS5 proxy modifying TCP/TLS frames to bypass Deep Packet Inspection systems without external proxy servers.
+    *   Custom strategies and automated tuning via `byedpi_tester_gui.pyw`.
+    *   **Dedicated Pip (PyPI) proxy:** Fast and reliable Python package management.
 *   **Tor Integration (`tor.exe`):**
-    *   Automates the start and stop of the local Tor client.
-    *   Bypass Tor blocks using bridges (editable via the built-in editor).
-    *   Circuit control (request a new circuit `/NEWNYM` from the tray menu).
-    *   Automated `torrc` configuration generation and restoration.
-*   **ByeDPI Strategy Tester (`byedpi_tester_gui.pyw`):**
-    *   Interface to test various ByeDPI parameters against blocked resources.
-    *   Automatically finds a working bypass strategy for your ISP.
+    *   Full lifecycle management for the Tor onion routing daemon.
+    *   Pluggable Transports (obfs4, webtunnel, snowflake) and built-in bridge configuration editor.
+    *   Circuit renewal (`/NEWNYM`) on demand with shortcut support.
+*   **Secure SSH SOCKS5 Tunnel (`ssh_tunnel.exe` in C++):**
+    *   Native C++ OpenSSH supervisor utilizing Windows `ssh.exe -D`.
+    *   **Zero hardcoded credentials:** Server host, port, username, password, and local SOCKS port are entirely configurable via GUI and config file.
+    *   **Silent AskPass integration:** Passwords are delivered directly and securely without intrusive terminal dialogs.
+    *   Auto-reconnect resilience and Windows Job Object assignment for clean shutdown.
+*   **Telegram WebSocket Proxy (TGWS) & MTProto:**
+    *   Multiplexes SOCKS5 and MTProto connections on a single port (`1480`).
+    *   Fake TLS domain and MTProto secret configuration.
+    *   One-click instant import into Telegram Desktop.
+*   **Gatik Smart Router (`gatik.exe` in C++):**
+    *   High-performance dynamic load balancer designed to optimize Telegram connections between multiple proxies.
 *   **Opera Proxy (`opera-proxy`):**
-    *   A local SOCKS5 proxy server wrapping Opera's built-in VPN infrastructure.
-    *   Allows fast and easy bypass without complex configurations.
-*   **VLESS Proxy (`sing-box.exe`):**
-    *   A powerful proxy protocol allowing connections to remote VLESS servers.
-    *   Includes **Auto-Rotation (wl_torred_vless)**: Automatically fetches VLESS links from subscriptions (via `subs.txt`), dedupes, checks latency, and dynamically rotates servers every N-seconds.
-*   **TGWS Proxy:**
-    *   Dedicated MTProto/SOCKS5 proxy designed primarily for Telegram, allowing rapid connection bypassing DPI.
-*   **Autostart & Convenience:**
-    *   Minimizes to the Windows system tray.
-    *   Built-in autostart installer and one-click desktop shortcut creator.
-    *   **DNS Management:** Quickly switch to custom DNS (Comms, Xbox) or reset settings (requires Admin).
-    *   **Application Logs:** Built-in viewer for real-time app logs.
+    *   Fast SOCKS5/HTTP tunnel utilizing Opera's global infrastructure with region selection and connection pooling.
+*   **VLESS & EVPN Routing (`sing-box`):**
+    *   VLESS Reality, Trojan, and subscription management with auto-latency verification.
+*   **Native C++ Utilities:**
+    *   `cpller.exe` — Instant Windows Internet Settings (WinINet) proxy management.
+    *   DNS management (Comms DNS, Xbox DNS, reset) and Google Antigravity unblocking (Agy Fix).
 
 ---
 
-## Traffic Routing Modes
-
-The program provides three operational modes:
-
-1.  **Empty Mode:**
-    *   Runs bypass tools in the background on local ports.
-    *   Does not alter system network settings.
-    *   *Best for:* Manual configuration in specific apps (e.g., SwitchyOmega for browsers).
-2.  **Inetcpl (Browser Properties):**
-    *   Automatically sets the local proxy in Windows system settings using `cpller.pyw`.
-    *   *Best for:* Instant access via browsers that use system proxy settings (Chrome, Edge, Opera). Settings are reset upon disconnection.
-3.  **TUN (Full Tunneling Mode):**
-    *   Uses an external proxifier (like **Proxifier**) to route all OS traffic through the tools.
-    *   *Best for:* Transparent bypass for games, launchers, and desktop apps (Discord, Steam).
-    *   *Setup:* Path to the proxifier executable must be specified in `proxification_app.txt`.
-
----
-
-## Default Ports
+## 🔌 Default Network Ports
 
 | Tool / Protocol | Port | Proxy Type | Description |
 | :--- | :--- | :--- | :--- |
-| **ByeDPI (Main)** | `1780` | SOCKS5 | Main bypass proxy for browsers |
+| **ByeDPI (Main)** | `1780` | SOCKS5 | Local DPI evasion proxy |
 | **ByeDPI (HTTP)** | `1782` | HTTP | HTTP bridge for ByeDPI |
-| **Tor (Main)** | `9853` | SOCKS5 | Anonymous access via Tor network |
+| **ByeDPI (Pip PyPI)**| `1781` | SOCKS5 | Dedicated proxy for Python pip |
+| **Tor (Main)** | `9853` | SOCKS5 | Onion router SOCKS proxy |
 | **Tor (HTTP)** | `9854` | HTTP | HTTP bridge for Tor |
-| **Tor Control Port** | `9851` | TCP | Control port for Tor (circuit rotation) |
-| **Opera Proxy** | `1785` | HTTP | Fast bypass using Opera VPN infrastructure |
-| **Opera Proxy (SOCKS5)**| `1785` | SOCKS5 | SOCKS5 bridge for Opera (e.g. for Telegram) |
-| **VLESS Proxy** | `1790` | SOCKS5 | SOCKS5 proxy routed through VLESS servers |
-| **TGWS Proxy** | `1480` | MTProto/SOCKS | MTProto and SOCKS proxy for Telegram |
-| **SOCKS Rehabilitator**| `1788` | SOCKS5 | Utility port for SOCKS recovery |
+| **Tor Control Port** | `9851` | TCP | Circuit control & identity renewal |
+| **SSH Tunnel** | `1770` | SOCKS5 | Secure OpenSSH dynamic proxy (C++) |
+| **Opera Proxy** | `1785` | HTTP / SOCKS5 | Fast tunnel via Opera VPN infrastructure |
+| **Telegram WS (TGWS)**| `1480`| SOCKS5 & MTProto | Telegram multiplexed proxy |
+| **Gatik Router** | `1777` | SOCKS5 | C++ dynamic Telegram balancer |
+| **VLESS / EVPN** | `1790` | SOCKS5 | SOCKS5 proxy via remote sing-box nodes |
+| **SOCKS Rehabilitator**| `1788` | SOCKS5 | Connection recovery port |
 
 ---
 
-## Requirements and Installation
+## 🔨 Building and Running
 
-### System Requirements:
-*   OS: **Windows 10 / 11** (amd64).
-*   **Python 3.8+** installed (added to `PATH`).
+1. **Python version:** Run `install.bat`, then `launch.bat`.
+2. **Portable version:** Run `ToInet.exe`.
+3. **Compiling C++ Utilities:**
+   ```cmd
+   cpp\build.bat
+   ```
+   Compiles `cpller.exe`, `gatik.exe`, `ssh_tunnel.exe`, and `programs_settings.exe` directly into `bin/` using MSVC or GCC.
 
-### Installation Guide:
-
-1.  Download the release or build it according to the folder structure below.
-2.  Run the dependency installation script **`install.bat`**. Or use portable version
-3.  If planning to use **TUN mode**:
-    *   Install a proxifier.
-    *   Open `proxification_app.txt` and write the absolute path to the executable (e.g., `C:\Program Files\Proxifier\Proxifier.exe`).
 
 ---
 
-## Launch and Usage
+## 🇫🇷 Traduction en français (Documentation)
 
-1.  Double-click **`launch.bat`**. \ ToInet.exe
-2.  The **ToInet-MAX** icon will appear in the system tray.
-3.  **Initial Tray Setup:**
-    *   Right-click the icon.
-    *   By default, **Inetcpl mode** is enabled, allowing quick service toggles.
-    *   Click **"Settings" / "Настройки"** to switch to **Advanced Mode** for granular control over each component.
+# ToInet-MAX — Gestionnaire universel de contournement et de routage (ByeDPI, TGWS, Tor, Opera, VLESS, EVPN, SSH)
+
+<p align="center">
+  <img src="icon.ico" width="128" height="128" alt="Logo ToInet">
+</p>
+
+**ToInet-MAX** est une suite complète conçue pour garantir un accès libre, rapide et sécurisé à Internet sous Windows (une [version Android](https://github.com/AlexeyRF/ToInet-Mobile) est également disponible). Elle réunit dans une interface unifiée les technologies les plus efficaces : **ByeDPI**, **Tor**, **Telegram WebSocket Proxy (TGWS)**, **Routeur intelligent Gatik**, **Opera Proxy**, **VLESS / EVPN (sing-box)**, **Tunnel sécurisé SSH SOCKS5**, **Réhabilitateur SOCKS** et un générateur de bruit réseau.
 
 ---
 
-## Troubleshooting
+### Objectif principal du projet
 
 > [!IMPORTANT]
-> **Tor is not working. Endless connection.**
-> Your ISP is likely blocking the default Tor bridges. Go to Advanced Menu -> click **"Edit Bridges"** and add custom bridges. Bridges can be obtained from the `@GetBridgesBot` on Telegram.
-
-> [!WARNING]
-> **Application crashed and internet is lost.**
-> If the program closed abruptly during `inetcpl` mode, system proxy settings might still be active.
-> *Solution:* Restart the program and close it properly, or open Windows *Internet Options* -> *Connections* -> *LAN settings* -> uncheck "Use a proxy server". You can also use the tray menu cache cleaner.
-
-> [!NOTE]
-> **Port Conflicts.**
-> If logs show `Address already in use`, ensure no other instances of ByeDPI, Tor, or third-party apps are using ports `1780`, `1781`, `9853`, or `1480`.
+> **La mission fondamentale de ToInet-MAX** est d'offrir un accès à Internet libre, stable et sécurisé au plus grand nombre d'utilisateurs sans nécessiter de compétences techniques avancées, tout en assurant une **économie maximale de la bande passante envoyée vers votre propre VPS**.
+> 
+> La majorité des fournisseurs de VPS et VPN privés appliquent des limites strictes de données ou facturent chaque gigaoctet transféré. ToInet-MAX résout ce problème grâce à un routage hybride et intelligent :
+> 1. **Contournement DPI local (ByeDPI) :** les contenus volumineux (vidéos, streaming, navigation web courante) sont débloqués directement sur votre machine locale par fragmentation et modification des paquets TCP/TLS, sans consommer le trafic de votre serveur distant.
+> 2. **Passerelles publiques gratuites (Tor, Opera Proxy, TGWS, Gatik) :** services de déblocage autonomes qui ne décomptent aucun quota sur votre VPS.
+> 3. **Tunneling ciblé (SSH / VLESS) :** la connexion chiffrée vers votre serveur privé n'est sollicitée que pour les flux nécessaires, réduisant drastiquement les coûts d'infrastructure.
 
 ---
 
+### Fonctionnalités principales
 
-# ToInet-Server
+*   **Contournement DPI local avec ByeDPI (`ciadpi.exe`) :**
+    *   Proxy SOCKS5 local modifiant les trames TCP/TLS pour déjouer les filtres d'inspection profonde (DPI).
+    *   Profils et stratégies ajustables avec outil de test graphique intégré (`byedpi_tester_gui.pyw`).
+    *   **Proxy dédié pour Pip (PyPI) :** accélération et déblocage de l'installation des paquets Python.
+*   **Intégration complète de Tor (`tor.exe`) :**
+    *   Gestion automatisée du démon de routage en oignon.
+    *   Support des transports enfichables (obfs4, webtunnel, snowflake) et éditeur graphique de ponts (`bridges.txt`).
+    *   Renouvellement instantané des circuits (`/NEWNYM`) par raccourci clavier ou clic droit.
+*   **Tunnel SSH SOCKS5 sécurisé (`ssh_tunnel.exe` en C++) :**
+    *   Superviseur natif C++ pilotant l'OpenSSH natif de Windows (`ssh.exe -D`).
+    *   **Aucun identifiant codé en dur :** serveur, port SSH, nom d'utilisateur, mot de passe et port SOCKS local sont entièrement configurables via l'interface graphique et le fichier `config.json`.
+    *   **Sécurité AskPass & Clé éphémère :** chiffrement du mot de passe en mémoire avec suppression instantanée de la clé de déchiffrement dès l'ouverture du tunnel (aucun mot de passe visible dans le gestionnaire des tâches).
+    *   Reconnexion automatique et gestion de processus Windows Job Object (nettoyage garanti à l'arrêt).
+*   **Gestionnaire unifié des chemins de programmes (`programs_settings.exe` en C++) :**
+    *   Application graphique native C++ (Win32 & DWM Dark Mode) regroupant la configuration du Proxificateur (TUN) et des programmes additionnels.
+    *   Accessible directement via le bouton **"Пути программ"** (**"Program Paths"** / **"Chemins des programmes"**).
+*   **Telegram WebSocket Proxy (TGWS) & MTProto :**
+    *   Multiplexage intelligent : prise en charge simultanée de **SOCKS5** et **MTProto** sur le même port (`1480`).
+    *   Support du Fake TLS et secrets MTProto.
+    *   Importation directe dans Telegram Desktop en un seul clic.
+*   **Routeur dynamique Gatik (`gatik.exe` en C++) :**
+    *   Équilibreur de charge haute performance pour optimiser les connexions Telegram.
+*   **Opera Proxy (`opera-proxy`) :**
+    *   Tunnel rapide SOCKS5/HTTP s'appuyant sur l'infrastructure mondiale d'Opera avec sélection de région.
+*   **Routage VLESS & EVPN (`sing-box`) :**
+    *   Gestion des protocoles VLESS Reality, Trojan, ShadowTLS et vérification automatique de latence.
+*   **Utilitaires natifs C++ :**
+    *   `cpller.exe` — Application instantanée des paramètres proxy système Windows (WinINet).
+    *   Gestion DNS (Comms DNS, Xbox DNS, réinitialisation) et déblocage de Google Antigravity.
+*   **Interface multilingue unifiée :**
+    *   Prise en charge intégrale du **Français**, de l'**Anglais** et du **Russe** avec détection automatique du système ou sélection manuelle dans les paramètres.
 
-ToInet-Server - это инструмент для управления экспертной программой лукового маршрутизатора. Он позволяет легко запускать ЛМ с настроенными мостами и выходными узлами, а также автоматически обновлять его до последней версии Expert Bundle.
+---
 
-## Особенности
+### 🔌 Tableau des ports réseau par défaut
 
-- **Автоматическое обновление:** Проверка и загрузка свежих версий через сам ЛМ (через прокси).
-- **Гибкая конфигурация:** Поддержка нескольких профилей настроек.
-- **Кроссплатформенность:** Работает на Windows и Linux.
-- **Фильтрация логов:** Настраиваемый уровень вывода логов Tor (notice, warn, err).
+| Outil / Protocole | Port | Type de Proxy | Description |
+| :--- | :--- | :--- | :--- |
+| **ByeDPI (Principal)** | `1780` | SOCKS5 | Contournement DPI local |
+| **ByeDPI (HTTP)** | `1782` | HTTP | Pont HTTP pour ByeDPI |
+| **ByeDPI (Pip PyPI)** | `1781` | SOCKS5 | Proxy dédié aux paquets Python |
+| **Tor (Principal)** | `9853` | SOCKS5 | Proxy SOCKS du réseau Tor |
+| **Tor (HTTP)** | `9854` | HTTP | Pont HTTP pour le réseau Tor |
+| **Tor Control Port** | `9851` | TCP | Port de contrôle & renouvellement des circuits |
+| **SSH Tunnel** | `1770` | SOCKS5 | Proxy dynamique OpenSSH sécurisé (C++) |
+| **Opera Proxy** | `1785` | HTTP / SOCKS5 | Tunnel via l'infrastructure Opera VPN |
+| **Telegram WS (TGWS)** | `1480` | SOCKS5 & MTProto | Proxy multiplexé pour Telegram |
+| **Routeur Gatik** | `1777` | SOCKS5 | Équilibreur dynamique C++ pour Telegram |
+| **VLESS / EVPN** | `1790` | SOCKS5 | Proxy SOCKS5 vers nœuds sing-box distants |
+| **Réhabilitateur SOCKS** | `1788` | SOCKS5 | Port de rétablissement de connexion |
 
-## Требования
+---
 
-- Python 3.6+
-- Библиотека `requests` (необходима для работы модуля обновлений):
-  ```bash
-  pip install requests
-  ```
+### 🔨 Compilation et exécution
 
-## Использование
-
-### Первый запуск
-
-Просто запустите скрипт без аргументов:
-```bash
-python tor_launcher.py
-```
-Программа предложит ввести настройки (порт, страны, мосты) и спросит, нужно ли сохранить их в конфигурационный файл.
-
-### Запуск с определенной конфигурацией
-
-Если вы сохранили конфиг под именем `my_proxy`:
-```bash
-python tor_launcher.py --config my_proxy
-```
-
-### Принудительное обновление
-
-Чтобы обновить исполняемые файлы ЛМ до последней версии:
-```bash
-python tor_launcher.py --update
-```
+1. **Version Python :** Exécutez `install.bat`, puis `launch.bat`.
+2. **Version portable :** Lancez `ToInet.exe`.
+3. **Compilation des outils C++ :**
+   ```cmd
+   cpp\build.bat
+   ```
+   Compile `cpller.exe`, `gatik.exe`, `ssh_tunnel.exe` et `programs_settings.exe` directement dans le dossier `bin/` avec MSVC ou GCC.

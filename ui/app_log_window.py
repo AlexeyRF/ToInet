@@ -12,6 +12,12 @@ class OutputLogger(QObject):
         import os
         if not os.path.exists('logs'): os.makedirs('logs')
         self.log_file = os.path.join('logs', 'app.log')
+        self._write_count = 0
+        try:
+            from managers.system_utils import clean_logs
+            clean_logs('logs')
+        except Exception:
+            pass
 
     def write(self, text):
         if self.original_stream:
@@ -23,6 +29,11 @@ class OutputLogger(QObject):
             try:
                 with open(self.log_file, 'a', encoding='utf-8') as f:
                     f.write(text)
+                self._write_count += 1
+                if self._write_count >= 500:
+                    self._write_count = 0
+                    from managers.system_utils import clean_logs
+                    clean_logs('logs')
             except: pass
         self.log_signal.emit(text)
 
@@ -100,6 +111,12 @@ class AppLogWindow(QDialog):
     def clear_logs(self):
         self.all_logs = []
         self.text_edit.clear()
+        try:
+            if hasattr(self, 'log_file') and os.path.exists(self.log_file):
+                with open(self.log_file, 'w', encoding='utf-8') as f:
+                    f.write("")
+        except Exception:
+            pass
         
     def _get_category(self, text):
         import re

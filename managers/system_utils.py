@@ -5,8 +5,36 @@ import shutil
 import ctypes
 import locale
 
-# --- CACHER ---
+# --- CACHER & LOGS ---
+def clean_logs(logs_path="logs", max_size_mb=2, keep_last_kb=200):
+    """Автоматическая очистка логов: ротация при превышении max_size_mb"""
+    if not os.path.exists(logs_path):
+        return
+    max_bytes = max_size_mb * 1024 * 1024
+    keep_bytes = keep_last_kb * 1024
+    try:
+        for item in os.listdir(logs_path):
+            item_path = os.path.join(logs_path, item)
+            if not os.path.isfile(item_path):
+                continue
+            try:
+                size = os.path.getsize(item_path)
+                if size > max_bytes:
+                    with open(item_path, "rb") as f:
+                        f.seek(-keep_bytes, os.SEEK_END)
+                        tail = f.read()
+                    nl = tail.find(b"\n")
+                    if nl != -1:
+                        tail = tail[nl + 1:]
+                    with open(item_path, "wb") as f:
+                        f.write(b"--- [LOG AUTO-CLEANED] ---\n" + tail)
+            except Exception:
+                pass
+    except Exception:
+        pass
+
 def clean_data_directory(data_path="data"):
+    clean_logs("logs")
     if not os.path.exists(data_path):
         print(f"Директория {data_path} не существует!")
         return False
@@ -23,24 +51,71 @@ def clean_data_directory(data_path="data"):
         except Exception as e: pass
 
 # --- LANG ---
-def is_english_system():
+def get_system_lang():
+    # 1. Config preference if set
+    try:
+        from managers import config_manager
+        cfg = config_manager.load_config()
+        chosen = str(cfg.get("language", "auto")).lower()
+        if chosen in ("ru", "en", "fr"):
+            return chosen
+    except Exception:
+        pass
+
+    # 2. Windows UI Language via WinAPI
     try:
         windll = ctypes.windll.kernel32
         lang_id = windll.GetUserDefaultUILanguage()
-        return (lang_id & 0xFF) == 0x09
+        primary = lang_id & 0xFF
+        if primary == 0x0C:
+            return "fr"
+        elif primary == 0x09:
+            return "en"
+        elif primary == 0x19:
+            return "ru"
     except Exception:
-        try:
-            loc = locale.getdefaultlocale()[0]
-            if loc:
-                return 'en' in loc.lower()
-            return False
-        except:
-            return False
+        pass
 
-_is_en = is_english_system()
+    # 3. Locale fallback
+    try:
+        import locale
+        loc = locale.getdefaultlocale()[0]
+        if loc:
+            loc = loc.lower()
+            if loc.startswith("fr"):
+                return "fr"
+            elif loc.startswith("en"):
+                return "en"
+            elif loc.startswith("ru"):
+                return "ru"
+    except Exception:
+        pass
 
-def T(ru_text, en_text):
-    return en_text if _is_en else ru_text
+    return "ru"
+
+def is_english_system():
+    return get_system_lang() == "en"
+
+def is_french_system():
+    return get_system_lang() == "fr"
+
+def get_language():
+    return get_system_lang()
+
+_current_lang = get_system_lang()
+_is_en = (_current_lang == "en")
+_is_fr = (_current_lang == "fr")
+_is_ru = (_current_lang == "ru")
+
+def T(ru_text, en_text, fr_text=None, fr=None):
+    if fr is not None:
+        fr_text = fr
+    cur = get_system_lang()
+    if cur == "fr":
+        return fr_text if fr_text is not None else (en_text if en_text is not None else ru_text)
+    elif cur == "en":
+        return en_text if en_text is not None else ru_text
+    return ru_text
 
 import builtins
 builtins.T = T
@@ -376,3 +451,47 @@ def open_browser_properties():
         subprocess.run(['inetcpl.cpl'], shell=True)
     except Exception as e:
         QMessageBox.warning(None, T("Ошибка", "Error"), f"Не удалось открыть свойства браузера:\n{e}")
+
+class AdoptedProcess:
+    """Обертка над psutil.Process для прозрачной совместимости с subprocess.Popen"""
+    def __init__(self, pid):
+        self.pid = pid
+        try:
+            import psutil
+            self._proc = psutil.Process(pid)
+        except Exception:
+            self._proc = None
+
+    def poll(self):
+        if not self._proc:
+            return 0
+        try:
+            import psutil
+            if not self._proc.is_running() or self._proc.status() == psutil.STATUS_ZOMBIE:
+                return 0
+            return None
+        except Exception:
+            return 0
+
+    def terminate(self):
+        if self._proc:
+            try:
+                self._proc.terminate()
+            except Exception:
+                pass
+
+    def kill(self):
+        if self._proc:
+            try:
+                self._proc.kill()
+            except Exception:
+                pass
+
+    def wait(self, timeout=None):
+        if self._proc:
+            return self._proc.wait(timeout=timeout)
+        return 0
+
+    def is_running(self):
+        return self.poll() is None
+

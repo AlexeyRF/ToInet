@@ -12,11 +12,46 @@ import json
 
 class TGWSManager:
     def __init__(self):
-        self.running = False
+        self._running = False
         self.thread = None
         self.stop_event = None
         self.config = {}
         self.gatik_process = None
+
+    @property
+    def running(self):
+        if self._running:
+            if self.thread and not self.thread.is_alive():
+                port = self.config.get("tgws_port", 1480)
+                try:
+                    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                    sock.settimeout(0.5)
+                    res = sock.connect_ex(('127.0.0.1', port))
+                    sock.close()
+                    if res != 0:
+                        self._running = False
+                except:
+                    self._running = False
+            return self._running
+        try:
+            port = self.config.get("tgws_port", 1480)
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            res = sock.connect_ex(('127.0.0.1', port))
+            sock.close()
+            if res == 0:
+                self._running = True
+                return True
+        except:
+            pass
+        return False
+
+    @running.setter
+    def running(self, val):
+        self._running = val
+
+    def is_running(self):
+        return self.running
 
     def log(self, msg):
         print(f"[TGWS] {msg}")
@@ -54,12 +89,18 @@ class TGWSManager:
             tgws_config.proxy_config.cfproxy_worker_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_worker_domain", ""))
             
             tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
-            
-            try:
-                from tgws import gatik
-                tasks.append(gatik.main(stop_event=stop_ev))
-            except Exception as e:
-                self.log(f"Failed to load gatik for async loop: {e}")
+            gatik_exe = os.path.join(CURRENT_DIR, "bin", "gatik.exe")
+            if not os.path.exists(gatik_exe):
+                try:
+                    import importlib.util
+                    dev_gatik = os.path.join(CURRENT_DIR, ".dev", "gatik.py")
+                    if os.path.exists(dev_gatik):
+                        spec = importlib.util.spec_from_file_location("gatik", dev_gatik)
+                        gatik = importlib.util.module_from_spec(spec)
+                        spec.loader.exec_module(gatik)
+                        tasks.append(gatik.main(stop_event=stop_ev))
+                except Exception as e:
+                    self.log(f"Failed to load gatik from .dev for async loop: {e}")
                 
             await asyncio.gather(*tasks)
 
@@ -71,8 +112,7 @@ class TGWSManager:
             traceback.print_exc()
             if "10048" in str(exc) or "Address already in use" in str(exc):
                 port = self.config.get("tgws_port", 1480)
-                QMessageBox.critical(None, "Ошибка TG WS Proxy", 
-                                   f"Не удалось запустить TG WS Proxy:\nПорт {port} уже используется другим приложением.")
+                self.log(f"Порт {port} уже используется другим приложением.")
         finally:
             self.stop_event = None
 
@@ -86,7 +126,7 @@ class TGWSManager:
         sock.close()
         
         if result == 0:
-            self.log(f"Порт {port} уже занят, возможно TGWS уже запущен.")
+            self.log(f"Порт {port} уже занят, возможно TGWS уже запущен. Используем существующий процесс.")
             self.running = True
             return True
         
@@ -118,7 +158,15 @@ class TGWSManager:
             except Exception as e:
                 self.log(f"Failed to start reabilitator: {e}")
                 
-            # Start Gatik is now handled in the thread
+            # Start Gatik (C++) if executable exists
+            try:
+                gatik_exe = os.path.join(CURRENT_DIR, "bin", "gatik.exe")
+                if os.path.exists(gatik_exe):
+                    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+                    self.gatik_process = subprocess.Popen([gatik_exe], cwd=CURRENT_DIR, creationflags=creationflags)
+                    self.log("Шлюз Gatik (C++) запущен")
+            except Exception as e:
+                self.log(f"Failed to start gatik.exe: {e}")
                 
             return True
         else:
@@ -132,6 +180,13 @@ class TGWSManager:
             if self.thread:
                 self.thread.join(timeout=3)
         
+        # Stop CF proxy domain refresh loop
+        try:
+            from .config import stop_cfproxy_domain_refresh
+            stop_cfproxy_domain_refresh()
+        except Exception:
+            pass
+
         self.thread = None
         self.stop_event = None
         self.running = False
@@ -148,7 +203,27 @@ class TGWSManager:
         except Exception as e:
             self.log(f"Failed to stop reabilitator: {e}")
             
-        # Gatik (Telegram Smart Router) остановлен вместе с циклом
+        if hasattr(self, 'gatik_process') and self.gatik_process:
+            try:
+                self.gatik_process.terminate()
+                self.gatik_process.wait(timeout=2)
+            except Exception:
+                try:
+                    self.gatik_process.kill()
+                except Exception:
+                    pass
+            self.gatik_process = None
+            self.log("Шлюз Gatik (C++) остановлен")
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name']):
+                try:
+                    if (proc.info.get('name') or '').lower() == 'gatik.exe':
+                        proc.kill()
+                except Exception:
+                    pass
+        except Exception:
+            pass
 
 _manager = TGWSManager()
 

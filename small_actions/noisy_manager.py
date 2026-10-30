@@ -1,5 +1,6 @@
-﻿import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 from managers import system_utils as lang
+from managers.system_utils import AdoptedProcess
 import os
 import subprocess
 import psutil
@@ -19,10 +20,42 @@ class NoisyManager(QObject):
         self.config = config or {}
 
     def is_running(self):
+        if self.running and self.process:
+            if self.process.poll() is not None:
+                self.running = False
+                self.process = None
+        elif not self.running:
+            existing_pid = self.find_existing_process()
+            if existing_pid:
+                self.process = AdoptedProcess(existing_pid)
+                self.running = True
         return self.running
 
+    def find_existing_process(self):
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'python' in name:
+                        cmdline = proc.cmdline() or []
+                        if any('noisy.py' in arg for arg in cmdline):
+                            return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception:
+            pass
+        return None
+
     def start(self):
-        if self.running:
+        if self.is_running():
+            return True
+
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            print(f"[Noisy] Найден уже запущенный процесс (PID {existing_pid}), используем его.")
+            self.process = AdoptedProcess(existing_pid)
+            self.running = True
+            self.status_changed.emit(True)
             return True
 
         if not os.path.exists(NOISY_SCRIPT):

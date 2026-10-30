@@ -1,21 +1,26 @@
-﻿# Python
+# Python
 __pycache__/
 *.pyc
 
 # Build artifacts
-build/
-dist/
-*.spec
+build/*
 !build/*.py
+!build/*.bat
 !build/*.spec
+dist/
+pyinstaller_build/
+*.spec
+!ToInet.spec
 releases/
 .dev/
 
 # Executables and Binaries
 *.exe
 *.zip
+*.old
 
 # App Data & Configs
+/config.json
 data/
 evpn/subs.txt
 evpn/subs_cache.json

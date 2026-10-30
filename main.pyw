@@ -95,6 +95,7 @@ from managers import config_manager
 from tgws import manager as tgws_manager
 from managers import opera_manager
 from managers import vless_manager
+from managers import ssh_manager
 from managers import mode_manager
 from managers import system_utils as utils
 from managers.system_utils import log
@@ -127,6 +128,7 @@ main_window = None
 
 config = config_manager.load_config()
 vless_mgr = vless_manager.get_manager(config)
+ssh_mgr = ssh_manager.get_manager(config)
 proxy_enabled = False
 simple_mode = True  
 mode_type = config.get("mode_type", "inetcpl")
@@ -138,6 +140,7 @@ noisy_manager.update_config(config)
 tester_manager.update_config(config)
 opera_mgr.update_config(config)
 tgws_mgr.update_config(config)
+ssh_mgr.update_config(config)
 
 # Инициализируем менеджер для pip
 pip_manager = bdsher.get_pip_manager(config)
@@ -148,12 +151,18 @@ def update_proxy_status():
                      byedpi_manager.is_running() or 
                      tgws_mgr.running or 
                      opera_mgr.is_running() or
+                     ssh_mgr.is_running() or
                      mode_mgr.inetcpl_tor_active or 
                      mode_mgr.inetcpl_bd_active or 
+                     getattr(mode_mgr, 'inetcpl_ssh_active', False) or
                      evpn_mgr.is_running or
-                     (mode_mgr.tun_process is not None))
-    if main_window:
-        main_window.update_ui_state()
+                     (mode_mgr.tun_process is not None) or
+                     (mode_type == "empty" and mode_mgr.proxifier_running()))
+    if main_window and hasattr(main_window, 'update_ui_state'):
+        try:
+            main_window.update_ui_state()
+        except Exception as e:
+            log(f"Error updating main_window UI state: {e}")
 
 def toggle_all():
     global proxy_enabled
@@ -179,6 +188,9 @@ def toggle_all():
             mode_mgr.inetcpl_bd_active = False
             mode_mgr.inetcpl_opera_active = False
             mode_mgr.inetcpl_vless_active = False
+            mode_mgr.inetcpl_ssh_active = False
+            if "ssh" in config.get("autostart_tools", []):
+                ssh_mgr.start()
         
         if mode_type == "tun":
             mode_mgr.start_tun()
@@ -188,6 +200,7 @@ def toggle_all():
                 byedpi_manager.stop()
                 opera_mgr.stop()
                 vless_mgr.stop()
+                ssh_mgr.stop()
                 tgws_mgr.stop()
                 pip_manager.stop()
                 bdsher.clear_pip_proxy()
@@ -202,6 +215,7 @@ def toggle_all():
             byedpi_manager.stop()
             opera_mgr.stop()
             vless_mgr.stop()
+            ssh_mgr.stop()
             tgws_mgr.stop()
             
             # Остановка pip-прокси и очистка глобального pip
@@ -220,6 +234,9 @@ def toggle_all():
             if mode_mgr.inetcpl_vless_active:
                 mode_mgr.run_cpller(1790, 0)
                 mode_mgr.inetcpl_vless_active = False
+            if getattr(mode_mgr, 'inetcpl_ssh_active', False):
+                mode_mgr.run_cpller(config.get("ssh_socks_port", 1770), 0)
+                mode_mgr.inetcpl_ssh_active = False
         
         if mode_type == "tun":
             mode_mgr.stop_tun()
@@ -261,6 +278,14 @@ def toggle_opera():
         opera_mgr.start()
     else:
         opera_mgr.stop()
+    update_proxy_status()
+    update_menu()
+
+def toggle_ssh():
+    if not ssh_mgr.is_running():
+        ssh_mgr.start()
+    else:
+        ssh_mgr.stop()
     update_proxy_status()
     update_menu()
 
@@ -381,6 +406,33 @@ def toggle_inetcpl_opera():
     update_proxy_status()
     update_menu()
 
+def toggle_inetcpl_ssh():
+    port = int(config.get("ssh_socks_port", 1770))
+    if not getattr(mode_mgr, 'inetcpl_ssh_active', False):
+        if mode_mgr.inetcpl_vless_active:
+            if mode_mgr.run_cpller(1790, 0):
+                mode_mgr.inetcpl_vless_active = False
+        if mode_mgr.inetcpl_tor_active:
+            if mode_mgr.run_cpller(9853, 0):
+                mode_mgr.inetcpl_tor_active = False
+        if mode_mgr.inetcpl_bd_active:
+            if mode_mgr.run_cpller(1780, 0):
+                mode_mgr.inetcpl_bd_active = False
+        if mode_mgr.inetcpl_opera_active:
+            if mode_mgr.run_cpller(1785, 0):
+                mode_mgr.inetcpl_opera_active = False
+        
+        if not ssh_mgr.is_running():
+            ssh_mgr.start()
+        if mode_mgr.run_cpller(port, 1):
+            mode_mgr.inetcpl_ssh_active = True
+    else:
+        if mode_mgr.run_cpller(port, 0):
+            mode_mgr.inetcpl_ssh_active = False
+    
+    update_proxy_status()
+    update_menu()
+
 def toggle_singbox_tun(port, ptype="socks"):
     if mode_mgr.tun_proxy_port == port:
         mode_mgr.tun_proxy_port = 0
@@ -403,6 +455,10 @@ def toggle_singbox_tun_bd():
 
 def toggle_singbox_tun_opera():
     toggle_singbox_tun(1785)
+
+def toggle_singbox_tun_ssh():
+    port = int(config.get("ssh_socks_port", 1770))
+    toggle_singbox_tun(port)
 
 def set_mode_type(mode):
     global mode_type, config, proxy_enabled
@@ -450,6 +506,7 @@ def set_mode_type(mode):
                 byedpi_manager.stop()
                 opera_mgr.stop()
                 vless_mgr.stop()
+                ssh_mgr.stop()
                 tgws_mgr.stop()
                 pip_manager.stop()
                 bdsher.clear_pip_proxy()
@@ -529,6 +586,7 @@ def restart_app():
     byedpi_manager.stop()
     opera_mgr.stop()
     vless_mgr.stop()
+    ssh_mgr.stop()
     
     # Остановка pip-прокси и очистка глобального pip
     pip_mgr = bdsher.get_pip_manager()
@@ -560,6 +618,7 @@ def exit_app():
     byedpi_manager.stop()
     opera_mgr.stop()
     vless_mgr.stop()
+    ssh_mgr.stop()
     
     # Остановка pip-прокси и очистка глобального pip
     pip_mgr = bdsher.get_pip_manager()
@@ -570,6 +629,7 @@ def exit_app():
     tester_manager.stop()
     ext_programs_manager.stop_all()
     mode_mgr.stop_tun()
+    mode_mgr.stop_proxifier()
     tgws_mgr.stop()
     evpn_mgr.stop()
     # conv_mgr.stop()
@@ -606,7 +666,17 @@ def create_tray_menu():
     app = QApplication(sys.argv)
     app.setQuitOnLastWindowClosed(False)
     app_log_window = setup_logging()
-    # conv_mgr.start()
+
+    def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
+        if issubclass(exc_type, KeyboardInterrupt):
+            sys.__excepthook__(exc_type, exc_value, exc_traceback)
+            return
+        import traceback
+        err_msg = "".join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        log(f"[Unhandled Exception] {err_msg}")
+        print(f"[Unhandled Exception] {err_msg}", file=sys.stderr)
+
+    sys.excepthook = handle_unhandled_exception
     
     tray = QSystemTrayIcon()
     try: tray.setIcon(QIcon("icon.ico"))
@@ -630,11 +700,18 @@ def create_tray_menu():
                 main_window.activateWindow()
         else:
             if reason in (QSystemTrayIcon.Trigger, QSystemTrayIcon.Context):
+                update_proxy_status()
+                _update_menu_impl()
                 tray_menu.popup(QCursor.pos())
     
     tray.activated.connect(on_tray_activated)
+    tray_menu.aboutToShow.connect(_update_menu_impl)
     
-    update_menu()
+    _update_menu_impl()
+    
+    status_timer = QTimer(tray)
+    status_timer.timeout.connect(update_proxy_status)
+    status_timer.start(2500)
     
     def apply_autostart_tools():
         global proxy_enabled
@@ -666,6 +743,9 @@ def create_tray_menu():
         if "opera" in tools:
             opera_mgr.start()
             
+        if "ssh" in tools:
+            ssh_mgr.start()
+            
         if "socks" in tools:
             import subprocess
             subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
@@ -674,7 +754,10 @@ def create_tray_menu():
             tgws_mgr.start()
             
         if "proxifier" in tools and mode_type != "evpn":
-            mode_mgr.start_tun()
+            if mode_type == "empty":
+                mode_mgr.start_proxifier()
+            else:
+                mode_mgr.start_tun()
             
         if "ext" in tools:
             ext_programs_manager.start_all()
@@ -692,22 +775,28 @@ def create_tray_menu():
             import subprocess
             subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         if "proxifier" in tools and mode_type != "evpn":
-            mode_mgr.start_tun()
+            if mode_type == "empty":
+                mode_mgr.start_proxifier()
+            else:
+                mode_mgr.start_tun()
         if "ext" in tools:
             ext_programs_manager.start_all()
         
+    update_proxy_status()
     return app
 
 if __name__ == "__main__":
     app = create_tray_menu()
     ret = app.exec_()
-    print("[DEBUG] app.exec_() returned:", ret)
-    import threading
-    for t in threading.enumerate():
-        print(f"[DEBUG] Thread: {t.name}, daemon: {t.daemon}")
     try:
+        if os.name == "nt":
+            import ctypes
+            ctypes.windll.kernel32.TerminateProcess(ctypes.windll.kernel32.GetCurrentProcess(), ret)
         sys.exit(ret)
     finally:
+        if os.name == "nt":
+            import ctypes
+            ctypes.windll.kernel32.TerminateProcess(ctypes.windll.kernel32.GetCurrentProcess(), ret)
         os._exit(ret)
 
 

@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
 Socks5-слой для ByeDPI (режим клиент-upstream)
@@ -83,6 +83,26 @@ class ByeDPI:
         self.port = port
         self.process: subprocess.Popen | None = None
 
+    def find_existing_process(self):
+        port_str = str(self.port)
+        try:
+            import psutil
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'ciadpi' in name:
+                        cmdline = proc.cmdline() or []
+                        for i, arg in enumerate(cmdline):
+                            if arg in ('-p', '--port') and i + 1 < len(cmdline) and cmdline[i + 1] == port_str:
+                                return proc.info['pid']
+                            elif arg in (f'-p{port_str}', f'--port={port_str}'):
+                                return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception:
+            pass
+        return None
+
     def _build_cmd(self) -> List[str]:
         # Стратегия может содержать заполнители, такие как {sni}; оставляем как есть.
         args = [str(self.exe_path), "--ip", self.ip, "--port", str(self.port)]
@@ -96,6 +116,14 @@ class ByeDPI:
     def start(self) -> None:
         if self.process is not None:
             raise RuntimeError("ByeDPI already running")
+
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            log(f"Found already running ByeDPI process (PID {existing_pid}) on {self.ip}:{self.port}, adopting it.")
+            from managers.system_utils import AdoptedProcess
+            self.process = AdoptedProcess(existing_pid)
+            return
+
         cmd = self._build_cmd()
         log(f"Starting ByeDPI: {' '.join(cmd)}")
         # ``creationflags`` для скрытия консольного окна на Windows.
@@ -303,11 +331,22 @@ class Socks5Server(threading.Thread):
         self._stop_event = threading.Event()
         self.sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.sock.bind(self.listen_addr)
-        self.sock.listen(128)
-        log(f"SOCKS5 server listening on {self.listen_addr[0]}:{self.listen_addr[1]}")
+        self._bound = False
+        try:
+            self.sock.bind(self.listen_addr)
+            self.sock.listen(128)
+            self._bound = True
+            log(f"SOCKS5 server listening on {self.listen_addr[0]}:{self.listen_addr[1]}")
+        except OSError as e:
+            if getattr(e, 'winerror', None) == 10048 or "10048" in str(e) or "already in use" in str(e):
+                log(f"Port {self.listen_addr[1]} is already in use; adopting existing SOCKS5 server.")
+            else:
+                raise
 
     def run(self) -> None:
+        if not self._bound:
+            self._stop_event.wait()
+            return
         while not self._stop_event.is_set():
             try:
                 client, addr = self.sock.accept()
@@ -321,12 +360,13 @@ class Socks5Server(threading.Thread):
 
     def stop(self) -> None:
         self._stop_event.set()
-        # Инициирование фиктивного подключения для разблокировки accept()
-        try:
-            dummy = socket.create_connection(self.listen_addr, timeout=1)
-            dummy.close()
-        except Exception:
-            pass
+        if self._bound:
+            # Инициирование фиктивного подключения для разблокировки accept()
+            try:
+                dummy = socket.create_connection(self.listen_addr, timeout=1)
+                dummy.close()
+            except Exception:
+                pass
 
 # ---------------------------------------------------------------------------
 # Главная точка входа – разбор аргументов, загрузка стратегий, плавное завершение
@@ -358,7 +398,9 @@ def main() -> None:
     # Разрешение путей относительно расположения скрипта.
     base_dir = Path(__file__).parent.parent
     # Фиксированный путь к бинарнику ByeDPI относительно корня проекта
-    byedpi_exe = (base_dir / "byedpi/ciadpi.exe").resolve()
+    byedpi_exe = (base_dir / "bin/ciadpi.exe").resolve()
+    if not byedpi_exe.exists():
+        byedpi_exe = (base_dir / "byedpi/ciadpi.exe").resolve()
     strategies_path = (base_dir / args.strategies_file).resolve()
 
     strategies = load_strategies(strategies_path)

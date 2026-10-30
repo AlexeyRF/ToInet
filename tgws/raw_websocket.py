@@ -21,6 +21,8 @@ _st_BBQ4s = struct.Struct('>BBQ4s')
 _st_H = struct.Struct('>H')
 _st_Q = struct.Struct('>Q')
 
+_XOR_TABLES = tuple(bytes(value ^ key for value in range(256)) for key in range(256))
+
 _ssl_ctx = create_ssl_context()
 _ssl_ctx_fronting = create_ssl_context(check_hostname=False)
 
@@ -38,10 +40,23 @@ class WsHandshakeError(Exception):
         return self.status_code in (301, 302, 303, 307, 308)
 
 
+try:
+    from .accel import fast_mask as _c_fast_mask
+except Exception:
+    _c_fast_mask = None
+
+
 def _xor_mask(data: bytes, mask: bytes) -> bytes:
     if not data:
         return data
+    if _c_fast_mask is not None:
+        return _c_fast_mask(mask, data)
     n = len(data)
+    if n >= 512:
+        masked = bytearray(data)
+        for offset in range(4):
+            masked[offset::4] = masked[offset::4].translate(_XOR_TABLES[mask[offset]])
+        return bytes(masked)
     mask_rep = (mask * (n // 4 + 1))[:n]
     return (int.from_bytes(data, 'big') ^
             int.from_bytes(mask_rep, 'big')).to_bytes(n, 'big')
@@ -104,26 +119,26 @@ class RawWebSocket:
             timeout=min(timeout, 10),
         )
         
-        set_sock_opts(writer.transport, proxy_config.buffer_size)
-
-        ws_key = base64.b64encode(os.urandom(16)).decode()
-
-        req = (
-            f'GET {path} HTTP/1.1\r\n'
-            f'Host: {domain}\r\n'
-            f'Upgrade: websocket\r\n'
-            f'Connection: Upgrade\r\n'
-            f'Sec-WebSocket-Key: {ws_key}\r\n'
-            f'Sec-WebSocket-Version: 13\r\n'
-            f'Sec-WebSocket-Protocol: binary\r\n'
-            f'\r\n'
-        )
-
-        writer.write(req.encode())
-        await writer.drain()
-
-        response_lines: list[str] = []
         try:
+            set_sock_opts(writer.transport, proxy_config.buffer_size)
+
+            ws_key = base64.b64encode(os.urandom(16)).decode()
+
+            req = (
+                f'GET {path} HTTP/1.1\r\n'
+                f'Host: {domain}\r\n'
+                f'Upgrade: websocket\r\n'
+                f'Connection: Upgrade\r\n'
+                f'Sec-WebSocket-Key: {ws_key}\r\n'
+                f'Sec-WebSocket-Version: 13\r\n'
+                f'Sec-WebSocket-Protocol: binary\r\n'
+                f'\r\n'
+            )
+
+            writer.write(req.encode())
+            await writer.drain()
+
+            response_lines: list[str] = []
             while True:
                 line = await asyncio.wait_for(reader.readline(),
                                               timeout=timeout)
@@ -131,33 +146,31 @@ class RawWebSocket:
                     break
                 response_lines.append(
                     line.decode('utf-8', errors='replace').strip())
-        except asyncio.TimeoutError:
+
+            if not response_lines:
+                raise WsHandshakeError(0, 'empty response')
+
+            first_line = response_lines[0]
+            parts = first_line.split(' ', 2)
+            try:
+                status_code = int(parts[1]) if len(parts) >= 2 else 0
+            except ValueError:
+                status_code = 0
+
+            if status_code == 101:
+                return RawWebSocket(reader, writer)
+
+            headers: dict[str, str] = {}
+            for hl in response_lines[1:]:
+                if ':' in hl:
+                    k, v = hl.split(':', 1)
+                    headers[k.strip().lower()] = v.strip()
+
+            raise WsHandshakeError(status_code, first_line, headers,
+                                    location=headers.get('location'))
+        except BaseException:
             writer.close()
             raise
-
-        if not response_lines:
-            writer.close()
-            raise WsHandshakeError(0, 'empty response')
-
-        first_line = response_lines[0]
-        parts = first_line.split(' ', 2)
-        try:
-            status_code = int(parts[1]) if len(parts) >= 2 else 0
-        except ValueError:
-            status_code = 0
-
-        if status_code == 101:
-            return RawWebSocket(reader, writer)
-
-        headers: dict[str, str] = {}
-        for hl in response_lines[1:]:
-            if ':' in hl:
-                k, v = hl.split(':', 1)
-                headers[k.strip().lower()] = v.strip()
-
-        writer.close()
-        raise WsHandshakeError(status_code, first_line, headers,
-                                location=headers.get('location'))
 
     async def send(self, data: bytes):
         if self._closed:

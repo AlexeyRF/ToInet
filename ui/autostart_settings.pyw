@@ -1,118 +1,225 @@
-﻿import os
-
-import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 import os
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QCheckBox, QPushButton, QMessageBox, QLabel, QComboBox, QHBoxLayout
+sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
+                             QCheckBox, QPushButton, QMessageBox, QLabel, 
+                             QComboBox, QHBoxLayout, QGroupBox, QGridLayout)
+from PyQt5.QtCore import Qt
+from PyQt5.QtGui import QFont, QIcon
 from managers import config_manager
 from managers import system_utils as lang
 
-def T(ru, en):
-    return en if lang._is_en else ru
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def T(ru, en, fr=None):
+    if hasattr(lang, 'T'):
+        return lang.T(ru, en, fr)
+    cur = getattr(lang, '_current_lang', 'ru')
+    if cur == 'fr':
+        return fr or en or ru
+    elif cur == 'en':
+        return en or ru
+    return ru
 
 class AutostartSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings"))
-        self.resize(600, 650)
+        self.setWindowTitle(T("Настройки автозапуска", "Autostart Settings", "Paramètres de démarrage"))
+        self.setFixedSize(440, 430)
         
-        # Dark Title Bar for Windows
+        # Dark Title Bar matching window background
         try:
             import ctypes
-            DWMWA_USE_IMMERSIVE_DARK_MODE = 20
-            set_window_attribute = ctypes.windll.dwmapi.DwmSetWindowAttribute
             hwnd = int(self.winId())
-            rendering_policy = ctypes.c_int(1)
-            set_window_attribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ctypes.byref(rendering_policy), ctypes.sizeof(rendering_policy))
-        except:
+            val = ctypes.c_int(1)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(val), ctypes.sizeof(val))
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 19, ctypes.byref(val), ctypes.sizeof(val))
+            color = ctypes.c_int(0x00181818)  # Matches #181818 background (0x00BBGGRR)
+            ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(color), ctypes.sizeof(color))
+        except Exception:
             pass
+            
+        icon_path = os.path.join(CURRENT_DIR, "icon.ico")
+        if os.path.exists(icon_path):
+            self.setWindowIcon(QIcon(icon_path))
         
         self.config = config_manager.load_config()
         self.autostart_tools = self.config.get("autostart_tools", ["byedpi", "tor", "opera", "vless", "tgws", "ext"])
+        
+        self.setStyleSheet("""
+            QMainWindow, QWidget {
+                background-color: #181818;
+                color: #e0e0e0;
+                font-family: 'Segoe UI', Arial, sans-serif;
+                font-size: 12px;
+            }
+            QGroupBox {
+                border: 1px solid #333333;
+                border-radius: 6px;
+                margin-top: 10px;
+                padding-top: 10px;
+                font-weight: bold;
+                color: #5dade2;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 10px;
+                padding: 0 4px;
+            }
+            QLabel {
+                color: #cccccc;
+            }
+            QComboBox {
+                background-color: #242424;
+                border: 1px solid #3d3d3d;
+                border-radius: 4px;
+                padding: 3px 6px;
+                color: #ffffff;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #242424;
+                color: #ffffff;
+                selection-background-color: #0078d4;
+            }
+            QCheckBox {
+                color: #cccccc;
+                spacing: 6px;
+            }
+            QCheckBox::indicator {
+                width: 14px;
+                height: 14px;
+                background-color: #242424;
+                border: 1px solid #444444;
+                border-radius: 3px;
+            }
+            QCheckBox::indicator:hover {
+                border-color: #666666;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #0078d4;
+                border-color: #0078d4;
+            }
+            QPushButton {
+                background-color: #0078d4;
+                border: none;
+                border-radius: 4px;
+                color: #ffffff;
+                padding: 6px 14px;
+                font-weight: 500;
+            }
+            QPushButton:hover {
+                background-color: #1084d8;
+            }
+            QPushButton:pressed {
+                background-color: #005a9e;
+            }
+        """)
         
         self.initUI()
         
     def initUI(self):
         central = QWidget()
         self.setCentralWidget(central)
-        layout = QVBoxLayout(central)
+        main_layout = QVBoxLayout(central)
+        main_layout.setContentsMargins(14, 10, 14, 10)
+        main_layout.setSpacing(8)
         
-        label = QLabel(T("Выберите, какие инструменты будут запускаться\nавтоматически при старте приложения:", 
-                         "Select which tools should be started\nautomatically when the application starts:"))
-        layout.addWidget(label)
+        # 1. Tools Group (2-column compact grid)
+        tools_group = QGroupBox(T("Инструменты для автозапуска", "Tools to autostart", "Outils au démarrage"))
+        tools_layout = QGridLayout(tools_group)
+        tools_layout.setContentsMargins(10, 8, 10, 8)
+        tools_layout.setHorizontalSpacing(15)
+        tools_layout.setVerticalSpacing(6)
         
-        self.cb_byedpi = QCheckBox(T("ByeDPI (Обход DPI)", "ByeDPI (DPI Bypass)"))
+        self.cb_byedpi = QCheckBox(T("ByeDPI (Обход DPI)", "ByeDPI (DPI Bypass)", "ByeDPI (Contournement DPI)"))
         self.cb_byedpi.setChecked("byedpi" in self.autostart_tools)
-        layout.addWidget(self.cb_byedpi)
+        tools_layout.addWidget(self.cb_byedpi, 0, 0)
         
-        self.cb_tor = QCheckBox(T("Tor (Для сайтов Onion и заблокированных)", "Tor (For Onion and blocked sites)"))
+        self.cb_tor = QCheckBox(T("Tor (Onion/Мосты)", "Tor (Onion/Bridges)", "Tor (Onion/Ponts)"))
         self.cb_tor.setChecked("tor" in self.autostart_tools)
-        layout.addWidget(self.cb_tor)
+        tools_layout.addWidget(self.cb_tor, 0, 1)
         
-        self.cb_opera = QCheckBox(T("Opera Proxy (VPN)", "Opera Proxy (VPN)"))
+        self.cb_opera = QCheckBox(T("Opera Proxy (VPN)", "Opera Proxy (VPN)", "Opera Proxy (VPN)"))
         self.cb_opera.setChecked("opera" in self.autostart_tools)
-        layout.addWidget(self.cb_opera)
+        tools_layout.addWidget(self.cb_opera, 1, 0)
         
-        # self.cb_vless = QCheckBox(T("VLESS Proxy", "VLESS Proxy"))
-        # self.cb_vless.setChecked("vless" in self.autostart_tools)
-        # layout.addWidget(self.cb_vless)
+        self.cb_ssh = QCheckBox(T("SSH Туннель (SOCKS5)", "SSH Tunnel (SOCKS5)", "Tunnel SSH (SOCKS5)"))
+        self.cb_ssh.setChecked("ssh" in self.autostart_tools)
+        tools_layout.addWidget(self.cb_ssh, 1, 1)
         
-        self.cb_socks = QCheckBox(T("SOCKS Reabilitator", "SOCKS Reabilitator"))
-        self.cb_socks.setChecked("socks" in self.autostart_tools)
-        layout.addWidget(self.cb_socks)
-        
-        self.cb_tgws = QCheckBox(T("Telegram WS Proxy", "Telegram WS Proxy"))
+        self.cb_tgws = QCheckBox(T("Telegram WS Proxy", "Telegram WS Proxy", "Proxy Telegram WS"))
         self.cb_tgws.setChecked("tgws" in self.autostart_tools)
         self.cb_tgws.toggled.connect(self.on_tgws_toggled)
-        layout.addWidget(self.cb_tgws)
+        tools_layout.addWidget(self.cb_tgws, 2, 0)
         
-        self.cb_proxifier = QCheckBox(T("Проксификатор (TUN / ProxyBridge)", "Proxifier (TUN / ProxyBridge)"))
+        self.cb_socks = QCheckBox(T("SOCKS Реабилитатор", "SOCKS Reabilitator", "Réhabilitateur SOCKS"))
+        self.cb_socks.setChecked("socks" in self.autostart_tools)
+        tools_layout.addWidget(self.cb_socks, 2, 1)
+        
+        self.cb_proxifier = QCheckBox(T("Проксификатор (TUN)", "Proxifier (TUN)", "Proxificateur (TUN)"))
         self.cb_proxifier.setChecked("proxifier" in self.autostart_tools)
-        layout.addWidget(self.cb_proxifier)
+        tools_layout.addWidget(self.cb_proxifier, 3, 0)
         
-        self.cb_ext = QCheckBox(T("Дополнительные программы", "External Programs"))
+        self.cb_ext = QCheckBox(T("Доп. программы", "External Programs", "Programmes additionnels"))
         self.cb_ext.setChecked("ext" in self.autostart_tools)
-        layout.addWidget(self.cb_ext)
+        tools_layout.addWidget(self.cb_ext, 3, 1)
         
-        # Adding a master checkbox for app autostart itself
-        layout.addSpacing(15)
+        main_layout.addWidget(tools_group)
         
-        self.cb_auto_last = QCheckBox(T("Подключать последний режим при запуске", "Connect Last Mode on Start"))
+        # 2. General Autostart & Torrc Parameters Group
+        params_group = QGroupBox(T("Параметры запуска Windows и Tor", "Startup & Tor Options", "Options de démarrage et Tor"))
+        params_layout = QVBoxLayout(params_group)
+        params_layout.setContentsMargins(10, 8, 10, 8)
+        params_layout.setSpacing(6)
+        
+        self.cb_app_autostart = QCheckBox(T("Запускать ToInet-MAX при старте Windows", "Start ToInet-MAX on Windows startup", "Démarrer ToInet-MAX avec Windows"))
+        self.cb_app_autostart.setChecked(self.config.get("auto_start", False))
+        params_layout.addWidget(self.cb_app_autostart)
+        
+        self.cb_auto_last = QCheckBox(T("Подключать последний режим при запуске", "Connect last mode on start", "Reconnecter le dernier mode au démarrage"))
         self.cb_auto_last.setChecked(self.config.get("auto_connect_last_mode", False))
-        layout.addWidget(self.cb_auto_last)
+        params_layout.addWidget(self.cb_auto_last)
         
-        layout.addSpacing(10)
-        torrc_layout = QHBoxLayout()
-        torrc_label = QLabel(T("Действие с torrc при запуске:", "Action with torrc on start:"))
-        torrc_label.setStyleSheet("padding-bottom: 0px;")
+        torrc_row = QHBoxLayout()
+        torrc_label = QLabel(T("Действие с torrc:", "Action with torrc:", "Action pour torrc :"))
+        torrc_label.setFixedWidth(120)
         self.torrc_combo = QComboBox()
-        self.torrc_combo.addItem(T("Не трогать (None)", "Do nothing (None)"), "none")
-        self.torrc_combo.addItem(T("Обновлять мосты (Bridges Only)", "Update bridges (Bridges Only)"), "bridges")
-        self.torrc_combo.addItem(T("Полное пересоздание (Full)", "Full recreation (Full)"), "full")
+        self.torrc_combo.addItem(T("Не трогать (None)", "Do nothing (None)", "Ne rien faire (None)"), "none")
+        self.torrc_combo.addItem(T("Обновлять мосты", "Update bridges only", "Mettre à jour les ponts"), "bridges")
+        self.torrc_combo.addItem(T("Полное пересоздание", "Full recreation", "Recréation complète"), "full")
         
-        # Read current state
         val = self.config.get("recreate_torrc", "none")
         if isinstance(val, bool): val = "full" if val else "none"
-        if val == "true" or val == "full": self.torrc_combo.setCurrentIndex(2)
-        elif val == "false" or val == "bridges": self.torrc_combo.setCurrentIndex(1)
+        if val in ("true", "full"): self.torrc_combo.setCurrentIndex(2)
+        elif val in ("false", "bridges"): self.torrc_combo.setCurrentIndex(1)
         else: self.torrc_combo.setCurrentIndex(0)
             
-        torrc_layout.addWidget(torrc_label)
-        torrc_layout.addWidget(self.torrc_combo)
-        torrc_layout.addStretch()
-        layout.addLayout(torrc_layout)
+        torrc_row.addWidget(torrc_label)
+        torrc_row.addWidget(self.torrc_combo)
+        torrc_row.addStretch()
+        params_layout.addLayout(torrc_row)
         
-        layout.addSpacing(15)
-        self.cb_app_autostart = QCheckBox(T("Запускать приложение при старте Windows", "Start application on Windows startup"))
-        self.cb_app_autostart.setChecked(self.config.get("auto_start", False))
-        layout.addWidget(self.cb_app_autostart)
+        main_layout.addWidget(params_group)
+        main_layout.addStretch()
         
-        layout.addStretch()
+        # 3. Action Buttons
+        btn_layout = QHBoxLayout()
+        btn_layout.setSpacing(8)
         
-        save_btn = QPushButton(T("Сохранить", "Save"))
-        save_btn.setFixedHeight(40)
+        save_btn = QPushButton(T("Сохранить", "Save", "Enregistrer"))
+        save_btn.setFixedHeight(30)
         save_btn.clicked.connect(self.save_settings)
-        layout.addWidget(save_btn)
+        
+        close_btn = QPushButton(T("Отмена", "Cancel", "Annuler"))
+        close_btn.setFixedHeight(30)
+        close_btn.setStyleSheet("background-color: #2b2b2b; color: white; border: 1px solid #3d3d3d;")
+        close_btn.clicked.connect(self.close)
+        
+        btn_layout.addStretch()
+        btn_layout.addWidget(save_btn)
+        btn_layout.addWidget(close_btn)
+        main_layout.addLayout(btn_layout)
         
     def on_tgws_toggled(self, checked):
         if checked:
@@ -130,15 +237,13 @@ class AutostartSettingsWindow(QMainWindow):
         if self.cb_byedpi.isChecked(): tools.append("byedpi")
         if self.cb_tor.isChecked(): tools.append("tor")
         if self.cb_opera.isChecked(): tools.append("opera")
-        # if self.cb_vless.isChecked(): tools.append("vless")
+        if self.cb_ssh.isChecked(): tools.append("ssh")
         if self.cb_socks.isChecked(): tools.append("socks")
         if self.cb_tgws.isChecked(): tools.append("tgws")
         if self.cb_proxifier.isChecked(): tools.append("proxifier")
         if self.cb_ext.isChecked(): tools.append("ext")
         
         self.config["autostart_tools"] = tools
-        
-        # Handle app autostart
         self.config["auto_connect_last_mode"] = self.cb_auto_last.isChecked()
         
         mode = self.torrc_combo.currentData()
@@ -159,81 +264,11 @@ class AutostartSettingsWindow(QMainWindow):
                 QMessageBox.warning(self, T("Ошибка", "Error"), f"Failed to set autorun: {e}")
                 
         config_manager.save_config(self.config)
-        QMessageBox.information(self, T("Успех", "Success"), T("Настройки автозапуска сохранены.", "Autostart settings saved."))
+        QMessageBox.information(self, T("Успех", "Success", "Succès"), T("Настройки автозапуска сохранены.", "Autostart settings saved.", "Paramètres de démarrage enregistrés."))
         self.close()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    app.setStyle("Fusion")
-    
-    # Simple dark theme
-    app.setStyleSheet("""
-        QWidget { 
-            background-color: #1e1e1e; 
-            color: #e0e0e0; 
-            font-family: 'Segoe UI', 'Inter', sans-serif;
-            font-size: 13px; 
-        }
-        QLabel {
-            font-size: 14px;
-            font-weight: 500;
-            padding-bottom: 10px;
-            color: #ffffff;
-        }
-        QCheckBox { 
-            padding: 8px; 
-            spacing: 8px;
-        }
-        QCheckBox::indicator {
-            width: 20px;
-            height: 20px;
-            border-radius: 4px;
-            border: 2px solid #555;
-            background-color: #2d2d2d;
-        }
-        QCheckBox::indicator:hover {
-            border: 2px solid #777;
-        }
-        QCheckBox::indicator:checked {
-            background-color: #005FB8;
-            border: 2px solid #005FB8;
-            image: url(check.png); /* PyQt5 usually renders a check automatically if styled properly or without image, but we rely on its default check behavior by just coloring the background */
-        }
-        QComboBox {
-            background-color: #2d2d2d;
-            border: 1px solid #555;
-            border-radius: 4px;
-            padding: 5px;
-            color: white;
-            min-width: 250px;
-        }
-        QComboBox::drop-down {
-            border: none;
-        }
-        QComboBox QAbstractItemView {
-            background-color: #2d2d2d;
-            color: white;
-            selection-background-color: #005FB8;
-        }
-        QPushButton { 
-            background-color: #005FB8; 
-            color: white; 
-            border: none; 
-            border-radius: 6px; 
-            font-weight: bold; 
-            font-size: 14px;
-            padding: 10px;
-            margin-top: 10px;
-        }
-        QPushButton:hover { 
-            background-color: #0078D4; 
-        }
-        QPushButton:pressed {
-            background-color: #3d8b40;
-        }
-    """)
-    
-    win = AutostartSettingsWindow()
-    win.show()
+    window = AutostartSettingsWindow()
+    window.show()
     sys.exit(app.exec_())
-

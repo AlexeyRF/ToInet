@@ -17,48 +17,73 @@ import zipfile
 import shutil
 
 from managers import system_utils as lang
-
-
+from managers.system_utils import AdoptedProcess
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-
 BIN_DIR = os.path.join(CURRENT_DIR, "bin")
-
 SING_BOX_DIR = os.path.join(BIN_DIR, "sing-box")
-
 SING_BOX_EXE = os.path.join(SING_BOX_DIR, "sing-box.exe")
 
-
-
 class VlessManager(QObject):
-
     status_changed = pyqtSignal(bool)
-
     error_occurred = pyqtSignal(str)
 
-
-
     def __init__(self, config=None):
-
         super().__init__()
-
         self.process = None
-
         self.running = False
-
         self.config = config or {}
 
-
-
     def update_config(self, new_config):
-
         self.config = new_config
 
-
-
     def is_running(self):
-
+        if self.running and self.process:
+            if self.process.poll() is not None:
+                self.running = False
+                self.process = None
+        elif not self.running:
+            existing_pid = self.find_existing_process()
+            if existing_pid:
+                self.process = AdoptedProcess(existing_pid)
+                self.running = True
         return self.running
+
+    def find_existing_process(self):
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'sing-box' in name:
+                        cmdline = proc.cmdline() or []
+                        if any('vless' in arg.lower() for arg in cmdline) or any('config.json' in arg.lower() for arg in cmdline):
+                            return proc.info['pid']
+                    elif 'python' in name:
+                        cmdline = proc.cmdline() or []
+                        if any('wl_torred_vless.py' in arg for arg in cmdline):
+                            return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception:
+            pass
+
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            res = sock.connect_ex(('127.0.0.1', 1790))
+            sock.close()
+            if res == 0:
+                for proc in psutil.process_iter(['pid', 'name']):
+                    try:
+                        name = (proc.info.get('name') or "").lower()
+                        if 'sing-box' in name:
+                            return proc.info['pid']
+                    except:
+                        pass
+        except:
+            pass
+        return None
 
 
 
@@ -229,18 +254,19 @@ class VlessManager(QObject):
 
 
     def start(self):
-
-        if self.running:
-
+        if self.is_running():
             return True
 
-            
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            print(f"[VLESS] Найден уже запущенный процесс (PID {existing_pid}), используем его.")
+            self.process = AdoptedProcess(existing_pid)
+            self.running = True
+            self.status_changed.emit(True)
+            return True
 
         if not self.extract_sing_box():
-
             return False
-
-            
 
         from managers import config_manager
 

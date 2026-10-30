@@ -21,7 +21,21 @@ DEFAULT_CONFIG = {
     "auto_start": False,
     "auto_connect_last_mode": False,
     "tor_show_window": False,
-    "autostart_tools": ["byedpi", "tor", "opera", "vless", "tgws", "ext"]
+    "autostart_tools": ["byedpi", "tor", "opera", "vless", "tgws", "ext"],
+    "ssh_host": "",
+    "ssh_port": 22,
+    "ssh_user": "",
+    "ssh_pass": "",
+    "ssh_socks_port": 1770,
+    "ssh_share_lan": False,
+    "ssh_hide_credentials": True,
+    "ssh_auto_reconnect": True,
+    "ssh_reconnect_interval": 5,
+    "tun_dns_address": "77.88.8.8",
+    "tun_stack": "mixed",
+    "tun_block_quic": True,
+    "proxy_dns_tun_evpn": True,
+    "language": "auto"
 }
 
 def load_config():
@@ -45,4 +59,3 @@ def load_config():
 def save_config(config):
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)
-
