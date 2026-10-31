@@ -1543,143 +1543,162 @@ class ModeManager:
 
 
     def open_advanced_tun_config(self):
-
         from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QCheckBox, QMessageBox
-
         
-
         config = config_manager.load_config()
-
         
-
         dialog = QDialog()
-
         dialog.setWindowTitle("Продвинутые настройки TUN (sing-box)")
-
-        dialog.resize(500, 250)
-
+        dialog.resize(500, 270)
+        dialog.setStyleSheet("""
+            QDialog {
+                background-color: #202020;
+                color: #FFFFFF;
+                font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+            }
+            QLabel {
+                color: #E0E0E0;
+                font-size: 11px;
+                font-weight: 600;
+                background: transparent;
+            }
+            QComboBox, QLineEdit {
+                background-color: #2d2d2d;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 5px;
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            QComboBox:hover, QLineEdit:hover {
+                border-color: #555555;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                selection-background-color: #005FB8;
+                selection-color: #FFFFFF;
+            }
+            QCheckBox {
+                color: #FFFFFF;
+                background: transparent;
+                font-size: 11px;
+            }
+            QCheckBox::indicator {
+                width: 16px;
+                height: 16px;
+                border-radius: 4px;
+                border: 1px solid #555555;
+                background-color: #2d2d2d;
+            }
+            QCheckBox::indicator:hover {
+                border-color: #777777;
+            }
+            QCheckBox::indicator:checked {
+                background-color: #005FB8;
+                border-color: #005FB8;
+            }
+            QPushButton {
+                background-color: #2d2d2d;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 5px;
+                padding: 5px 14px;
+                font-size: 11px;
+                font-weight: 600;
+            }
+            QPushButton:hover {
+                background-color: #383838;
+                border-color: #484848;
+            }
+            QPushButton#primaryBtn {
+                background-color: #005FB8;
+                border-color: #005FB8;
+            }
+            QPushButton#primaryBtn:hover {
+                background-color: #0078D4;
+                border-color: #0078D4;
+            }
+        """)
         
-
         layout = QVBoxLayout(dialog)
-
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
         
-
         # DNS Address
-
         layout.addWidget(QLabel("DNS Сервер:"))
-
         dns_cb = QComboBox()
-
         dns_cb.setEditable(True)
-
         dns_cb.addItems(["77.88.8.8", "1.1.1.1", "8.8.8.8", "https://1.1.1.1/dns-query", "https://8.8.8.8/dns-query", "tcp://8.8.8.8"])
-
         current_dns = config.get("tun_dns_address", "77.88.8.8")
-
         if current_dns == "local":
-
             current_dns = "77.88.8.8"
-
         dns_cb.setCurrentText(current_dns)
-
         layout.addWidget(dns_cb)
-
         
-
         # DNS Detour
-
         layout.addWidget(QLabel("Маршрут DNS:"))
-
         detour_cb = QComboBox()
-
         detour_cb.addItems(["direct (напрямую)", "proxy (через прокси)"])
-
         current_detour = config.get("tun_dns_detour", "direct")
-
         detour_cb.setCurrentIndex(0 if current_detour == "direct" else 1)
-
         layout.addWidget(detour_cb)
-
         
-
         # Stack
-
         layout.addWidget(QLabel("Сетевой стек TUN:"))
-
         stack_cb = QComboBox()
-
         stack_cb.addItems(["mixed", "system", "gvisor"])
-
         current_stack = config.get("tun_stack", "mixed")
-
         stack_cb.setCurrentText(current_stack)
-
         layout.addWidget(stack_cb)
-
         
-
         # Block QUIC
-
         quic_cb = QCheckBox("Блокировать QUIC (UDP 443)")
-
         quic_cb.setToolTip("Полезно для обхода замедления YouTube, заставляет браузеры использовать TCP")
-
         quic_cb.setChecked(config.get("tun_block_quic", False))
-
         layout.addWidget(quic_cb)
-
         
-
         # Smart Routing
-
         smart_cb = QCheckBox("Умная маршрутизация (по правилам)")
-
         smart_cb.setToolTip("Использовать кастомные правила маршрутизации трафика")
-
         smart_cb.setChecked(config.get("tun_smart_route", False))
-
         layout.addWidget(smart_cb)
-
         
-
         btn_layout = QHBoxLayout()
-
-        ok_btn = QPushButton("ОК")
-
-        cancel_btn = QPushButton("Отмена")
-
-        ok_btn.clicked.connect(dialog.accept)
-
-        cancel_btn.clicked.connect(dialog.reject)
-
+        btn_layout.setSpacing(8)
         
-
+        edit_rules_btn = QPushButton("Редактировать правила...")
+        def open_rules():
+            try:
+                from ui.rules_editor import RulesEditorDialog
+                ed = RulesEditorDialog(parent=dialog)
+                ed.exec_()
+            except Exception as e:
+                QMessageBox.warning(dialog, "Ошибка", f"Не удалось открыть редактор правил: {e}")
+        edit_rules_btn.clicked.connect(open_rules)
+        btn_layout.addWidget(edit_rules_btn)
+        
         btn_layout.addStretch()
-
+        
+        ok_btn = QPushButton("ОК")
+        ok_btn.setObjectName("primaryBtn")
+        cancel_btn = QPushButton("Отмена")
+        ok_btn.clicked.connect(dialog.accept)
+        cancel_btn.clicked.connect(dialog.reject)
+        
         btn_layout.addWidget(ok_btn)
-
         btn_layout.addWidget(cancel_btn)
-
         
-
         layout.addLayout(btn_layout)
-
         
-
         if dialog.exec_() == QDialog.Accepted:
-
             config["tun_dns_address"] = dns_cb.currentText().strip()
-
             config["tun_dns_detour"] = "direct" if detour_cb.currentIndex() == 0 else "proxy"
-
             config["tun_stack"] = stack_cb.currentText()
-
             config["tun_block_quic"] = quic_cb.isChecked()
-
             config["tun_smart_route"] = smart_cb.isChecked()
-
             config_manager.save_config(config)
-
             QMessageBox.information(None, "Успех", "Настройки сохранены. Если TUN запущен, переподключитесь, чтобы применить.")
 
 

@@ -29,8 +29,9 @@ def T(ru_text, en_text):
 class VlessSettingsWindow(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(T("Настройки VLESS", "VLESS Settings"))
-        self.setFixedSize(500, 600)
+        self.setWindowTitle(T("Настройки VLESS / EVPN", "VLESS / EVPN Settings"))
+        self.resize(440, 410)
+        self.setMinimumSize(400, 370)
         
         icon_path = os.path.join(CURRENT_DIR, "icon.ico")
         if os.path.exists(icon_path):
@@ -39,31 +40,44 @@ class VlessSettingsWindow(QMainWindow):
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
         main_layout = QVBoxLayout(central_widget)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(15)
+        main_layout.setContentsMargins(14, 12, 14, 12)
+        main_layout.setSpacing(8)
         
-        title_label = QLabel(T("Настройки VLESS Proxy", "VLESS Proxy Settings"))
-        title_label.setFont(QFont("Segoe UI", 16, QFont.Bold))
+        title_label = QLabel(T("Настройки VLESS / EVPN Proxy", "VLESS / EVPN Proxy Settings"))
+        title_label.setFont(QFont("Segoe UI Variable Text", 12, QFont.Bold))
         title_label.setAlignment(Qt.AlignCenter)
+        title_label.setStyleSheet("color: #FFFFFF; background: transparent; padding: 2px;")
         main_layout.addWidget(title_label)
         
         mode_layout = QHBoxLayout()
+        mode_layout.setSpacing(8)
         mode_label = QLabel(T("Режим работы:", "Mode:"))
+        mode_label.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        mode_label.setStyleSheet("color: #CCCCCC; background: transparent;")
         self.mode_combo = QComboBox()
+        self.mode_combo.setFixedHeight(27)
         self.mode_combo.addItems([T("Стандартный (Один сервер)", "Standard (Single Server)"), T("Ротация (wl_torred_vless)", "Rotation (wl_torred_vless)")])
         self.mode_combo.currentIndexChanged.connect(self.toggle_mode_ui)
         mode_layout.addWidget(mode_label)
-        mode_layout.addWidget(self.mode_combo)
+        mode_layout.addWidget(self.mode_combo, 1)
         main_layout.addLayout(mode_layout)
         
-        # Standard Mode Group
+        # Standard Mode Group (Compact)
         self.std_group = QGroupBox(T("Стандартный режим", "Standard Mode"))
         std_layout = QVBoxLayout(self.std_group)
+        std_layout.setContentsMargins(10, 8, 10, 8)
+        std_layout.setSpacing(4)
         
         def add_input(layout, label_text):
             h = QHBoxLayout()
-            h.addWidget(QLabel(label_text))
+            h.setSpacing(6)
+            lbl = QLabel(label_text)
+            lbl.setFixedWidth(85)
+            lbl.setFont(QFont("Segoe UI Variable Text", 9))
+            lbl.setStyleSheet("color: #d0d0d0; background: transparent;")
             le = QLineEdit()
+            le.setFixedHeight(25)
+            h.addWidget(lbl)
             h.addWidget(le)
             layout.addLayout(h)
             return le
@@ -76,48 +90,113 @@ class VlessSettingsWindow(QMainWindow):
         self.inp_sid = add_input(std_layout, "Short ID:")
         main_layout.addWidget(self.std_group)
         
-        # Rotation Mode Group
+        # Rotation Mode Group (Compact)
         self.rot_group = QGroupBox(T("Режим Ротации", "Rotation Mode"))
         rot_layout = QVBoxLayout(self.rot_group)
+        rot_layout.setContentsMargins(10, 8, 10, 8)
+        rot_layout.setSpacing(6)
         
-        rot_layout.addWidget(QLabel(T("Ссылки на подписки (по одной на строку):", "Subscription URLs (one per line):")))
+        rot_lbl = QLabel(T("Ссылки на подписки (по одной на строку):", "Subscription URLs (one per line):"))
+        rot_lbl.setFont(QFont("Segoe UI Variable Text", 9))
+        rot_layout.addWidget(rot_lbl)
         self.subs_text = QTextEdit()
+        self.subs_text.setMinimumHeight(110)
         rot_layout.addWidget(self.subs_text)
         
         int_layout = QHBoxLayout()
-        int_layout.addWidget(QLabel(T("Интервал ротации (сек):", "Rotation interval (sec):")))
+        int_layout.setSpacing(6)
+        int_lbl = QLabel(T("Интервал ротации (сек):", "Rotation interval (sec):"))
+        int_lbl.setFont(QFont("Segoe UI Variable Text", 9))
         self.inp_interval = QSpinBox()
+        self.inp_interval.setFixedHeight(25)
         self.inp_interval.setRange(10, 86400)
+        int_layout.addWidget(int_lbl)
         int_layout.addWidget(self.inp_interval)
+        int_layout.addStretch()
         rot_layout.addLayout(int_layout)
         
         main_layout.addWidget(self.rot_group)
         
-        # Buttons
+        # Action Buttons
         btn_layout = QHBoxLayout()
-        save_btn = QPushButton(T("Сохранить и Применить", "Save and Apply"))
-        save_btn.setMinimumHeight(35)
-        save_btn.setStyleSheet("background-color: #2b78e4; color: white; border: none; border-radius: 4px; font-weight: bold;")
-        save_btn.clicked.connect(self.save_settings)
+        btn_layout.setSpacing(8)
+        btn_layout.addStretch()
         
         cancel_btn = QPushButton(T("Отмена", "Cancel"))
-        cancel_btn.setMinimumHeight(35)
+        cancel_btn.setFixedHeight(28)
         cancel_btn.clicked.connect(self.close)
         
-        btn_layout.addWidget(save_btn)
+        save_btn = QPushButton(T("Сохранить и Применить", "Save and Apply"))
+        save_btn.setObjectName("primaryBtn")
+        save_btn.setFixedHeight(28)
+        save_btn.clicked.connect(self.save_settings)
+        
         btn_layout.addWidget(cancel_btn)
+        btn_layout.addWidget(save_btn)
         main_layout.addLayout(btn_layout)
         
-        # Apply dark theme
+        # Fluent Dark Theme stylesheet
         self.setStyleSheet("""
-            QMainWindow, QDialog { background-color: #1e1e1e; color: #f0f0f0; }
-            QLabel { color: #f0f0f0; }
-            QGroupBox { color: #f0f0f0; border: 1px solid #3d3d3d; border-radius: 5px; margin-top: 10px; font-weight: bold; }
-            QGroupBox::title { subcontrol-origin: margin; subcontrol-position: top left; padding: 0 5px; color: #2b78e4; }
-            QLineEdit, QComboBox, QSpinBox, QTextEdit { background-color: #2d2d2d; color: #ffffff; border: 1px solid #3d3d3d; border-radius: 4px; padding: 5px; }
-            QPushButton { background-color: #3d3d3d; color: #f0f0f0; border: none; border-radius: 4px; padding: 5px 15px; }
-            QPushButton:hover { background-color: #4d4d4d; }
-            QComboBox::drop-down { border: none; }
+            QMainWindow, QDialog { 
+                background-color: #202020; 
+                color: #FFFFFF; 
+                font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+            }
+            QLabel { 
+                color: #d0d0d0; 
+                background: transparent;
+            }
+            QGroupBox { 
+                color: #0078D4; 
+                border: 1px solid #383838; 
+                border-radius: 6px; 
+                margin-top: 6px; 
+                font-weight: bold; 
+                font-size: 11px;
+            }
+            QGroupBox::title { 
+                subcontrol-origin: margin; 
+                subcontrol-position: top left; 
+                padding: 0 4px; 
+                color: #0078D4; 
+            }
+            QLineEdit, QComboBox, QSpinBox, QTextEdit { 
+                background-color: #2b2b2b; 
+                color: #ffffff; 
+                border: 1px solid #383838; 
+                border-radius: 4px; 
+                padding: 2px 6px; 
+                font-size: 11px;
+            }
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QTextEdit:focus {
+                border-color: #005FB8;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                selection-background-color: #005FB8;
+            }
+            QPushButton { 
+                background-color: #2b2b2b; 
+                color: #FFFFFF; 
+                border: 1px solid #383838; 
+                border-radius: 4px; 
+                padding: 3px 14px; 
+                font-size: 11px;
+                font-weight: 600;
+            }
+            QPushButton:hover { 
+                background-color: #383838; 
+                border-color: #484848; 
+            }
+            QPushButton#primaryBtn {
+                background-color: #005FB8;
+                border-color: #005FB8;
+            }
+            QPushButton#primaryBtn:hover {
+                background-color: #0078D4;
+                border-color: #0078D4;
+            }
         """)
         
         self.load_settings()

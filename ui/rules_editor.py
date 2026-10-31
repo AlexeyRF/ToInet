@@ -6,7 +6,7 @@ from PyQt5.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
     QMessageBox, QLineEdit, QPlainTextEdit, QCheckBox, QWidget,
-    QAbstractItemView
+    QAbstractItemView, QSpinBox
 )
 from PyQt5.QtCore import Qt
 from PyQt5.QtGui import QFont, QColor
@@ -186,6 +186,148 @@ class SingleRuleDialog(QDialog):
         }
 
 
+class AddProxyDialog(QDialog):
+    """
+    Dialog to add a new Proxy Provider to Toinet.ppx.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(T("Добавить провайдер прокси", "Add Proxy Provider", "Ajouter un fournisseur proxy"))
+        self.setFixedSize(400, 250)
+        self.setStyleSheet("""
+            QDialog {
+                background-color: #202020;
+                color: #FFFFFF;
+                font-family: 'Segoe UI Variable Text', 'Segoe UI', sans-serif;
+            }
+            QLabel {
+                color: #d0d0d0;
+                font-size: 11px;
+                font-weight: 600;
+                background: transparent;
+            }
+            QLineEdit, QComboBox, QSpinBox {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                border-radius: 5px;
+                padding: 4px 8px;
+                font-size: 11px;
+            }
+            QLineEdit:focus, QComboBox:focus, QSpinBox:focus {
+                border-color: #005FB8;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                selection-background-color: #005FB8;
+            }
+            QPushButton {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                border-radius: 5px;
+                padding: 6px 14px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #383838;
+                border-color: #484848;
+            }
+            QPushButton#primaryBtn {
+                background-color: #005FB8;
+                border-color: #005FB8;
+            }
+            QPushButton#primaryBtn:hover {
+                background-color: #0078D4;
+                border-color: #0078D4;
+            }
+        """)
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(10)
+
+        # Label / Name
+        lbl_h = QHBoxLayout()
+        lbl_title = QLabel(T("Название / Метка:", "Label / Name:", "Libellé / Nom :"))
+        lbl_title.setFixedWidth(120)
+        self.inp_label = QLineEdit()
+        self.inp_label.setPlaceholderText(T("Например: MyProxy", "e.g. MyProxy", "ex: MyProxy"))
+        lbl_h.addWidget(lbl_title)
+        lbl_h.addWidget(self.inp_label)
+        layout.addLayout(lbl_h)
+
+        # Protocol
+        proto_h = QHBoxLayout()
+        proto_title = QLabel(T("Протокол:", "Protocol:", "Protocole :"))
+        proto_title.setFixedWidth(120)
+        self.combo_proto = QComboBox()
+        self.combo_proto.addItems(["SOCKS5", "HTTPS", "HTTP", "SOCKS4"])
+        proto_h.addWidget(proto_title)
+        proto_h.addWidget(self.combo_proto)
+        layout.addLayout(proto_h)
+
+        # Address / Host
+        host_h = QHBoxLayout()
+        host_title = QLabel(T("Адрес хоста:", "Host Address:", "Adresse :"))
+        host_title.setFixedWidth(120)
+        self.inp_host = QLineEdit("127.0.0.1")
+        host_h.addWidget(host_title)
+        host_h.addWidget(self.inp_host)
+        layout.addLayout(host_h)
+
+        # Port
+        port_h = QHBoxLayout()
+        port_title = QLabel(T("Порт:", "Port:", "Port :"))
+        port_title.setFixedWidth(120)
+        self.inp_port = QSpinBox()
+        self.inp_port.setRange(1, 65535)
+        self.inp_port.setValue(1080)
+        port_h.addWidget(port_title)
+        port_h.addWidget(self.inp_port)
+        layout.addLayout(port_h)
+
+        layout.addStretch()
+
+        # Buttons
+        btn_h = QHBoxLayout()
+        btn_h.addStretch()
+        cancel_btn = QPushButton(T("Отмена", "Cancel", "Annuler"))
+        cancel_btn.clicked.connect(self.reject)
+        btn_h.addWidget(cancel_btn)
+
+        add_btn = QPushButton(T("Добавить", "Add", "Ajouter"))
+        add_btn.setObjectName("primaryBtn")
+        add_btn.clicked.connect(self.accept_data)
+        btn_h.addWidget(add_btn)
+
+        layout.addLayout(btn_h)
+
+    def accept_data(self):
+        lbl = self.inp_label.text().strip()
+        if not lbl:
+            QMessageBox.warning(self, T("Внимание", "Warning", "Attention"), 
+                                T("Укажите название прокси!", "Please specify a proxy label!", "Veuillez indiquer un nom de proxy !"))
+            return
+        host = self.inp_host.text().strip()
+        if not host:
+            QMessageBox.warning(self, T("Внимание", "Warning", "Attention"), 
+                                T("Укажите адрес хоста!", "Please specify a host address!", "Veuillez indiquer une adresse hôte !"))
+            return
+        self.accept()
+
+    def get_data(self):
+        return {
+            "label": self.inp_label.text().strip(),
+            "type": self.combo_proto.currentText(),
+            "address": self.inp_host.text().strip(),
+            "port": str(self.inp_port.value()),
+            "options": "48"
+        }
+
+
 class RulesEditorDialog(QDialog):
     """
     Graphical Proxification Rules Editor dialog styled after Proxifier's
@@ -196,6 +338,7 @@ class RulesEditorDialog(QDialog):
         self.setWindowTitle(T("Правила проксификации (Toinet.ppx)", "Proxification Rules", "Règles de proxification"))
         self.resize(920, 620)
         self.ppx_path = find_ppx_path()
+        self.proxies = []        # list of proxy dictionaries from <ProxyList>
         self.proxy_options = []  # list of (display_label, internal_action_key)
         self.proxy_id_to_label = {}
         self.rules = []
@@ -320,9 +463,13 @@ class RulesEditorDialog(QDialog):
         btn_bar = QHBoxLayout()
         btn_bar.setSpacing(8)
 
-        self.add_btn = QPushButton(T("Добавить", "Add...", "Ajouter..."))
+        self.add_btn = QPushButton(T("Добавить правило", "Add Rule...", "Ajouter règle..."))
         self.add_btn.clicked.connect(self.on_add_rule)
         btn_bar.addWidget(self.add_btn)
+
+        self.add_proxy_btn = QPushButton(T("Добавить прокси...", "Add Proxy...", "Ajouter proxy..."))
+        self.add_proxy_btn.clicked.connect(self.on_add_proxy)
+        btn_bar.addWidget(self.add_proxy_btn)
 
         self.edit_btn = QPushButton(T("Редактировать", "Edit...", "Modifier..."))
         self.edit_btn.clicked.connect(self.on_edit_rule)
@@ -366,6 +513,7 @@ class RulesEditorDialog(QDialog):
             root = tree.getroot()
 
             # Parse ProxyList
+            self.proxies = []
             self.proxy_options = [
                 ("Direct", "Direct"),
                 ("Block", "Block")
@@ -379,9 +527,20 @@ class RulesEditorDialog(QDialog):
             if proxy_list is not None:
                 for p in proxy_list.findall("Proxy"):
                     pid = p.attrib.get("id")
-                    label = p.find("Label").text if p.find("Label") is not None else pid
                     ptype = p.attrib.get("type", "SOCKS5")
-                    disp = f"Proxy {ptype} {label}"
+                    lbl = p.find("Label").text if p.find("Label") is not None and p.find("Label").text else pid
+                    addr = p.find("Address").text if p.find("Address") is not None and p.find("Address").text else "127.0.0.1"
+                    port = p.find("Port").text if p.find("Port") is not None and p.find("Port").text else "1080"
+                    opts = p.find("Options").text if p.find("Options") is not None and p.find("Options").text else "48"
+                    self.proxies.append({
+                        "id": pid,
+                        "type": ptype,
+                        "label": lbl,
+                        "address": addr,
+                        "port": port,
+                        "options": opts
+                    })
+                    disp = f"Proxy {ptype} {lbl}"
                     self.proxy_options.append((disp, f"Proxy:{pid}"))
                     self.proxy_id_to_label[f"Proxy:{pid}"] = disp
 
@@ -481,6 +640,35 @@ class RulesEditorDialog(QDialog):
             self.rules[row]["action_key"] = combo.currentData()
             self.rules[row]["action_label"] = combo.currentText()
 
+    def on_add_proxy(self):
+        dlg = AddProxyDialog(parent=self)
+        if dlg.exec_() == QDialog.Accepted:
+            data = dlg.get_data()
+            existing_ids = []
+            for p in self.proxies:
+                try:
+                    existing_ids.append(int(p["id"]))
+                except (ValueError, TypeError):
+                    pass
+            new_id = str(max(existing_ids) + 1) if existing_ids else "100"
+            data["id"] = new_id
+            self.proxies.append(data)
+
+            disp = f"Proxy {data['type']} {data['label']}"
+            self.proxy_options.append((disp, f"Proxy:{new_id}"))
+            self.proxy_id_to_label[f"Proxy:{new_id}"] = disp
+
+            self._sync_rules_from_table()
+            self.populate_table()
+
+            QMessageBox.information(
+                self,
+                T("Провайдер добавлен", "Proxy Added", "Proxy ajouté"),
+                T(f"Прокси '{data['label']}' ({data['type']} {data['address']}:{data['port']}) добавлен в список!\nТеперь вы можете выбрать его в столбце Action правил.",
+                  f"Proxy '{data['label']}' ({data['type']} {data['address']}:{data['port']}) added!\nYou can now select it in the Action column.",
+                  f"Proxy '{data['label']}' ({data['type']} {data['address']}:{data['port']}) ajouté !")
+            )
+
     def on_add_rule(self):
         self._sync_rules_from_table()
         dlg = SingleRuleDialog(rule_data={"enabled": True, "apps": "Any", "targets": "Any", "ports": "Any"},
@@ -557,6 +745,24 @@ class RulesEditorDialog(QDialog):
         try:
             tree = ET.parse(self.ppx_path)
             root = tree.getroot()
+
+            # Save ProxyList
+            proxy_list = root.find("ProxyList")
+            if proxy_list is None:
+                proxy_list = ET.SubElement(root, "ProxyList")
+            else:
+                proxy_list.clear()
+
+            for p in self.proxies:
+                p_elem = ET.SubElement(proxy_list, "Proxy", id=str(p["id"]), type=str(p.get("type", "SOCKS5")))
+                opt_elem = ET.SubElement(p_elem, "Options")
+                opt_elem.text = str(p.get("options", "48"))
+                port_elem = ET.SubElement(p_elem, "Port")
+                port_elem.text = str(p.get("port", "1080"))
+                addr_elem = ET.SubElement(p_elem, "Address")
+                addr_elem.text = str(p.get("address", "127.0.0.1"))
+                lbl_elem = ET.SubElement(p_elem, "Label")
+                lbl_elem.text = str(p.get("label", f"Proxy_{p['id']}"))
 
             rule_list = root.find("RuleList")
             if rule_list is None:

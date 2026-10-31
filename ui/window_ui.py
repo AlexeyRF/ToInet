@@ -189,6 +189,8 @@ class CardRow(QFrame):
         layout.addLayout(text_layout, 1)
 
         if control_widget:
+            if type(control_widget) is QWidget or isinstance(control_widget, QFrame):
+                control_widget.setStyleSheet("background: transparent; border: none;")
             ctrl_layout = QVBoxLayout()
             ctrl_layout.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
             ctrl_layout.addWidget(control_widget)
@@ -571,8 +573,35 @@ class MainWindow(QMainWindow):
             b.clicked.connect(callback)
             return b
 
-        # Helper to create a comprehensive, spacious card for each provider with 2-row button layout
-        def create_provider_card(title, port_desc, description, primary_actions, settings_actions):
+        # Helper to create miniature 26x26 control buttons copying the tray menu pattern (↻ and ▶/■)
+        def make_mini_btn(symbol, tooltip, callback):
+            b = QPushButton(symbol)
+            b.setToolTip(tooltip)
+            b.setFixedSize(26, 26)
+            b.setCursor(Qt.PointingHandCursor)
+            b.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    border: 1px solid transparent;
+                    border-radius: 4px;
+                    font-size: 15px;
+                    font-weight: bold;
+                    color: #FFFFFF;
+                    padding: 0px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.12);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(255, 255, 255, 0.22);
+                }
+            """)
+            b.clicked.connect(callback)
+            return b
+
+        # Helper to create a compact, modern provider card with miniature control buttons in the top row
+        def create_provider_card(title, port_desc, description, actions, mini_restart_btn=None, mini_toggle_btn=None):
             card = QFrame()
             card.setStyleSheet("""
                 QFrame {
@@ -600,6 +629,12 @@ class MainWindow(QMainWindow):
             top_row.addWidget(lbl_title)
             top_row.addWidget(lbl_port)
             top_row.addStretch()
+
+            if mini_restart_btn:
+                top_row.addWidget(mini_restart_btn)
+            if mini_toggle_btn:
+                top_row.addWidget(mini_toggle_btn)
+
             card_layout.addLayout(top_row)
 
             lbl_desc = QLabel(description)
@@ -608,23 +643,13 @@ class MainWindow(QMainWindow):
             lbl_desc.setWordWrap(True)
             card_layout.addWidget(lbl_desc)
 
-            # Row 1: Primary actions (Gateway selector, Start/Stop)
-            if primary_actions:
-                row1 = QHBoxLayout()
-                row1.setSpacing(8)
-                for btn in primary_actions:
-                    row1.addWidget(btn)
-                row1.addStretch()
-                card_layout.addLayout(row1)
-
-            # Row 2: Provider specific settings & Telegram integration
-            if settings_actions:
-                row2 = QHBoxLayout()
-                row2.setSpacing(8)
-                for btn in settings_actions:
-                    row2.addWidget(btn)
-                row2.addStretch()
-                card_layout.addLayout(row2)
+            if actions:
+                act_row = QHBoxLayout()
+                act_row.setSpacing(6)
+                for btn in actions:
+                    act_row.addWidget(btn)
+                act_row.addStretch()
+                card_layout.addLayout(act_row)
 
             return card
 
@@ -636,7 +661,6 @@ class MainWindow(QMainWindow):
 
         # 1. ByeDPI
         bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
-        self.bd_toggle_btn = make_prov_btn("", lambda: (m.toggle_byedpi(), self.update_ui_state()))
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
@@ -650,18 +674,29 @@ class MainWindow(QMainWindow):
             from managers import system_utils
             system_utils.add_proxy_to_telegram(1780)
         bd_tg_btn = make_prov_btn("В Telegram (1780)", add_bd_tg)
+
+        def restart_bd():
+            if getattr(m, 'byedpi_manager', None):
+                m.byedpi_manager.stop()
+                import time; time.sleep(1)
+                m.byedpi_manager.start()
+            self.update_ui_state()
+
+        self.bd_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_bd)
+        self.bd_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_byedpi(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "ByeDPI",
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
-            [bd_select_btn, self.bd_toggle_btn],
-            [bd_test_btn, bd_pip_btn, bd_tg_btn]
+            [bd_select_btn, bd_test_btn, bd_pip_btn, bd_tg_btn],
+            self.bd_restart_btn,
+            self.bd_toggle_btn
         ))
 
         # 2. Tor
         tor_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("tor"), is_primary=True)
-        self.tor_toggle_btn = make_prov_btn("", lambda: (m.toggle_tor(), self.update_ui_state()))
         def open_tor_bridges():
             subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
@@ -670,31 +705,54 @@ class MainWindow(QMainWindow):
             from managers import system_utils
             system_utils.add_proxy_to_telegram(9853)
         tor_tg_btn = make_prov_btn("В Telegram (9853)", add_tor_tg)
+
+        def tor_restart_handler():
+            mods = QApplication.keyboardModifiers()
+            if (mods & Qt.ControlModifier) and hasattr(m, 'tor_manager'):
+                m.tor_manager.new_circuit()
+            elif hasattr(m, 'tor_manager'):
+                m.tor_manager.restart()
+            self.update_ui_state()
+
+        self.tor_restart_btn = make_mini_btn("↻", T("Перезапуск (Ctrl + Клик = Новая цепь)", "Restart (Ctrl + Click = New Circuit)"), tor_restart_handler)
+        self.tor_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_tor(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "Tor",
             "Порт 9853 / HTTP 9854",
             T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
               "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
-            [tor_select_btn, self.tor_toggle_btn],
-            [tor_bridges_btn, tor_newnym_btn, tor_tg_btn]
+            [tor_select_btn, tor_bridges_btn, tor_newnym_btn, tor_tg_btn],
+            self.tor_restart_btn,
+            self.tor_toggle_btn
         ))
 
         # 3. Opera Proxy
         opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
-        self.opera_toggle_btn = make_prov_btn("", lambda: (m.toggle_opera(), self.update_ui_state()))
         opera_cfg_btn = make_prov_btn(T("Настройки региона (EU/AM/AS)", "Region Options"), lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
+
+        def restart_opera():
+            if getattr(m, 'opera_mgr', None):
+                m.opera_mgr.stop()
+                import time; time.sleep(1)
+                m.opera_mgr.start()
+            self.update_ui_state()
+
+        self.opera_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_opera)
+        self.opera_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_opera(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "Opera Proxy",
             "Порт 1785",
             T("Высокоскоростной туннель через европейские, американские и азиатские серверы Opera.",
               "High-speed proxy tunnel through European, American, and Asian Opera infrastructure."),
-            [opera_select_btn, self.opera_toggle_btn],
-            [opera_cfg_btn]
+            [opera_select_btn, opera_cfg_btn],
+            self.opera_restart_btn,
+            self.opera_toggle_btn
         ))
 
         # 4. SVPN / SSH Tunnel
         ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
-        self.ssh_toggle_btn = make_prov_btn("", lambda: (m.toggle_ssh(), self.update_ui_state()))
         ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
         def add_ssh_tg():
             from managers import system_utils
@@ -702,33 +760,58 @@ class MainWindow(QMainWindow):
             system_utils.add_proxy_to_telegram(ssh_p)
         ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
         ssh_tg_btn = make_prov_btn(f"В Telegram ({ssh_p_str})", add_ssh_tg)
+
+        def restart_ssh():
+            if getattr(m, 'ssh_mgr', None):
+                m.ssh_mgr.restart()
+            self.update_ui_state()
+
+        self.ssh_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_ssh)
+        self.ssh_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_ssh(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "SVPN / SSH Туннель",
             f"Порт {ssh_p_str}",
             T("Высокоскоростной C++ SOCKS5 туннель к вашему личному VPS с безопасным хранением учетных данных.",
               "High-speed C++ SOCKS5 tunnel to your personal VPS with secure password management."),
-            [ssh_select_btn, self.ssh_toggle_btn],
-            [ssh_cfg_btn, ssh_tg_btn]
+            [ssh_select_btn, ssh_cfg_btn, ssh_tg_btn],
+            self.ssh_restart_btn,
+            self.ssh_toggle_btn
         ))
 
-        # 5. VLESS / EVPN
+        # 5. VLESS / EVPN (hidden when mode is not evpn)
         vless_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("vless"), is_primary=True)
-        self.vless_toggle_btn = make_prov_btn("", lambda: (m.toggle_vless(), self.update_ui_state()))
         vless_cfg_btn = make_prov_btn(T("Настройки VLESS", "VLESS Settings"), lambda: getattr(m, 'vless_mgr', None) and m.vless_mgr.open_settings())
-        c_layout.addWidget(create_provider_card(
+
+        def restart_vless():
+            if getattr(m, 'vless_mgr', None):
+                m.vless_mgr.stop()
+                import time; time.sleep(1)
+                m.vless_mgr.start()
+            elif getattr(m, 'evpn_mgr', None):
+                m.evpn_mgr.stop()
+                import time; time.sleep(1)
+                m.evpn_mgr.start()
+            self.update_ui_state()
+
+        self.vless_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_vless)
+        self.vless_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_vless(), self.update_ui_state()))
+
+        self.vless_card = create_provider_card(
             "VLESS / EVPN",
             "Порт 1790",
             T("Ядро Sing-box: VLESS Reality, ShadowTLS, Trojan и динамическая ротация серверов.",
               "Sing-box core with VLESS Reality, ShadowTLS, Trojan, and subscription server rotation."),
-            [vless_select_btn, self.vless_toggle_btn],
-            [vless_cfg_btn]
-        ))
+            [vless_select_btn, vless_cfg_btn],
+            self.vless_restart_btn,
+            self.vless_toggle_btn
+        )
+        c_layout.addWidget(self.vless_card)
 
         # Store all gateway select buttons for mode-dependent visibility (hidden in empty mode)
         self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
 
         # 6. Telegram WebSocket Proxy (TGWS)
-        self.tgws_toggle_btn = make_prov_btn("", lambda: (m.toggle_tgws(), self.update_ui_state()))
         def open_tgws_test():
             subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"])
         tgws_test_btn = make_prov_btn(T("Тестер TGWS", "TGWS Tester"), open_tgws_test)
@@ -742,48 +825,50 @@ class MainWindow(QMainWindow):
                                                  m.config.get("tgws_fake_tls", ""))
         tgws_s_btn = make_prov_btn("В Telegram (SOCKS5)", add_tgws_socks)
         tgws_m_btn = make_prov_btn("В Telegram (MTProto)", add_tgws_mtproto)
+
+        def restart_tgws():
+            if getattr(m, 'tgws_mgr', None):
+                m.tgws_mgr.stop()
+                import time; time.sleep(1)
+                m.tgws_mgr.start()
+            self.update_ui_state()
+
+        self.tgws_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_tgws)
+        self.tgws_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_tgws(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "Telegram WS Proxy (TGWS)",
             "Порт 1480",
             T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
               "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
-            [self.tgws_toggle_btn, tgws_test_btn],
-            [tgws_s_btn, tgws_m_btn]
+            [tgws_test_btn, tgws_s_btn, tgws_m_btn],
+            self.tgws_restart_btn,
+            self.tgws_toggle_btn
         ))
 
-        # 7. Gatik Router (dedicated Gatik to Telegram button included!)
+        # 7. Gatik Router
         def add_gatik_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(1777)
         gatik_tg_btn = make_prov_btn(T("Добавить Gatik в Telegram", "Add Gatik to Telegram"), add_gatik_tg, is_primary=True)
-        gatik_restart_btn = make_prov_btn("Перезапуск Gatik", lambda: getattr(m, 'tgws_mgr', None) and m.tgws_mgr.start())
+
+        self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), lambda: (getattr(m, 'tgws_mgr', None) and m.tgws_mgr.start(), self.update_ui_state()))
+
         c_layout.addWidget(create_provider_card(
             "Умный шлюз Gatik",
             "Порт 1777",
             T("Нативный C++ балансировщик и акселератор для Telegram, оптимизирующий сетевые маршруты.",
               "Native C++ smart router and balancer for accelerating Telegram connections."),
-            [gatik_tg_btn, gatik_restart_btn],
-            []
+            [gatik_tg_btn],
+            self.gatik_restart_btn,
+            None
         ))
 
         # Section: Split Tunneling & Proxifier
-        # Labeled as "Путь к проксификатору" according to user request
         sc_header = QLabel(T("Системный перехват и проксификация", "System Redirection & Proxification"))
         sc_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
         sc_header.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sc_header)
-
-        split_card = QFrame()
-        split_card.setStyleSheet("""
-            QFrame {
-                background-color: #2b2b2b;
-                border: 1px solid #383838;
-                border-radius: 8px;
-                padding: 8px 10px;
-            }
-        """)
-        sc_layout = QHBoxLayout(split_card)
-        sc_layout.setSpacing(10)
 
         proxi_btn = make_prov_btn(T("Путь к проксификатору", "Path to Proxifier", "Chemin vers Proxifier"),
                                   lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_proxifier_config())
@@ -791,11 +876,19 @@ class MainWindow(QMainWindow):
                                 lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_advanced_tun_config())
         rules_btn = make_prov_btn(T("Редактировать правила", "Edit Rules", "Modifier les règles"),
                                   self.open_rules_editor)
-        sc_layout.addWidget(proxi_btn)
-        sc_layout.addWidget(tun_btn)
-        sc_layout.addWidget(rules_btn)
-        sc_layout.addStretch()
-        c_layout.addWidget(split_card)
+
+        self.prox_restart_btn = make_mini_btn("↻", T("Перезапустить Proxifier", "Restart Proxifier"), lambda: (getattr(m, 'mode_mgr', None) and m.mode_mgr.restart_proxifier(), self.update_ui_state()))
+        self.prox_toggle_btn = make_mini_btn("▶", T("Запустить Proxifier", "Start Proxifier"), lambda: (m.toggle_proxifier(), self.update_ui_state()))
+
+        c_layout.addWidget(create_provider_card(
+            T("Системный перехват и проксификатор", "System Redirection & Proxifier", "Redirection système et Proxifier"),
+            "",
+            T("Маршрутизация приложений и хостов через Toinet.ppx с гибкой фильтрацией.",
+              "Application and hostname routing via Toinet.ppx with flexible filtering rules."),
+            [proxi_btn, tun_btn, rules_btn],
+            self.prox_restart_btn,
+            self.prox_toggle_btn
+        ))
 
         c_layout.addStretch()
         scroll.setWidget(content)
@@ -904,27 +997,6 @@ class MainWindow(QMainWindow):
         sec_label_ast.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_ast)
 
-        auto_start_cb = QCheckBox()
-        auto_start_cb.setChecked(m.config.get("auto_start", False))
-        auto_start_cb.setCursor(Qt.PointingHandCursor)
-        auto_start_cb.setStyleSheet("""
-            QCheckBox { background: transparent; }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-                border-radius: 4px;
-                border: 1px solid #555555;
-                background-color: #2d2d2d;
-            }
-            QCheckBox::indicator:hover { border-color: #777777; }
-            QCheckBox::indicator:checked { background-color: #005FB8; border-color: #005FB8; }
-        """)
-        auto_start_cb.clicked.connect(lambda: m.toggle_auto_start() if hasattr(m, 'toggle_auto_start') else None)
-        c_layout.addWidget(CardRow(T("Автозапуск при входе в систему", "Start on Windows Boot"),
-                                   T("Автоматический запуск ToInet-MAX при старте операционной системы.",
-                                     "Automatically launch ToInet-MAX when you log into Windows."),
-                                   auto_start_cb))
-
         def open_ast_gui():
             subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")],
                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
@@ -940,10 +1012,23 @@ class MainWindow(QMainWindow):
         sec_label_pip.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_pip)
 
+        cb_style = """
+            QCheckBox { background: transparent; }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid #555555;
+                background-color: #2d2d2d;
+            }
+            QCheckBox::indicator:hover { border-color: #777777; }
+            QCheckBox::indicator:checked { background-color: #005FB8; border-color: #005FB8; }
+        """
+
         pip_cb = QCheckBox()
         pip_cb.setChecked(m.config.get("byedpi_pip_enabled", False))
         pip_cb.setCursor(Qt.PointingHandCursor)
-        pip_cb.setStyleSheet(auto_start_cb.styleSheet())
+        pip_cb.setStyleSheet(cb_style)
         def on_pip_change():
             m.config["byedpi_pip_enabled"] = pip_cb.isChecked()
             m.config_manager.save_config(m.config)
@@ -957,7 +1042,7 @@ class MainWindow(QMainWindow):
         pip_tor_cb = QCheckBox()
         pip_tor_cb.setChecked(m.config.get("byedpi_pip_use_tor", False))
         pip_tor_cb.setCursor(Qt.PointingHandCursor)
-        pip_tor_cb.setStyleSheet(auto_start_cb.styleSheet())
+        pip_tor_cb.setStyleSheet(cb_style)
         def on_pip_tor_change():
             m.config["byedpi_pip_use_tor"] = pip_tor_cb.isChecked()
             m.config_manager.save_config(m.config)
@@ -975,6 +1060,7 @@ class MainWindow(QMainWindow):
         c_layout.addWidget(sec_label_dns)
 
         dns_widget = QWidget()
+        dns_widget.setStyleSheet("background: transparent; border: none;")
         dw_layout = QHBoxLayout(dns_widget)
         dw_layout.setContentsMargins(0, 0, 0, 0)
         dw_layout.setSpacing(6)
@@ -995,6 +1081,7 @@ class MainWindow(QMainWindow):
 
         # SOCKS Rehab & Noisy
         misc_widget = QWidget()
+        misc_widget.setStyleSheet("background: transparent; border: none;")
         mw_layout = QHBoxLayout(misc_widget)
         mw_layout.setContentsMargins(0, 0, 0, 0)
         mw_layout.setSpacing(6)
@@ -1011,6 +1098,7 @@ class MainWindow(QMainWindow):
 
         # Clean Cache & Folder
         utils_widget = QWidget()
+        utils_widget.setStyleSheet("background: transparent; border: none;")
         uw_layout = QHBoxLayout(utils_widget)
         uw_layout.setContentsMargins(0, 0, 0, 0)
         uw_layout.setSpacing(6)
@@ -1092,13 +1180,6 @@ class MainWindow(QMainWindow):
                                    T("Режим отображения (графическое окно или меню в системном трее).",
                                      "Presentation mode: application window vs notification area tray menu."),
                                    ui_combo))
-
-        # Tray Menu Style
-        menu_mode_btn = make_action_btn(T("Сменить", "Toggle"), m.toggle_mode)
-        c_layout.addWidget(CardRow(T("Вид меню трея", "Tray Menu Style"),
-                                   T("Переключение между простым и расширенным меню трея.",
-                                     "Switch between simple and advanced tray menu layouts."),
-                                   menu_mode_btn))
 
         # Language selection (from tray menu)
         lang_combo = QComboBox()
@@ -1264,48 +1345,53 @@ class MainWindow(QMainWindow):
                 }
             """)
 
-    def _update_prov_toggle_btn(self, btn, is_running):
-        if is_running:
-            btn.setText(T("Включен", "Active", "Actif"))
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #107C41;
-                    color: #FFFFFF;
-                    border: 1px solid #138747;
-                    border-radius: 6px;
-                    padding: 3px 9px;
-                    font-size: 10.5px;
-                    font-weight: 600;
-                }
-                QPushButton:hover {
-                    background-color: #138747;
-                    border-color: #169E54;
-                }
-                QPushButton:pressed {
-                    background-color: #0E6B38;
-                }
-            """)
-        else:
-            btn.setText(T("Выключен", "Stopped", "Arrêté"))
-            btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #2b2b2b;
-                    color: #9d9d9d;
-                    border: 1px solid #3c3c3c;
-                    border-radius: 6px;
-                    padding: 3px 9px;
-                    font-size: 10.5px;
-                    font-weight: 600;
-                }
-                QPushButton:hover {
-                    background-color: #353535;
-                    color: #FFFFFF;
-                    border-color: #484848;
-                }
-                QPushButton:pressed {
-                    background-color: #202020;
-                }
-            """)
+    def _update_mini_controls(self, restart_btn, toggle_btn, is_running):
+        T = self.main_module.T
+        if restart_btn:
+            restart_btn.setVisible(bool(is_running))
+        if toggle_btn:
+            if is_running:
+                toggle_btn.setText("■")
+                toggle_btn.setToolTip(T("Остановить", "Stop", "Arreter"))
+                toggle_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: transparent;
+                        border: 1px solid transparent;
+                        border-radius: 4px;
+                        font-size: 14px;
+                        font-weight: bold;
+                        color: #ff5555;
+                        padding: 0px;
+                    }
+                    QPushButton:hover {
+                        background-color: rgba(255, 85, 85, 0.18);
+                        border: 1px solid rgba(255, 85, 85, 0.4);
+                    }
+                    QPushButton:pressed {
+                        background-color: rgba(255, 85, 85, 0.28);
+                    }
+                """)
+            else:
+                toggle_btn.setText("▶")
+                toggle_btn.setToolTip(T("Запустить", "Start", "Demarrer"))
+                toggle_btn.setStyleSheet("""
+                    QPushButton {
+                        background-color: transparent;
+                        border: 1px solid transparent;
+                        border-radius: 4px;
+                        font-size: 15px;
+                        font-weight: bold;
+                        color: #55ff55;
+                        padding: 0px;
+                    }
+                    QPushButton:hover {
+                        background-color: rgba(85, 255, 85, 0.18);
+                        border: 1px solid rgba(85, 255, 85, 0.4);
+                    }
+                    QPushButton:pressed {
+                        background-color: rgba(85, 255, 85, 0.28);
+                    }
+                """)
 
     def open_rules_editor(self):
         try:
@@ -1342,41 +1428,51 @@ class MainWindow(QMainWindow):
             self._last_status_text = status_text
             self.set_status(status_text)
 
-        # Update provider live status toggle buttons
+        # Update provider live status miniature buttons (copy tray menu mechanism)
         if hasattr(self, 'bd_toggle_btn'):
             bd_on = getattr(m, 'byedpi_manager', None) and m.byedpi_manager.is_running()
-            self._update_prov_toggle_btn(self.bd_toggle_btn, bd_on)
+            self._update_mini_controls(getattr(self, 'bd_restart_btn', None), self.bd_toggle_btn, bd_on)
 
         if hasattr(self, 'tor_toggle_btn'):
             tor_on = getattr(m, 'tor_manager', None) and m.tor_manager.is_running()
-            self._update_prov_toggle_btn(self.tor_toggle_btn, tor_on)
+            self._update_mini_controls(getattr(self, 'tor_restart_btn', None), self.tor_toggle_btn, tor_on)
 
         if hasattr(self, 'opera_toggle_btn'):
             opera_on = getattr(m, 'opera_mgr', None) and m.opera_mgr.is_running()
-            self._update_prov_toggle_btn(self.opera_toggle_btn, opera_on)
+            self._update_mini_controls(getattr(self, 'opera_restart_btn', None), self.opera_toggle_btn, opera_on)
 
         if hasattr(self, 'ssh_toggle_btn'):
             ssh_on = getattr(m, 'ssh_mgr', None) and m.ssh_mgr.is_running()
-            self._update_prov_toggle_btn(self.ssh_toggle_btn, ssh_on)
+            self._update_mini_controls(getattr(self, 'ssh_restart_btn', None), self.ssh_toggle_btn, ssh_on)
 
         if hasattr(self, 'vless_toggle_btn'):
             vless_on = (getattr(m, 'vless_mgr', None) and m.vless_mgr.is_running()) or (getattr(m, 'evpn_mgr', None) and getattr(m.evpn_mgr, 'is_running', False))
-            self._update_prov_toggle_btn(self.vless_toggle_btn, vless_on)
+            self._update_mini_controls(getattr(self, 'vless_restart_btn', None), self.vless_toggle_btn, vless_on)
 
         if hasattr(self, 'tgws_toggle_btn'):
             tgws_on = getattr(m, 'tgws_mgr', None) and getattr(m.tgws_mgr, 'running', False)
-            self._update_prov_toggle_btn(self.tgws_toggle_btn, tgws_on)
+            self._update_mini_controls(getattr(self, 'tgws_restart_btn', None), self.tgws_toggle_btn, tgws_on)
+
+        if hasattr(self, 'prox_toggle_btn'):
+            prox_on = getattr(m, 'mode_mgr', None) and m.mode_mgr.proxifier_running()
+            self._update_mini_controls(getattr(self, 'prox_restart_btn', None), self.prox_toggle_btn, prox_on)
 
         # Update quick server switch buttons on main screen (Tor circuit / EVPN server)
         tor_active = getattr(m, 'tor_manager', None) and m.tor_manager.tor_running
         evpn_active = getattr(m, 'evpn_mgr', None) and getattr(m.evpn_mgr, 'is_running', False)
         if hasattr(self, 'tor_switch_btn'):
             self.tor_switch_btn.setVisible(bool(tor_active))
-        if hasattr(self, 'evpn_switch_btn'):
-            self.evpn_switch_btn.setVisible(bool(evpn_active))
 
         # Update mode chips only when mode changes
         cur_mode = getattr(m, 'mode_type', 'inetcpl').lower()
+
+        # Hide EVPN card in providers if mode is not evpn
+        if hasattr(self, 'vless_card'):
+            self.vless_card.setVisible(cur_mode == "evpn")
+
+        # EVPN switch button only visible if in evpn mode and actively running
+        if hasattr(self, 'evpn_switch_btn'):
+            self.evpn_switch_btn.setVisible(cur_mode == "evpn" and bool(evpn_active))
 
         # Hide 'Выбрать шлюзом' buttons in empty mode
         is_empty = (cur_mode == "empty")
