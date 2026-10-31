@@ -940,11 +940,13 @@ class MainWindow(QMainWindow):
                     m.tgws_mgr.stop_gatik()
                 else:
                     m.tgws_mgr.start_gatik()
+            import time; time.sleep(0.3)
             self.update_ui_state()
 
         def stop_gatik():
             if getattr(m, 'tgws_mgr', None):
                 m.tgws_mgr.stop_gatik()
+            import time; time.sleep(0.2)
             self.update_ui_state()
 
         def restart_gatik():
@@ -952,6 +954,7 @@ class MainWindow(QMainWindow):
                 m.tgws_mgr.stop_gatik()
                 import time; time.sleep(0.5)
                 m.tgws_mgr.start_gatik()
+                time.sleep(0.3)
             self.update_ui_state()
 
         self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), restart_gatik)
@@ -1316,15 +1319,42 @@ class MainWindow(QMainWindow):
         """)
         ui_combo.setCursor(Qt.PointingHandCursor)
         def on_ui_change(idx):
-            m.config["ui_type"] = "window" if idx == 0 else "tray"
+            new_type = "window" if idx == 0 else "tray"
+            m.config["ui_type"] = new_type
             m.config_manager.save_config(m.config)
             if hasattr(m, 'update_menu'):
                 m.update_menu()
+            if new_type == "tray":
+                self.hide()
+                if hasattr(m, 'tray') and m.tray:
+                    m.tray.showMessage(
+                        "ToInet-MAX",
+                        T("Программа переведена в режим трея", "Program switched to system tray mode", "Programme réduit dans la barre"),
+                        QSystemTrayIcon.Information,
+                        2500
+                    )
         ui_combo.currentIndexChanged.connect(on_ui_change)
+
+        ui_widget = QWidget()
+        ui_widget.setStyleSheet("background: transparent; border: none;")
+        ui_w_layout = QHBoxLayout(ui_widget)
+        ui_w_layout.setContentsMargins(0, 0, 0, 0)
+        ui_w_layout.setSpacing(6)
+        ui_w_layout.addWidget(ui_combo)
+
+        def switch_to_tray_clicked():
+            if ui_combo.currentIndex() != 1:
+                ui_combo.setCurrentIndex(1)
+            else:
+                on_ui_change(1)
+
+        to_tray_btn = make_action_btn(T("В трей", "To Tray", "En barre"), switch_to_tray_clicked)
+        ui_w_layout.addWidget(to_tray_btn)
+
         c_layout.addWidget(CardRow(T("Тип интерфейса", "Interface Type"),
                                    T("Режим отображения (графическое окно или меню в системном трее).",
                                      "Presentation mode: application window vs notification area tray menu."),
-                                   ui_combo))
+                                   ui_widget))
 
         # Language selection (from tray menu)
         lang_combo = QComboBox()

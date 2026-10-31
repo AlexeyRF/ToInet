@@ -1,4 +1,20 @@
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+import sys, os
+if getattr(sys, 'frozen', False):
+    CURRENT_DIR = os.path.dirname(sys.executable)
+else:
+    CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def _find_gatik_exe():
+    candidates = [
+        os.path.join(CURRENT_DIR, 'bin', 'gatik.exe'),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'bin', 'gatik.exe'),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bin', 'gatik.exe'),
+        os.path.join(os.path.dirname(sys.executable), 'bin', 'gatik.exe'),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return os.path.abspath(c)
+    return None
 import threading
 import time
 import socket
@@ -160,11 +176,11 @@ class TGWSManager:
                 
             # Start Gatik (C++) if executable exists
             try:
-                gatik_exe = os.path.join(CURRENT_DIR, "bin", "gatik.exe")
-                if os.path.exists(gatik_exe):
+                gatik_exe = _find_gatik_exe()
+                if gatik_exe and os.path.exists(gatik_exe):
                     creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
                     self.gatik_process = subprocess.Popen([gatik_exe], cwd=CURRENT_DIR, creationflags=creationflags)
-                    self.log("Шлюз Gatik (C++) запущен")
+                    self.log(f"Шлюз Gatik (C++) запущен: {gatik_exe}")
             except Exception as e:
                 self.log(f"Failed to start gatik.exe: {e}")
                 
@@ -244,12 +260,14 @@ class TGWSManager:
         if self.is_gatik_running():
             return True
         try:
-            gatik_exe = os.path.join(CURRENT_DIR, 'bin', 'gatik.exe')
-            if os.path.exists(gatik_exe):
+            gatik_exe = _find_gatik_exe()
+            if gatik_exe and os.path.exists(gatik_exe):
                 creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
                 self.gatik_process = subprocess.Popen([gatik_exe], cwd=CURRENT_DIR, creationflags=creationflags)
-                self.log('Шлюз Gatik (C++) запущен')
+                self.log(f'Шлюз Gatik (C++) запущен: {gatik_exe}')
                 return True
+            else:
+                self.log(f'Ошибка: gatik.exe не найден (искали в {CURRENT_DIR})')
         except Exception as e:
             self.log(f'Failed to start gatik.exe: {e}')
         return False

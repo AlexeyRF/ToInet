@@ -416,6 +416,8 @@ def _update_menu_impl_unsafe():
                 m.main_window.update_ui_state()
                 m.main_window.show()
                 m.main_window.activateWindow()
+            elif new_type == "tray" and getattr(m, "main_window", None):
+                m.main_window.hide()
         ui_type_act.triggered.connect(toggle_ui_type)
         sys_menu.addAction(ui_type_act)
             
