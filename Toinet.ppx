@@ -278,9 +278,7 @@
 ;turn.livekit.cloud
 ;sentry.io
 ;datadoghq.com</Targets>
-			<Applications>gpttest
-</Applications>
-			<Name>New</Name>
+			<Name>gpttest</Name>
 		</Rule>
 		<Rule enabled="true">
 			<Action type="Direct" />

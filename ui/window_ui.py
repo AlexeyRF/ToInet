@@ -20,7 +20,7 @@ class PowerButton(QPushButton):
     """
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setFixedSize(160, 160)
+        self.setFixedSize(130, 130)
         self.setCursor(Qt.PointingHandCursor)
         self._state = "off"  # "off", "starting", "on"
         self._hover = False
@@ -64,7 +64,7 @@ class PowerButton(QPushButton):
         h = self.height()
         cx = w / 2.0
         cy = h / 2.0
-        radius = 70.0
+        radius = 55.0
 
         if self._state == "on":
             bg_color = QColor("#107C41") if not self._hover else QColor("#138747")
@@ -96,10 +96,10 @@ class PowerButton(QPushButton):
         # Authentic Power Symbol (IEC 5009):
         # Open arc at top (12 o'clock, 90 deg). Gap is from 60 to 120 deg.
         # Starts at 120 deg and sweeps counter-clockwise 300 deg to 60 deg.
-        painter.setPen(QPen(icon_color, 6.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setPen(QPen(icon_color, 5.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
         painter.setBrush(Qt.NoBrush)
 
-        r_icon = 25.0
+        r_icon = 20.0
         arc_rect = QRectF(cx - r_icon, cy - r_icon, r_icon * 2, r_icon * 2)
         painter.drawArc(arc_rect, int(120 * 16), int(300 * 16))
         # Centered vertical stroke passing through the open gap into center
@@ -168,20 +168,20 @@ class CardRow(QFrame):
             }
         """)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setContentsMargins(10, 6, 10, 6)
         layout.setSpacing(10)
 
         text_layout = QVBoxLayout()
         text_layout.setSpacing(2)
 
         title_label = QLabel(title)
-        title_label.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        title_label.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
         title_label.setStyleSheet("color: #FFFFFF; background: transparent;")
         text_layout.addWidget(title_label)
 
         if description:
             desc_label = QLabel(description)
-            desc_label.setFont(QFont("Segoe UI Variable Text", 9))
+            desc_label.setFont(QFont("Segoe UI Variable Text", 8))
             desc_label.setStyleSheet("color: #9d9d9d; background: transparent;")
             desc_label.setWordWrap(True)
             text_layout.addWidget(desc_label)
@@ -206,7 +206,8 @@ class MainWindow(QMainWindow):
         self.main_module = main_module
         self.setWindowTitle("ToInet-MAX")
         # Spacious window size: 620 x 700 px to comfortably fit all provider controls
-        self.setFixedSize(620, 700)
+        self.resize(560, 610)
+        self.setMinimumSize(500, 550)
 
         # Strictly dark background across all widgets, views, and viewports
         self.setStyleSheet("""
@@ -292,7 +293,7 @@ class MainWindow(QMainWindow):
     # -------------------------------------------------------------------------
     def build_connect_view(self):
         layout = QVBoxLayout(self.connect_view)
-        layout.setContentsMargins(32, 28, 32, 0)
+        layout.setContentsMargins(24, 16, 24, 0)
         layout.setSpacing(0)
 
         # Top Title
@@ -331,7 +332,7 @@ class MainWindow(QMainWindow):
         btn_layout.addWidget(self.power_btn)
         layout.addLayout(btn_layout)
 
-        layout.addSpacing(18)
+        layout.addSpacing(8)
 
         # Status Description Label
         self.status_desc = QLabel("Нажмите для подключения")
@@ -420,13 +421,13 @@ class MainWindow(QMainWindow):
         """
 
         self.btn_provider = QPushButton(T("VPN Провайдер", "VPN Providers", "Fournisseurs VPN"))
-        self.btn_provider.setFixedHeight(50)
+        self.btn_provider.setFixedHeight(38)
         self.btn_provider.setCursor(Qt.PointingHandCursor)
         self.btn_provider.setStyleSheet(win11_tonal_btn)
         self.btn_provider.clicked.connect(self.show_provider_view)
 
         self.btn_settings = QPushButton(T("Настройки", "Settings", "Paramètres"))
-        self.btn_settings.setFixedHeight(50)
+        self.btn_settings.setFixedHeight(38)
         self.btn_settings.setCursor(Qt.PointingHandCursor)
         self.btn_settings.setStyleSheet(win11_tonal_btn)
         self.btn_settings.clicked.connect(self.show_settings_view)
@@ -435,7 +436,7 @@ class MainWindow(QMainWindow):
         bottom_buttons_layout.addWidget(self.btn_settings, 1)
         layout.addLayout(bottom_buttons_layout)
 
-        layout.addSpacing(16)
+        layout.addSpacing(6)
 
         # Win11 Linear Progress Bar along bottom edge
         self.progress_bar = Win11LinearProgress()
@@ -499,7 +500,7 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;
                 border: 1px solid #383838;
                 border-radius: 8px;
-                padding: 12px;
+                padding: 8px 10px;
             }
         """)
         mc_layout = QVBoxLayout(mode_card)
@@ -528,7 +529,7 @@ class MainWindow(QMainWindow):
         mc_layout.addLayout(modes_btn_layout)
 
         self.mode_desc_label = QLabel("")
-        self.mode_desc_label.setFont(QFont("Segoe UI Variable Text", 9))
+        self.mode_desc_label.setFont(QFont("Segoe UI Variable Text", 8))
         self.mode_desc_label.setStyleSheet("color: #9d9d9d; border: none; background: transparent;")
         self.mode_desc_label.setWordWrap(True)
         mc_layout.addWidget(self.mode_desc_label)
@@ -555,8 +556,8 @@ class MainWindow(QMainWindow):
                     color: #FFFFFF;
                     border: 1px solid #3c3c3c;
                     border-radius: 6px;
-                    padding: 6px 12px;
-                    font-size: 11px;
+                    padding: 3px 9px;
+                    font-size: 10.5px;
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
@@ -578,18 +579,18 @@ class MainWindow(QMainWindow):
                     background-color: #2b2b2b;
                     border: 1px solid #383838;
                     border-radius: 8px;
-                    padding: 12px;
+                    padding: 8px 10px;
                 }
                 QFrame:hover {
                     border-color: #484848;
                 }
             """)
             card_layout = QVBoxLayout(card)
-            card_layout.setSpacing(8)
+            card_layout.setSpacing(5)
 
             top_row = QHBoxLayout()
             lbl_title = QLabel(title)
-            lbl_title.setFont(QFont("Segoe UI Variable Text", 11, QFont.Bold))
+            lbl_title.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
             lbl_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
 
             lbl_port = QLabel(port_desc)
@@ -602,7 +603,7 @@ class MainWindow(QMainWindow):
             card_layout.addLayout(top_row)
 
             lbl_desc = QLabel(description)
-            lbl_desc.setFont(QFont("Segoe UI Variable Text", 9))
+            lbl_desc.setFont(QFont("Segoe UI Variable Text", 8))
             lbl_desc.setStyleSheet("border: none; color: #9d9d9d; background: transparent;")
             lbl_desc.setWordWrap(True)
             card_layout.addWidget(lbl_desc)
@@ -635,7 +636,7 @@ class MainWindow(QMainWindow):
 
         # 1. ByeDPI
         bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
-        bd_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_byedpi(), self.update_ui_state()))
+        self.bd_toggle_btn = make_prov_btn("", lambda: (m.toggle_byedpi(), self.update_ui_state()))
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
@@ -654,13 +655,13 @@ class MainWindow(QMainWindow):
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
-            [bd_select_btn, bd_toggle_btn],
+            [bd_select_btn, self.bd_toggle_btn],
             [bd_test_btn, bd_pip_btn, bd_tg_btn]
         ))
 
         # 2. Tor
         tor_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("tor"), is_primary=True)
-        tor_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_tor(), self.update_ui_state()))
+        self.tor_toggle_btn = make_prov_btn("", lambda: (m.toggle_tor(), self.update_ui_state()))
         def open_tor_bridges():
             subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
@@ -674,26 +675,26 @@ class MainWindow(QMainWindow):
             "Порт 9853 / HTTP 9854",
             T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
               "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
-            [tor_select_btn, tor_toggle_btn],
+            [tor_select_btn, self.tor_toggle_btn],
             [tor_bridges_btn, tor_newnym_btn, tor_tg_btn]
         ))
 
         # 3. Opera Proxy
         opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
-        opera_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_opera(), self.update_ui_state()))
+        self.opera_toggle_btn = make_prov_btn("", lambda: (m.toggle_opera(), self.update_ui_state()))
         opera_cfg_btn = make_prov_btn(T("Настройки региона (EU/AM/AS)", "Region Options"), lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
         c_layout.addWidget(create_provider_card(
             "Opera Proxy",
             "Порт 1785",
             T("Высокоскоростной туннель через европейские, американские и азиатские серверы Opera.",
               "High-speed proxy tunnel through European, American, and Asian Opera infrastructure."),
-            [opera_select_btn, opera_toggle_btn],
+            [opera_select_btn, self.opera_toggle_btn],
             [opera_cfg_btn]
         ))
 
         # 4. SVPN / SSH Tunnel
         ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
-        ssh_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_ssh(), self.update_ui_state()))
+        self.ssh_toggle_btn = make_prov_btn("", lambda: (m.toggle_ssh(), self.update_ui_state()))
         ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
         def add_ssh_tg():
             from managers import system_utils
@@ -706,29 +707,28 @@ class MainWindow(QMainWindow):
             f"Порт {ssh_p_str}",
             T("Высокоскоростной C++ SOCKS5 туннель к вашему личному VPS с безопасным хранением учетных данных.",
               "High-speed C++ SOCKS5 tunnel to your personal VPS with secure password management."),
-            [ssh_select_btn, ssh_toggle_btn],
+            [ssh_select_btn, self.ssh_toggle_btn],
             [ssh_cfg_btn, ssh_tg_btn]
         ))
 
         # 5. VLESS / EVPN
         vless_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("vless"), is_primary=True)
-        vless_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_vless(), self.update_ui_state()))
+        self.vless_toggle_btn = make_prov_btn("", lambda: (m.toggle_vless(), self.update_ui_state()))
         vless_cfg_btn = make_prov_btn(T("Настройки VLESS", "VLESS Settings"), lambda: getattr(m, 'vless_mgr', None) and m.vless_mgr.open_settings())
-        vless_rot_btn = make_prov_btn(T("Сменить сервер", "Next Server"), lambda: getattr(m, 'evpn_mgr', None) and m.evpn_mgr.next_server())
         c_layout.addWidget(create_provider_card(
             "VLESS / EVPN",
             "Порт 1790",
             T("Ядро Sing-box: VLESS Reality, ShadowTLS, Trojan и динамическая ротация серверов.",
               "Sing-box core with VLESS Reality, ShadowTLS, Trojan, and subscription server rotation."),
-            [vless_select_btn, vless_toggle_btn],
-            [vless_rot_btn, vless_cfg_btn]
+            [vless_select_btn, self.vless_toggle_btn],
+            [vless_cfg_btn]
         ))
 
         # Store all gateway select buttons for mode-dependent visibility (hidden in empty mode)
         self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
 
         # 6. Telegram WebSocket Proxy (TGWS)
-        tgws_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_tgws(), self.update_ui_state()))
+        self.tgws_toggle_btn = make_prov_btn("", lambda: (m.toggle_tgws(), self.update_ui_state()))
         def open_tgws_test():
             subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"])
         tgws_test_btn = make_prov_btn(T("Тестер TGWS", "TGWS Tester"), open_tgws_test)
@@ -747,7 +747,7 @@ class MainWindow(QMainWindow):
             "Порт 1480",
             T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
               "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
-            [tgws_toggle_btn, tgws_test_btn],
+            [self.tgws_toggle_btn, tgws_test_btn],
             [tgws_s_btn, tgws_m_btn]
         ))
 
@@ -779,7 +779,7 @@ class MainWindow(QMainWindow):
                 background-color: #2b2b2b;
                 border: 1px solid #383838;
                 border-radius: 8px;
-                padding: 12px;
+                padding: 8px 10px;
             }
         """)
         sc_layout = QHBoxLayout(split_card)
@@ -1130,33 +1130,7 @@ class MainWindow(QMainWindow):
                                      "Select display language for window and tray menus."),
                                    lang_combo))
 
-        # Encrypted DNS (EVPN)
-        evpn_dns_cb = QCheckBox()
-        evpn_dns_cb.setChecked(m.config.get("evpn_encrypted_dns", False))
-        evpn_dns_cb.setCursor(Qt.PointingHandCursor)
-        evpn_dns_cb.setStyleSheet(auto_start_cb.styleSheet())
-        def on_evpn_dns():
-            m.config["evpn_encrypted_dns"] = evpn_dns_cb.isChecked()
-            m.config_manager.save_config(m.config)
-        evpn_dns_cb.clicked.connect(on_evpn_dns)
-        c_layout.addWidget(CardRow(T("Шифрованный DNS (EVPN)", "Encrypted DNS (EVPN)"),
-                                   T("Использовать защищенный DNS для VLESS подписок.",
-                                     "Use encrypted DoH DNS for subscription nodes."),
-                                   evpn_dns_cb))
 
-        # Proxy DNS in TUN/EVPN
-        tun_dns_cb = QCheckBox()
-        tun_dns_cb.setChecked(m.config.get("proxy_dns_tun_evpn", True))
-        tun_dns_cb.setCursor(Qt.PointingHandCursor)
-        tun_dns_cb.setStyleSheet(auto_start_cb.styleSheet())
-        def on_tun_dns():
-            m.config["proxy_dns_tun_evpn"] = tun_dns_cb.isChecked()
-            m.config_manager.save_config(m.config)
-        tun_dns_cb.clicked.connect(on_tun_dns)
-        c_layout.addWidget(CardRow(T("Проксировать DNS (TUN/EVPN)", "Proxy DNS (TUN/EVPN)"),
-                                   T("Направлять DNS-запросы системы через активный туннель.",
-                                     "Direct system DNS requests through the active proxy tunnel."),
-                                   tun_dns_cb))
 
         # Group 7: Exit & Restart
         sec_label_sys = QLabel(T("Системные команды", "System Actions"))
@@ -1290,6 +1264,49 @@ class MainWindow(QMainWindow):
                 }
             """)
 
+    def _update_prov_toggle_btn(self, btn, is_running):
+        if is_running:
+            btn.setText(T("Включен", "Active", "Actif"))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #107C41;
+                    color: #FFFFFF;
+                    border: 1px solid #138747;
+                    border-radius: 6px;
+                    padding: 3px 9px;
+                    font-size: 10.5px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background-color: #138747;
+                    border-color: #169E54;
+                }
+                QPushButton:pressed {
+                    background-color: #0E6B38;
+                }
+            """)
+        else:
+            btn.setText(T("Выключен", "Stopped", "Arrêté"))
+            btn.setStyleSheet("""
+                QPushButton {
+                    background-color: #2b2b2b;
+                    color: #9d9d9d;
+                    border: 1px solid #3c3c3c;
+                    border-radius: 6px;
+                    padding: 3px 9px;
+                    font-size: 10.5px;
+                    font-weight: 600;
+                }
+                QPushButton:hover {
+                    background-color: #353535;
+                    color: #FFFFFF;
+                    border-color: #484848;
+                }
+                QPushButton:pressed {
+                    background-color: #202020;
+                }
+            """)
+
     def open_rules_editor(self):
         try:
             from ui.rules_editor import RulesEditorDialog
@@ -1324,6 +1341,31 @@ class MainWindow(QMainWindow):
         if getattr(self, '_last_status_text', None) != status_text:
             self._last_status_text = status_text
             self.set_status(status_text)
+
+        # Update provider live status toggle buttons
+        if hasattr(self, 'bd_toggle_btn'):
+            bd_on = getattr(m, 'byedpi_manager', None) and m.byedpi_manager.is_running()
+            self._update_prov_toggle_btn(self.bd_toggle_btn, bd_on)
+
+        if hasattr(self, 'tor_toggle_btn'):
+            tor_on = getattr(m, 'tor_manager', None) and m.tor_manager.is_running()
+            self._update_prov_toggle_btn(self.tor_toggle_btn, tor_on)
+
+        if hasattr(self, 'opera_toggle_btn'):
+            opera_on = getattr(m, 'opera_mgr', None) and m.opera_mgr.is_running()
+            self._update_prov_toggle_btn(self.opera_toggle_btn, opera_on)
+
+        if hasattr(self, 'ssh_toggle_btn'):
+            ssh_on = getattr(m, 'ssh_mgr', None) and m.ssh_mgr.is_running()
+            self._update_prov_toggle_btn(self.ssh_toggle_btn, ssh_on)
+
+        if hasattr(self, 'vless_toggle_btn'):
+            vless_on = (getattr(m, 'vless_mgr', None) and m.vless_mgr.is_running()) or (getattr(m, 'evpn_mgr', None) and getattr(m.evpn_mgr, 'is_running', False))
+            self._update_prov_toggle_btn(self.vless_toggle_btn, vless_on)
+
+        if hasattr(self, 'tgws_toggle_btn'):
+            tgws_on = getattr(m, 'tgws_mgr', None) and getattr(m.tgws_mgr, 'running', False)
+            self._update_prov_toggle_btn(self.tgws_toggle_btn, tgws_on)
 
         # Update quick server switch buttons on main screen (Tor circuit / EVPN server)
         tor_active = getattr(m, 'tor_manager', None) and m.tor_manager.tor_running
