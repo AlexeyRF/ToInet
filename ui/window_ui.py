@@ -8,8 +8,8 @@ from PyQt5.QtWidgets import (
     QStackedWidget, QScrollArea, QFrame, QComboBox, QCheckBox, QMessageBox,
     QApplication, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QTimer, QPointF, QRectF
-from PyQt5.QtGui import QFont, QColor, QPainter, QPen, QBrush
+from PyQt5.QtCore import Qt, QTimer, QPointF, QRectF, QSize
+from PyQt5.QtGui import QFont, QColor, QPainter, QPen, QBrush, QIcon
 
 class PowerButton(QPushButton):
     """
@@ -207,9 +207,9 @@ class MainWindow(QMainWindow):
         super().__init__()
         self.main_module = main_module
         self.setWindowTitle("ToInet-MAX")
-        # Spacious window size: 620 x 700 px to comfortably fit all provider controls
-        self.resize(560, 610)
-        self.setMinimumSize(500, 550)
+        # Spacious window size: increased width by 30px to comfortably fit all provider controls
+        self.resize(590, 610)
+        self.setMinimumSize(530, 550)
 
         # Strictly dark background across all widgets, views, and viewports
         self.setStyleSheet("""
@@ -493,33 +493,34 @@ class MainWindow(QMainWindow):
         content.setStyleSheet("background-color: #202020;")
         c_layout = QVBoxLayout(content)
         c_layout.setContentsMargins(2, 2, 8, 2)
-        c_layout.setSpacing(12)
+        c_layout.setSpacing(8)
 
-        # Card 1: Routing Mode Selection
+        # Card 1: Routing Mode Selection (Compact)
         mode_card = QFrame()
         mode_card.setStyleSheet("""
             QFrame {
                 background-color: #2b2b2b;
                 border: 1px solid #383838;
                 border-radius: 8px;
-                padding: 8px 10px;
+                padding: 0px;
             }
         """)
         mc_layout = QVBoxLayout(mode_card)
-        mc_layout.setSpacing(8)
+        mc_layout.setContentsMargins(10, 6, 10, 6)
+        mc_layout.setSpacing(4)
 
         mc_title = QLabel(T("Режим маршрутизации", "Routing Mode"))
-        mc_title.setFont(QFont("Segoe UI Variable Text", 11, QFont.Bold))
+        mc_title.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
         mc_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
         mc_layout.addWidget(mc_title)
 
         modes_btn_layout = QHBoxLayout()
-        modes_btn_layout.setSpacing(8)
+        modes_btn_layout.setSpacing(6)
 
         self.mode_chips = {}
         for m_name in ["EMPTY", "INETCPL", "TUN", "EVPN"]:
             btn = QPushButton(m_name)
-            btn.setFixedHeight(32)
+            btn.setFixedHeight(28)
             btn.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
             btn.setCursor(Qt.PointingHandCursor)
             def _make_mode_cb(m_val):
@@ -532,7 +533,7 @@ class MainWindow(QMainWindow):
 
         self.mode_desc_label = QLabel("")
         self.mode_desc_label.setFont(QFont("Segoe UI Variable Text", 8))
-        self.mode_desc_label.setStyleSheet("color: #9d9d9d; border: none; background: transparent;")
+        self.mode_desc_label.setStyleSheet("color: #8e8e8e; border: none; background: transparent;")
         self.mode_desc_label.setWordWrap(True)
         mc_layout.addWidget(self.mode_desc_label)
 
@@ -542,6 +543,7 @@ class MainWindow(QMainWindow):
         def make_prov_btn(text, callback, is_primary=False, is_accent=False):
             b = QPushButton(text)
             b.setCursor(Qt.PointingHandCursor)
+            b.setFixedHeight(26)
             if is_primary:
                 bg = "#005FB8"
                 h_bg = "#0078D4"
@@ -557,9 +559,9 @@ class MainWindow(QMainWindow):
                     background-color: {bg};
                     color: #FFFFFF;
                     border: 1px solid #3c3c3c;
-                    border-radius: 6px;
-                    padding: 3px 9px;
-                    font-size: 10.5px;
+                    border-radius: 5px;
+                    padding: 2px 8px;
+                    font-size: 10px;
                     font-weight: 600;
                 }}
                 QPushButton:hover {{
@@ -600,24 +602,62 @@ class MainWindow(QMainWindow):
             b.clicked.connect(callback)
             return b
 
+        # Path to Telegram logo icon
+        tg_icon_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ui", "telegram.png")
+        if not os.path.exists(tg_icon_path):
+            tg_icon_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "telegram.png")
+
+        # Helper to create miniature 26x26 Telegram button using attached icon
+        def make_mini_tg_btn(tooltip, callback):
+            b = QPushButton()
+            b.setToolTip(tooltip)
+            b.setFixedSize(26, 26)
+            b.setCursor(Qt.PointingHandCursor)
+            if os.path.exists(tg_icon_path):
+                b.setIcon(QIcon(tg_icon_path))
+                b.setIconSize(QSize(18, 18))
+            else:
+                b.setText("✈")
+            b.setStyleSheet("""
+                QPushButton {
+                    background-color: transparent;
+                    border: 1px solid transparent;
+                    border-radius: 4px;
+                    padding: 0px;
+                }
+                QPushButton:hover {
+                    background-color: rgba(255, 255, 255, 0.12);
+                    border: 1px solid rgba(255, 255, 255, 0.2);
+                }
+                QPushButton:pressed {
+                    background-color: rgba(255, 255, 255, 0.22);
+                }
+            """)
+            b.clicked.connect(callback)
+            return b
+
         # Helper to create a compact, modern provider card with miniature control buttons in the top row
-        def create_provider_card(title, port_desc, description, actions, mini_restart_btn=None, mini_toggle_btn=None):
+        def create_provider_card(title, port_desc, description, actions, mini_restart_btn=None, mini_toggle_btn=None, mini_tg_btn=None):
             card = QFrame()
             card.setStyleSheet("""
                 QFrame {
                     background-color: #2b2b2b;
                     border: 1px solid #383838;
                     border-radius: 8px;
-                    padding: 8px 10px;
+                    padding: 0px;
                 }
                 QFrame:hover {
                     border-color: #484848;
                 }
             """)
             card_layout = QVBoxLayout(card)
-            card_layout.setSpacing(5)
+            card_layout.setContentsMargins(10, 6, 10, 6)
+            card_layout.setSpacing(4)
 
             top_row = QHBoxLayout()
+            top_row.setContentsMargins(0, 0, 0, 0)
+            top_row.setSpacing(6)
+
             lbl_title = QLabel(title)
             lbl_title.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
             lbl_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
@@ -630,6 +670,12 @@ class MainWindow(QMainWindow):
             top_row.addWidget(lbl_port)
             top_row.addStretch()
 
+            if mini_tg_btn:
+                if isinstance(mini_tg_btn, (list, tuple)):
+                    for btn in mini_tg_btn:
+                        top_row.addWidget(btn)
+                else:
+                    top_row.addWidget(mini_tg_btn)
             if mini_restart_btn:
                 top_row.addWidget(mini_restart_btn)
             if mini_toggle_btn:
@@ -639,13 +685,14 @@ class MainWindow(QMainWindow):
 
             lbl_desc = QLabel(description)
             lbl_desc.setFont(QFont("Segoe UI Variable Text", 8))
-            lbl_desc.setStyleSheet("border: none; color: #9d9d9d; background: transparent;")
+            lbl_desc.setStyleSheet("border: none; color: #8e8e8e; background: transparent;")
             lbl_desc.setWordWrap(True)
             card_layout.addWidget(lbl_desc)
 
             if actions:
                 act_row = QHBoxLayout()
-                act_row.setSpacing(6)
+                act_row.setContentsMargins(0, 2, 0, 0)
+                act_row.setSpacing(5)
                 for btn in actions:
                     act_row.addWidget(btn)
                 act_row.addStretch()
@@ -656,7 +703,7 @@ class MainWindow(QMainWindow):
         # Section Header: Providers
         prov_header = QLabel(T("Провайдеры и параметры шлюзов", "Providers & Gateway Configurations"))
         prov_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
-        prov_header.setStyleSheet("color: #9d9d9d; margin-top: 6px; background: transparent;")
+        prov_header.setStyleSheet("color: #8e8e8e; margin-top: 4px; background: transparent;")
         c_layout.addWidget(prov_header)
 
         # 1. ByeDPI
@@ -673,7 +720,7 @@ class MainWindow(QMainWindow):
         def add_bd_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(1780)
-        bd_tg_btn = make_prov_btn("В Telegram (1780)", add_bd_tg)
+        bd_tg_btn = make_mini_tg_btn(T("Добавить ByeDPI в Telegram (1780)", "Add ByeDPI to Telegram (1780)"), add_bd_tg)
 
         def restart_bd():
             if getattr(m, 'byedpi_manager', None):
@@ -690,9 +737,10 @@ class MainWindow(QMainWindow):
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
-            [bd_select_btn, bd_test_btn, bd_pip_btn, bd_tg_btn],
+            [bd_select_btn, bd_test_btn, bd_pip_btn],
             self.bd_restart_btn,
-            self.bd_toggle_btn
+            self.bd_toggle_btn,
+            mini_tg_btn=bd_tg_btn
         ))
 
         # 2. Tor
@@ -704,7 +752,7 @@ class MainWindow(QMainWindow):
         def add_tor_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(9853)
-        tor_tg_btn = make_prov_btn("В Telegram (9853)", add_tor_tg)
+        tor_tg_btn = make_mini_tg_btn(T("Добавить Tor в Telegram (9853)", "Add Tor to Telegram (9853)"), add_tor_tg)
 
         def tor_restart_handler():
             mods = QApplication.keyboardModifiers()
@@ -722,9 +770,10 @@ class MainWindow(QMainWindow):
             "Порт 9853 / HTTP 9854",
             T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
               "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
-            [tor_select_btn, tor_bridges_btn, tor_newnym_btn, tor_tg_btn],
+            [tor_select_btn, tor_bridges_btn, tor_newnym_btn],
             self.tor_restart_btn,
-            self.tor_toggle_btn
+            self.tor_toggle_btn,
+            mini_tg_btn=tor_tg_btn
         ))
 
         # 3. Opera Proxy
@@ -754,12 +803,12 @@ class MainWindow(QMainWindow):
         # 4. SVPN / SSH Tunnel
         ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
         ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
+        ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
         def add_ssh_tg():
             from managers import system_utils
             ssh_p = int(m.config.get("ssh_socks_port", 1770))
             system_utils.add_proxy_to_telegram(ssh_p)
-        ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
-        ssh_tg_btn = make_prov_btn(f"В Telegram ({ssh_p_str})", add_ssh_tg)
+        ssh_tg_btn = make_mini_tg_btn(T(f"Добавить SSH в Telegram ({ssh_p_str})", f"Add SSH to Telegram ({ssh_p_str})"), add_ssh_tg)
 
         def restart_ssh():
             if getattr(m, 'ssh_mgr', None):
@@ -774,9 +823,10 @@ class MainWindow(QMainWindow):
             f"Порт {ssh_p_str}",
             T("Высокоскоростной C++ SOCKS5 туннель к вашему личному VPS с безопасным хранением учетных данных.",
               "High-speed C++ SOCKS5 tunnel to your personal VPS with secure password management."),
-            [ssh_select_btn, ssh_cfg_btn, ssh_tg_btn],
+            [ssh_select_btn, ssh_cfg_btn],
             self.ssh_restart_btn,
-            self.ssh_toggle_btn
+            self.ssh_toggle_btn,
+            mini_tg_btn=ssh_tg_btn
         ))
 
         # 5. VLESS / EVPN (hidden when mode is not evpn)
@@ -823,8 +873,32 @@ class MainWindow(QMainWindow):
             system_utils.add_mtproto_to_telegram(int(m.config.get("tgws_port", 1480)),
                                                  m.config.get("tgws_secret", "0"*32),
                                                  m.config.get("tgws_fake_tls", ""))
-        tgws_s_btn = make_prov_btn("В Telegram (SOCKS5)", add_tgws_socks)
-        tgws_m_btn = make_prov_btn("В Telegram (MTProto)", add_tgws_mtproto)
+
+        def show_tgws_tg_menu():
+            from PyQt5.QtWidgets import QMenu
+            from PyQt5.QtGui import QCursor
+            menu = QMenu(self)
+            menu.setStyleSheet("""
+                QMenu {
+                    background-color: #2b2b2b;
+                    color: #FFFFFF;
+                    border: 1px solid #383838;
+                    border-radius: 6px;
+                    padding: 4px;
+                }
+                QMenu::item {
+                    padding: 5px 16px;
+                    border-radius: 4px;
+                }
+                QMenu::item:selected {
+                    background-color: #005FB8;
+                }
+            """)
+            menu.addAction(T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), add_tgws_socks)
+            menu.addAction(T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), add_tgws_mtproto)
+            menu.exec_(QCursor.pos())
+
+        tgws_tg_btn = make_mini_tg_btn(T("Добавить TGWS в Telegram (SOCKS5 / MTProto)", "Add TGWS to Telegram (SOCKS5 / MTProto)"), show_tgws_tg_menu)
 
         def restart_tgws():
             if getattr(m, 'tgws_mgr', None):
@@ -841,16 +915,17 @@ class MainWindow(QMainWindow):
             "Порт 1480",
             T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
               "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
-            [tgws_test_btn, tgws_s_btn, tgws_m_btn],
+            [tgws_test_btn],
             self.tgws_restart_btn,
-            self.tgws_toggle_btn
+            self.tgws_toggle_btn,
+            mini_tg_btn=tgws_tg_btn
         ))
 
         # 7. Gatik Router
         def add_gatik_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(1777)
-        gatik_tg_btn = make_prov_btn(T("Добавить Gatik в Telegram", "Add Gatik to Telegram"), add_gatik_tg, is_primary=True)
+        gatik_tg_btn = make_mini_tg_btn(T("Добавить Gatik в Telegram (1777)", "Add Gatik to Telegram (1777)"), add_gatik_tg)
 
         self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), lambda: (getattr(m, 'tgws_mgr', None) and m.tgws_mgr.start(), self.update_ui_state()))
 
@@ -859,15 +934,16 @@ class MainWindow(QMainWindow):
             "Порт 1777",
             T("Нативный C++ балансировщик и акселератор для Telegram, оптимизирующий сетевые маршруты.",
               "Native C++ smart router and balancer for accelerating Telegram connections."),
-            [gatik_tg_btn],
+            [],
             self.gatik_restart_btn,
-            None
+            None,
+            mini_tg_btn=gatik_tg_btn
         ))
 
         # Section: Split Tunneling & Proxifier
         sc_header = QLabel(T("Системный перехват и проксификация", "System Redirection & Proxification"))
         sc_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
-        sc_header.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        sc_header.setStyleSheet("color: #8e8e8e; margin-top: 6px; background: transparent;")
         c_layout.addWidget(sc_header)
 
         proxi_btn = make_prov_btn(T("Путь к проксификатору", "Path to Proxifier", "Chemin vers Proxifier"),
