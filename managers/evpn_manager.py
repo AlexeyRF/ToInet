@@ -21,6 +21,43 @@ import concurrent.futures
 from PyQt5.QtCore import pyqtSignal, QObject, QThread
 
 import sys
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+def get_evpn_dir():
+    d = os.path.join(CURRENT_DIR, "evpn")
+    os.makedirs(d, exist_ok=True)
+    return d
+
+def get_subs_file_path():
+    candidates = [
+        os.path.join(CURRENT_DIR, "evpn", "subs.txt"),
+        os.path.join(CURRENT_DIR, "subs.txt"),
+        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "evpn", "subs.txt"),
+        os.path.abspath("evpn/subs.txt"),
+        "evpn/subs.txt"
+    ]
+    if getattr(sys, 'frozen', False):
+        meipass = getattr(sys, '_MEIPASS', '')
+        if meipass:
+            candidates.insert(0, os.path.join(meipass, "evpn", "subs.txt"))
+            candidates.insert(1, os.path.join(meipass, "subs.txt"))
+
+    for c in candidates:
+        if c and os.path.exists(c):
+            return c
+
+    default_path = os.path.join(CURRENT_DIR, "evpn", "subs.txt")
+    try:
+        os.makedirs(os.path.dirname(default_path), exist_ok=True)
+        default_subs = (
+            "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_universal.txt\n"
+            "https://gitverse.ru/api/repos/zieng2/wl/raw/branch/master/list_lite.txt\n"
+        )
+        with open(default_path, "w", encoding="utf-8") as f:
+            f.write(default_subs)
+        return default_path
+    except Exception:
+        return candidates[0]
 
 
 
@@ -260,7 +297,7 @@ class ProxyTester(QThread):
 
             use_cache = False
 
-            cache_file = "evpn/working_nodes.json"
+            cache_file = os.path.join(get_evpn_dir(), "working_nodes.json")
 
             if os.path.exists(cache_file):
 
@@ -288,17 +325,17 @@ class ProxyTester(QThread):
 
                 self.emit_progress("Загрузка подписок...")
 
-                subs_file = "evpn/subs.txt"
+                subs_file = get_subs_file_path()
 
                 if not os.path.exists(subs_file):
 
-                    self.finished.emit(False, ["Файл evpn/subs.txt не найден в папке"])
+                    self.finished.emit(False, [f"Файл evpn/subs.txt не найден ({subs_file or 'evpn/subs.txt'})"])
 
                     return
 
                     
 
-                with open(subs_file, "r") as f:
+                with open(subs_file, "r", encoding="utf-8", errors="ignore") as f:
 
                     urls = [line.strip() for line in f if line.strip()]
 
@@ -410,7 +447,7 @@ class ProxyTester(QThread):
 
                 os.makedirs("evpn", exist_ok=True)
 
-                with open("evpn/working_nodes.json", "w", encoding="utf-8") as f:
+                with open(cache_file, "w", encoding="utf-8") as f:
 
                     json.dump({"timestamp": time.time(), "nodes": working_nodes}, f)
 

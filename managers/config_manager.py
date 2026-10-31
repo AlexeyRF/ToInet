@@ -35,6 +35,7 @@ DEFAULT_CONFIG = {
     "tun_stack": "mixed",
     "tun_block_quic": True,
     "proxy_dns_tun_evpn": True,
+    "proxifier_install_prompt_declined": False,
     "language": "auto"
 }
 

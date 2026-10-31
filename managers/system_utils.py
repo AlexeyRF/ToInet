@@ -51,7 +51,108 @@ def clean_data_directory(data_path="data"):
         except Exception as e: pass
 
 # --- LANG ---
+_manual_lang_override = None
+
+FR_TRANSLATIONS = {
+    # Status & power
+    "Подключено": "Connecté",
+    "Отключено": "Déconnecté",
+    "Подключение...": "Connexion...",
+    "Соединение защищено": "Connexion sécurisée",
+    "Нажмите для подключения": "Cliquez pour vous connecter",
+    "Connected": "Connecté",
+    "Disconnected": "Déconnecté",
+    "Connecting...": "Connexion...",
+    "Connection secured": "Connexion sécurisée",
+    "Click to connect": "Cliquez pour vous connecter",
+    "VPN Включен": "VPN activé",
+    "VPN Отключен": "VPN désactivé",
+
+    # Buttons & actions
+    "Сменить сервер": "Changer de serveur",
+    "Сменить узел Tor": "Changer de circuit Tor",
+    "Сменить сервер EVPN": "Changer de serveur EVPN",
+    "Switch Server": "Changer de serveur",
+    "New Tor Circuit": "Changer de circuit Tor",
+    "Switch EVPN Server": "Changer de serveur EVPN",
+    "Выбрать шлюзом": "Définir comme passerelle",
+    "Select Gateway": "Définir comme passerelle",
+    "Запустить": "Démarrer",
+    "Остановить": "Arrêter",
+    "Start": "Démarrer",
+    "Stop": "Arrêter",
+    "Настройки": "Paramètres",
+    "Settings": "Paramètres",
+    "Редактировать правила": "Modifier les règles",
+    "Edit Rules": "Modifier les règles",
+    "Путь к проксификатору": "Chemin vers Proxifier",
+    "Path to Proxifier": "Chemin vers Proxifier",
+    "Параметры TUN (Sing-box) →": "Paramètres TUN (Sing-box) →",
+    "Sing-box TUN Config →": "Paramètres TUN (Sing-box) →",
+    "Сброс": "Réinitialiser",
+    "Reset": "Réinitialiser",
+    "В Telegram": "Vers Telegram",
+    "To Telegram": "Vers Telegram",
+    "Новая цепочка": "Nouveau circuit",
+    "New Circuit": "Nouveau circuit",
+    "Мосты": "Ponts",
+    "Bridges": "Ponts",
+
+    # Navigation & Views
+    "Главная": "Accueil",
+    "Home": "Accueil",
+    "Справка": "Aide",
+    "Help": "Aide",
+    "Провайдеры и параметры шлюзов": "Fournisseurs et passerelles",
+    "Providers & Gateway Configurations": "Fournisseurs et passerelles",
+    "Системный перехват и проксификатор": "Interception système et proxification",
+    "System Redirection & Proxification": "Interception système et proxification",
+    "Утилиты и обслуживание системы": "Utilitaires et maintenance système",
+    "System Maintenance & Utilities": "Utilitaires et maintenance système",
+    "Системный DNS (требуются права администратора)": "DNS système (droits administrateur requis)",
+    "System DNS (Admin rights required)": "DNS système (droits administrateur requis)",
+    "Язык программы": "Langue de l'application",
+    "Application Language": "Langue de l'application",
+    "Авто (Системный)": "Auto (Système)",
+    "Auto (System)": "Auto (Système)",
+    "Авто": "Auto",
+    "Auto": "Auto",
+
+    # Modes descriptions
+    "Локальные порты. Сетевые параметры Windows не изменяются (для ручной настройки).": "Ports locaux. Les paramètres réseau de Windows restent inchangés (configuration manuelle).",
+    "Системный прокси Windows (браузеры Chrome, Edge, Yandex и др. работают через прокси).": "Proxy système Windows (Chrome, Edge, etc. passent par le proxy).",
+    "Глобальный сетевой перехват трафика системы (игры, Discord и др.) через Sing-box TUN.": "Interception globale du trafic système (jeux, Discord, etc.) via Sing-box TUN.",
+    "Глобальное подключение через пул VLESS Reality серверов с автопереключением узлов.": "Connexion globale via un pool de serveurs VLESS Reality avec basculement automatique.",
+    "Local ports. Windows system network settings are untouched (for manual configuration).": "Ports locaux. Les paramètres réseau de Windows restent inchangés (configuration manuelle).",
+    "System proxy for Windows (browsers Chrome, Edge, etc. route through proxy).": "Proxy système Windows (Chrome, Edge, etc. passent par le proxy).",
+    "Global system network traffic interception (games, Discord, etc.) via Sing-box TUN.": "Interception globale du trafic système (jeux, Discord, etc.) via Sing-box TUN.",
+    "Global VPN connection through pool of VLESS Reality servers with auto-failover.": "Connexion globale via un pool de serveurs VLESS Reality avec basculement automatique.",
+
+    # Notifications & Dialogs
+    "Ошибка": "Erreur",
+    "Error": "Erreur",
+    "Успех": "Succès",
+    "Success": "Succès",
+    "Внимание": "Attention",
+    "Warning": "Attention"
+}
+
+def set_language(lang_code):
+    global _manual_lang_override, _current_lang, _is_en, _is_fr, _is_ru
+    if lang_code in ("ru", "en", "fr"):
+        _manual_lang_override = lang_code
+    elif lang_code == "auto":
+        _manual_lang_override = None
+    _current_lang = get_system_lang()
+    _is_en = (_current_lang == "en")
+    _is_fr = (_current_lang == "fr")
+    _is_ru = (_current_lang == "ru")
+
 def get_system_lang():
+    global _manual_lang_override
+    if _manual_lang_override in ("ru", "en", "fr"):
+        return _manual_lang_override
+
     # 1. Config preference if set
     try:
         from managers import config_manager
@@ -66,12 +167,12 @@ def get_system_lang():
     try:
         windll = ctypes.windll.kernel32
         lang_id = windll.GetUserDefaultUILanguage()
-        primary = lang_id & 0xFF
+        primary = lang_id & 0x3FF
         if primary == 0x0C:
             return "fr"
         elif primary == 0x09:
             return "en"
-        elif primary == 0x19:
+        elif primary in (0x19, 0x22, 0x23, 0x3F):
             return "ru"
     except Exception:
         pass
@@ -79,15 +180,15 @@ def get_system_lang():
     # 3. Locale fallback
     try:
         import locale
-        loc = locale.getdefaultlocale()[0]
-        if loc:
-            loc = loc.lower()
-            if loc.startswith("fr"):
-                return "fr"
-            elif loc.startswith("en"):
-                return "en"
-            elif loc.startswith("ru"):
-                return "ru"
+        for loc in [locale.getdefaultlocale()[0], locale.getlocale()[0], os.environ.get('LANG', '')]:
+            if loc:
+                loc = loc.lower()
+                if loc.startswith("fr"):
+                    return "fr"
+                elif loc.startswith("en"):
+                    return "en"
+                elif loc.startswith(("ru", "uk", "be", "kk")):
+                    return "ru"
     except Exception:
         pass
 
@@ -112,7 +213,13 @@ def T(ru_text, en_text, fr_text=None, fr=None):
         fr_text = fr
     cur = get_system_lang()
     if cur == "fr":
-        return fr_text if fr_text is not None else (en_text if en_text is not None else ru_text)
+        if fr_text is not None:
+            return fr_text
+        if ru_text in FR_TRANSLATIONS:
+            return FR_TRANSLATIONS[ru_text]
+        if en_text in FR_TRANSLATIONS:
+            return FR_TRANSLATIONS[en_text]
+        return en_text if en_text is not None else ru_text
     elif cur == "en":
         return en_text if en_text is not None else ru_text
     return ru_text
@@ -157,7 +264,10 @@ def get_app_directory():
     if getattr(sys, 'frozen', False):
         return os.path.dirname(sys.executable)
     else:
-        return os.path.dirname(os.path.abspath(__file__))
+        cur_file_dir = os.path.dirname(os.path.abspath(__file__))
+        if os.path.basename(cur_file_dir).lower() == "managers":
+            return os.path.dirname(cur_file_dir)
+        return cur_file_dir
 
 def create_shortcut(target_file="main.pyw"):
     try:
@@ -170,30 +280,46 @@ def create_shortcut(target_file="main.pyw"):
         
         is_frozen = getattr(sys, 'frozen', False)
         if is_frozen:
-            bat_path = sys.executable
+            target_path = sys.executable
+            args = ""
         else:
             bat_path = os.path.join(app_dir, "launch.bat")
-            try:
-                import subprocess
-                create_launch_bat(target_file)
-            except: pass
+            create_launch_bat(target_file)
+            target_path = bat_path
+            args = ""
             
-        icon_path = os.path.join(app_dir, "icon.ico")
+        icon_candidates = [
+            os.path.join(app_dir, "icon.ico"),
+            os.path.join(app_dir, "icons", "app.ico"),
+            os.path.join(app_dir, "icons", "icon.ico"),
+            os.path.join(getattr(sys, '_MEIPASS', ''), "icon.ico"),
+            sys.executable
+        ]
+        icon_path = None
+        for cand in icon_candidates:
+            if cand and os.path.exists(cand):
+                icon_path = os.path.abspath(cand)
+                break
+                
         shortcut_path = os.path.join(desktop_path, f"{app_name}.lnk")
         
         pythoncom.CoInitialize()
         try:
             shell = Dispatch('WScript.Shell')
             shortcut = shell.CreateShortCut(shortcut_path)
-            shortcut.Targetpath = bat_path
+            shortcut.Targetpath = target_path
+            if args:
+                shortcut.Arguments = args
             shortcut.WorkingDirectory = app_dir
-            if os.path.exists(icon_path): shortcut.IconLocation = icon_path
-            else: shortcut.IconLocation = bat_path
+            if icon_path:
+                shortcut.IconLocation = f"{icon_path},0" if (icon_path.endswith('.ico') or icon_path.endswith('.exe')) else icon_path
             shortcut.save()
         finally:
             pythoncom.CoUninitialize()
         return True
-    except: return False
+    except Exception as e:
+        print(f"Error creating shortcut: {e}")
+        return False
 
 def check_shortcut_exists():
     shortcut_path = os.path.join(get_desktop_path(), "ToInet-MAX.lnk")
@@ -234,15 +360,14 @@ def create_launch_bat(target_file="main.pyw"):
     if getattr(sys, 'frozen', False):
         return sys.executable
 
-    script_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
-    launch_bat_path = os.path.join(script_dir, "launch.bat")
+    app_dir = get_app_directory()
+    launch_bat_path = os.path.join(app_dir, "launch.bat")
     
     try:
-        main_pyw_path = os.path.join(script_dir, target_file)
         with open(launch_bat_path, 'w', encoding='utf-8') as f:
-            f.write(f'@echo off\n')
-            f.write(f'cd /d "{script_dir}"\n')
-            f.write(f'start /b pythonw "{main_pyw_path}"\n')
+            f.write('@echo off\n')
+            f.write('cd /d "%~dp0"\n')
+            f.write(f'start /b pythonw "%~dp0{target_file}"\n')
         print(f"[AutoLauncher] Создан/Обновлен файл {launch_bat_path}")
     except Exception as e:
         print(f"[AutoLauncher] Ошибка создания launch.bat: {e}")
@@ -344,8 +469,19 @@ from PyQt5.QtWidgets import QMessageBox
 def log(msg):
     print(f"[LOG] {msg}")
 
-def run_script(script_name, args=None):
+def _script_exists(script_name):
     if os.path.exists(script_name):
+        return True
+    if getattr(sys, 'frozen', False):
+        meipass = getattr(sys, '_MEIPASS', '')
+        if meipass:
+            norm = os.path.normpath(script_name)
+            if os.path.exists(os.path.join(meipass, norm)) or os.path.exists(os.path.join(meipass, os.path.basename(script_name))):
+                return True
+    return False
+
+def run_script(script_name, args=None):
+    if _script_exists(script_name):
         cmd = [sys.executable, script_name]
         if args:
             cmd.extend(args)
@@ -357,7 +493,7 @@ def run_script(script_name, args=None):
         return False
 
 def run_console_script(script_name, args=None):
-    if os.path.exists(script_name):
+    if _script_exists(script_name):
         cmd = [sys.executable, script_name]
         if args:
             cmd.extend(args)

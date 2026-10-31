@@ -137,7 +137,7 @@ def _update_menu_impl_unsafe():
                 ssh_cpl.triggered.connect(m.toggle_inetcpl_ssh)
                 m.tray_menu.addAction(ssh_cpl)            
 
-        elif m.mode_type == "tun" and not m.mode_mgr.get_tun_app_path():
+        elif m.mode_type == "tun":
             if m.tor_manager.is_running() or m.mode_mgr.tun_proxy_port == 9853:
                 tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
                 tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
@@ -265,6 +265,7 @@ def _update_menu_impl_unsafe():
         if not lang._is_en or m.config.get("enable_ru_features", False):
             settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: m.utils.run_script("tgws/settings.pyw"))
             
+        settings_menu.addAction(m.T("Настройки TUN", "TUN Settings", "Paramètres TUN"), m.mode_mgr.open_advanced_tun_config)
         settings_menu.addAction(m.T("Пути программ", "Program Paths", "Chemins des programmes"), m.mode_mgr.open_proxifier_config)
         m.tray_menu.addMenu(settings_menu)
         
@@ -362,9 +363,9 @@ def _update_menu_impl_unsafe():
         ast_act = QAction(m.T("Настройки автозапуска", "Autostart Settings", "Paramètres de démarrage"), sys_menu)
         ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
-        sys_menu.addAction(m.T("Очистка кеша", "Clear Cache", "Vider le cache"), lambda: m.utils.run_script(m.CACHER_SCRIPT))
+        sys_menu.addAction(m.T("Очистка кеша", "Clear Cache", "Vider le cache"), lambda: m.utils.clean_data_directory())
         sys_menu.addAction(m.T("Открыть папку проекта", "Open Project Folder", "Ouvrir le dossier du projet"), lambda: m.utils.open_project_folder(m.CURRENT_DIR))
-        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut", "Créer un raccourci sur le bureau"), lambda: m.utils.run_script(os.path.join(m.CURRENT_DIR, "managers", "system_utils.py"), ["yarlik", os.path.basename(__file__)]))
+        sys_menu.addAction(m.T("Создать ярлык на рабочем столе", "Create Desktop Shortcut", "Créer un raccourci sur le bureau"), lambda: m.utils.create_shortcut("ToInet.exe" if getattr(sys, 'frozen', False) else "main.pyw"))
         sys_menu.addAction(m.T("Открыть свойства браузера", "Open Browser Properties"), m.utils.open_browser_properties)
         # Управление DNS
         dns_menu = QMenu(m.T("Управление DNS (Требует прав Админа)", "DNS Management (Requires Admin)"), sys_menu)
@@ -372,14 +373,6 @@ def _update_menu_impl_unsafe():
         comms_dns_act = QAction(m.T("Установить Comms DNS (IPv4)", "Set Comms DNS (IPv4)"), dns_menu)
         comms_dns_act.triggered.connect(lambda: m.set_dns("comms"))
         dns_menu.addAction(comms_dns_act)
-
-        # xbox_dns_act = QAction(m.T("Установить Xbox DNS (IPv4)", "Set Xbox DNS (IPv4)"), dns_menu)
-        # xbox_dns_act.triggered.connect(lambda: m.set_dns("xbox"))
-        # dns_menu.addAction(xbox_dns_act)
-        # 
-        # xbox_ipv6_dns_act = QAction(m.T("Установить Xbox DNS (с IPv6)", "Set Xbox DNS (with IPv6)"), dns_menu)
-        # xbox_ipv6_dns_act.triggered.connect(lambda: m.set_dns("xbox_ipv6"))
-        # dns_menu.addAction(xbox_ipv6_dns_act)
 
         dns_menu.addSeparator()
 
@@ -426,9 +419,14 @@ def _update_menu_impl_unsafe():
         ui_type_act = QAction(m.T("Интерфейс: Окно (Приложение)", "Interface: Window (App)") if m.config.get("ui_type", "tray") == "window" else m.T("Интерфейс: Трей (По умолчанию)", "Interface: Tray (Default)"), sys_menu)
         def toggle_ui_type():
             current = m.config.get("ui_type", "tray")
-            m.config["ui_type"] = "window" if current == "tray" else "tray"
+            new_type = "window" if current == "tray" else "tray"
+            m.config["ui_type"] = new_type
             m.config_manager.save_config(m.config)
             m.update_menu()
+            if new_type == "window" and getattr(m, "main_window", None):
+                m.main_window.update_ui_state()
+                m.main_window.show()
+                m.main_window.activateWindow()
         ui_type_act.triggered.connect(toggle_ui_type)
         sys_menu.addAction(ui_type_act)
             

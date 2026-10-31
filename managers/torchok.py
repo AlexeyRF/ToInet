@@ -20,6 +20,7 @@ class TorManager:
         self.tor_process = None
         self.recreate_torrc = self._read_recreate_torrc()
         self.show_window = False
+        self._last_scan_time = 0
 
     def find_existing_process(self):
         tor_path = os.path.normcase(os.path.normpath(TOR_EXE))
@@ -46,7 +47,7 @@ class TorManager:
         try:
             import socket
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)
+            sock.settimeout(0.05)
             res = sock.connect_ex(('127.0.0.1', 9853))
             sock.close()
             if res == 0:
@@ -131,6 +132,7 @@ class TorManager:
             f"GeoIPFile {geoip_path}",
             f"GeoIPv6File {geoip6_path}",
             "SocksPort 9853",
+            "HTTPTunnelPort 9854",
             "ControlPort 9851",
             "HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1",
             "ExitNodes {us},{de},{fr},{nl},{se}",
@@ -435,10 +437,13 @@ class TorManager:
                 self.tor_running = False
                 self.tor_process = None
         elif not self.tor_running:
-            existing_pid = self.find_existing_process()
-            if existing_pid:
-                self.tor_process = AdoptedProcess(existing_pid)
-                self.tor_running = True
+            now = time.time()
+            if now - getattr(self, '_last_scan_time', 0) > 15.0:
+                self._last_scan_time = now
+                existing_pid = self.find_existing_process()
+                if existing_pid:
+                    self.tor_process = AdoptedProcess(existing_pid)
+                    self.tor_running = True
         return self.tor_running
 
     def toggle_recreate(self):
@@ -459,7 +464,8 @@ class TorManager:
     def open_settings(self):
         """Открывает настройки TOR (maestro.pyw, НЕ auto_maestro)"""
         # Сначала проверяем наличие maestro.pyw
-        if os.path.exists(MAESTRO_SCRIPT):
+        maestro_exists = os.path.exists(MAESTRO_SCRIPT) or (getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', None) and os.path.exists(os.path.join(sys._MEIPASS, "ui", "maestro.pyw")))
+        if maestro_exists:
             try:
                 # Запускаем maestro.pyw с обычным окном (не скрытым)
                 subprocess.Popen([sys.executable, MAESTRO_SCRIPT])

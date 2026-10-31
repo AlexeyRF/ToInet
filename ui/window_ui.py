@@ -1,586 +1,1405 @@
 import sys
+import math
+import os
 import platform
 import subprocess
-from PyQt5.QtWidgets import QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel, QApplication, QStackedWidget, QScrollArea, QFrame, QComboBox, QCheckBox
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont
+from PyQt5.QtWidgets import (
+    QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
+    QStackedWidget, QScrollArea, QFrame, QComboBox, QCheckBox, QMessageBox,
+    QApplication, QSizePolicy
+)
+from PyQt5.QtCore import Qt, QTimer, QPointF, QRectF
+from PyQt5.QtGui import QFont, QColor, QPainter, QPen, QBrush
 
-class SettingRow(QFrame):
-    def __init__(self, title, description, control_widget, parent=None):
+class PowerButton(QPushButton):
+    """
+    Circular connect button styled according to Windows 11 Fluent Design.
+    Features an authentic IEC 5009 power symbol: an open circular arc with
+    the gap strictly at 12 o'clock and a centered vertical line.
+    No emojis used.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(160, 160)
+        self.setCursor(Qt.PointingHandCursor)
+        self._state = "off"  # "off", "starting", "on"
+        self._hover = False
+        self._anim_phase = 0.0
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._on_anim_step)
+
+    def set_state(self, state):
+        if self._state == state:
+            return
+        self._state = state
+        if state == "starting":
+            if not self._timer.isActive():
+                self._timer.start(40)
+        else:
+            if self._timer.isActive():
+                self._timer.stop()
+        self.update()
+
+    def _on_anim_step(self):
+        self._anim_phase += 0.09
+        if self._anim_phase > 6.283:
+            self._anim_phase = 0.0
+        self.update()
+
+    def enterEvent(self, event):
+        self._hover = True
+        self.update()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        self._hover = False
+        self.update()
+        super().leaveEvent(event)
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+        w = self.width()
+        h = self.height()
+        cx = w / 2.0
+        cy = h / 2.0
+        radius = 70.0
+
+        if self._state == "on":
+            bg_color = QColor("#107C41") if not self._hover else QColor("#138747")
+            ring_color = QColor("#0F7B0F")
+            icon_color = QColor("#FFFFFF")
+            glow_color = QColor(16, 124, 65, 50 if not self._hover else 80)
+        elif self._state == "starting":
+            pulse = (math.sin(self._anim_phase) + 1.0) / 2.0
+            bg_color = QColor("#CA5010")
+            ring_color = QColor("#E9641D")
+            icon_color = QColor("#FFFFFF")
+            glow_color = QColor(202, 80, 16, int(35 + 55 * pulse))
+        else:  # "off"
+            bg_color = QColor("#2b2b2b") if not self._hover else QColor("#353535")
+            ring_color = QColor("#3c3c3c")
+            icon_color = QColor("#cccccc")
+            glow_color = QColor(0, 0, 0, 40 if not self._hover else 65)
+
+        # Ambient drop shadow
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(QBrush(glow_color))
+        painter.drawEllipse(QPointF(cx, cy), radius + 5, radius + 5)
+
+        # Main round button surface
+        painter.setPen(QPen(ring_color, 4))
+        painter.setBrush(QBrush(bg_color))
+        painter.drawEllipse(QPointF(cx, cy), radius, radius)
+
+        # Authentic Power Symbol (IEC 5009):
+        # Open arc at top (12 o'clock, 90 deg). Gap is from 60 to 120 deg.
+        # Starts at 120 deg and sweeps counter-clockwise 300 deg to 60 deg.
+        painter.setPen(QPen(icon_color, 6.0, Qt.SolidLine, Qt.RoundCap, Qt.RoundJoin))
+        painter.setBrush(Qt.NoBrush)
+
+        r_icon = 25.0
+        arc_rect = QRectF(cx - r_icon, cy - r_icon, r_icon * 2, r_icon * 2)
+        painter.drawArc(arc_rect, int(120 * 16), int(300 * 16))
+        # Centered vertical stroke passing through the open gap into center
+        painter.drawLine(QPointF(cx, cy - r_icon - 4), QPointF(cx, cy - 1))
+
+
+class Win11LinearProgress(QWidget):
+    """
+    Windows 11 styled indeterminate linear progress indicator (3px height)
+    with smooth Fluent accent blue animation.
+    """
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setFixedHeight(3)
+        self._pos = -0.35
+        self._running = False
+        self._timer = QTimer(self)
+        self._timer.timeout.connect(self._step)
+        self.hide()
+
+    def start(self):
+        self._running = True
+        self.show()
+        if not self._timer.isActive():
+            self._timer.start(16)
+
+    def stop(self):
+        self._running = False
+        self._timer.stop()
+        self.hide()
+
+    def _step(self):
+        self._pos += 0.02
+        if self._pos > 1.35:
+            self._pos = -0.35
+        self.update()
+
+    def paintEvent(self, event):
+        if not self._running:
+            return
+        painter = QPainter(self)
+        w = self.width()
+        h = self.height()
+        painter.fillRect(0, 0, w, h, QColor("#202020"))
+        bar_len = w * 0.35
+        x = int(self._pos * w)
+        painter.fillRect(x, 0, int(bar_len), h, QColor("#0078D4"))
+
+
+class CardRow(QFrame):
+    """
+    Windows 11 Fluent Card with 8px corner radius, #2b2b2b surface,
+    and subtle #383838 borders. Guaranteed strictly dark background.
+    """
+    def __init__(self, title, description=None, control_widget=None, parent=None):
         super().__init__(parent)
         self.setStyleSheet("""
-            SettingRow {
+            CardRow {
                 background-color: #2b2b2b;
+                border: 1px solid #383838;
                 border-radius: 8px;
             }
-            SettingRow:hover {
-                background-color: #333333;
+            CardRow:hover {
+                background-color: #323232;
+                border-color: #484848;
             }
         """)
         layout = QHBoxLayout(self)
-        layout.setContentsMargins(15, 12, 15, 12)
-        
+        layout.setContentsMargins(14, 10, 14, 10)
+        layout.setSpacing(10)
+
         text_layout = QVBoxLayout()
+        text_layout.setSpacing(2)
+
         title_label = QLabel(title)
-        title_label.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        title_label.setStyleSheet("color: white;")
-        
-        desc_label = QLabel(description)
-        desc_label.setFont(QFont("Segoe UI", 9))
-        desc_label.setStyleSheet("color: #aaaaaa;")
-        desc_label.setWordWrap(True)
-        
+        title_label.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        title_label.setStyleSheet("color: #FFFFFF; background: transparent;")
         text_layout.addWidget(title_label)
-        text_layout.addWidget(desc_label)
-        
-        layout.addLayout(text_layout)
-        layout.addSpacing(10)
-        
-        control_layout = QVBoxLayout()
-        control_layout.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
-        control_layout.addWidget(control_widget)
-        
-        layout.addLayout(control_layout)
+
+        if description:
+            desc_label = QLabel(description)
+            desc_label.setFont(QFont("Segoe UI Variable Text", 9))
+            desc_label.setStyleSheet("color: #9d9d9d; background: transparent;")
+            desc_label.setWordWrap(True)
+            text_layout.addWidget(desc_label)
+
+        layout.addLayout(text_layout, 1)
+
+        if control_widget:
+            ctrl_layout = QVBoxLayout()
+            ctrl_layout.setAlignment(Qt.AlignRight | Qt.AlignVCenter)
+            ctrl_layout.addWidget(control_widget)
+            layout.addLayout(ctrl_layout, 0)
+
 
 class MainWindow(QMainWindow):
+    """
+    Spacious Desktop GUI for ToInet-MAX with Windows 11 Fluent Design theme,
+    individual settings per provider, Telegram integration (including Gatik),
+    rich tray-menu parameters integration, and strictly dark color palette.
+    """
     def __init__(self, main_module):
         super().__init__()
         self.main_module = main_module
         self.setWindowTitle("ToInet-MAX")
-        self.setFixedSize(400, 600)
-        self.setStyleSheet("background-color: #121212; color: #ffffff;")
-        
+        # Spacious window size: 620 x 700 px to comfortably fit all provider controls
+        self.setFixedSize(620, 700)
+
+        # Strictly dark background across all widgets, views, and viewports
+        self.setStyleSheet("""
+            QMainWindow {
+                background-color: #202020;
+            }
+            QWidget {
+                background-color: transparent;
+                color: #FFFFFF;
+                font-family: 'Segoe UI Variable Text', 'Segoe UI', Arial, sans-serif;
+            }
+            QStackedWidget {
+                background-color: #202020;
+            }
+            QScrollArea {
+                border: none;
+                background-color: #202020;
+            }
+            QScrollBar:vertical {
+                width: 6px;
+                background: #202020;
+                margin: 0px;
+            }
+            QScrollBar::handle:vertical {
+                background: #484848;
+                border-radius: 3px;
+                min-height: 24px;
+            }
+            QScrollBar::handle:vertical:hover {
+                background: #606060;
+            }
+            QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
+                height: 0px;
+                background: none;
+            }
+            QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {
+                background: none;
+            }
+        """)
+
+        # Windows 11 DWM integration: Dark mode, titlebar color (#202020), and rounded corners
         if platform.system() == "Windows":
             try:
                 import ctypes
                 hwnd = int(self.winId())
-                value = ctypes.c_int(1)
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(value), ctypes.sizeof(value))
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 19, ctypes.byref(value), ctypes.sizeof(value))
-                color = ctypes.c_int(0x00121212)
-                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(color), ctypes.sizeof(color))
+                val_true = ctypes.c_int(1)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 20, ctypes.byref(val_true), ctypes.sizeof(val_true))
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 19, ctypes.byref(val_true), ctypes.sizeof(val_true))
+                caption_color = ctypes.c_int(0x00202020)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 35, ctypes.byref(caption_color), ctypes.sizeof(caption_color))
+                corner_pref = ctypes.c_int(2)
+                ctypes.windll.dwmapi.DwmSetWindowAttribute(hwnd, 33, ctypes.byref(corner_pref), ctypes.sizeof(corner_pref))
             except Exception:
                 pass
 
         self.stacked = QStackedWidget()
         self.setCentralWidget(self.stacked)
-        
-        self.main_view = QWidget()
-        self.settings_view = QWidget()
-        self.modules_view = QWidget()
-        
-        self.stacked.addWidget(self.main_view)
-        self.stacked.addWidget(self.settings_view)
-        self.stacked.addWidget(self.modules_view)
-        
-        self.build_main_view()
-        self.build_settings_view()
-        self.build_modules_view()
 
-    def build_main_view(self):
-        main_layout = QVBoxLayout(self.main_view)
-        main_layout.setAlignment(Qt.AlignTop)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        
-        header_layout = QHBoxLayout()
-        header_layout.setAlignment(Qt.AlignTop)
-        
+        self.connect_view = QWidget()
+        self.provider_view = QWidget()
+        self.settings_view = QWidget()
+
+        self.stacked.addWidget(self.connect_view)
+        self.stacked.addWidget(self.provider_view)
+        self.stacked.addWidget(self.settings_view)
+
+        self.build_connect_view()
+        self.build_provider_view()
+        self.build_settings_view()
+
+        # Connect EVPN signals if available
+        if hasattr(self.main_module, 'evpn_mgr'):
+            try:
+                self.main_module.evpn_mgr.status_changed.connect(self.set_status)
+                self.main_module.evpn_mgr.error_occurred.connect(self.show_error)
+            except Exception:
+                pass
+
+        self.update_ui_state()
+
+    # -------------------------------------------------------------------------
+    # Screen 0: Main Connect Screen (Windows 11 Fluent style, no emojis)
+    # -------------------------------------------------------------------------
+    def build_connect_view(self):
+        layout = QVBoxLayout(self.connect_view)
+        layout.setContentsMargins(32, 28, 32, 0)
+        layout.setSpacing(0)
+
+        # Top Title
         self.title_label = QLabel("ToInet-MAX")
-        self.title_label.setFont(QFont("Segoe UI", 24, QFont.Bold))
-        self.title_label.setStyleSheet("color: #ffffff; letter-spacing: 2px;")
-        
-        self.settings_btn = QPushButton("⚙")
-        self.settings_btn.setFixedSize(40, 40)
-        self.settings_btn.setFont(QFont("Segoe UI", 18))
-        self.settings_btn.setCursor(Qt.PointingHandCursor)
-        self.settings_btn.setStyleSheet("""
-            QPushButton {
-                background-color: transparent;
-                color: #aaaaaa;
-                border: none;
-                border-radius: 20px;
-            }
-            QPushButton:hover {
-                background-color: rgba(255, 255, 255, 0.1);
-                color: #ffffff;
+        self.title_label.setFont(QFont("Segoe UI Variable Text", 22, QFont.Bold))
+        self.title_label.setAlignment(Qt.AlignCenter)
+        self.title_label.setStyleSheet("color: #FFFFFF; background: transparent;")
+        layout.addWidget(self.title_label)
+
+        layout.addSpacing(8)
+
+        # Status Pill Badge (no emojis)
+        chip_layout = QHBoxLayout()
+        chip_layout.setAlignment(Qt.AlignCenter)
+        self.status_chip = QLabel("Отключено")
+        self.status_chip.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        self.status_chip.setStyleSheet("""
+            QLabel {
+                background-color: #2b2b2b;
+                color: #9d9d9d;
+                border: 1px solid #383838;
+                border-radius: 12px;
+                padding: 4px 16px;
             }
         """)
-        self.settings_btn.clicked.connect(self.show_settings)
-        
-        header_layout.addWidget(self.title_label)
-        header_layout.addStretch()
-        header_layout.addWidget(self.settings_btn)
-        
-        main_layout.addLayout(header_layout)
-        
-        if hasattr(self.main_module, 'evpn_mgr'):
-            self.main_module.evpn_mgr.status_changed.connect(self.set_status)
-            self.main_module.evpn_mgr.error_occurred.connect(self.show_error)
-        
-        main_layout.addSpacing(40)
+        chip_layout.addWidget(self.status_chip)
+        layout.addLayout(chip_layout)
 
-        self.toggle_btn = QPushButton("OFF")
-        self.toggle_btn.setFixedSize(160, 160)
-        self.toggle_btn.setFont(QFont("Segoe UI", 28, QFont.Bold))
-        self.toggle_btn.setCursor(Qt.PointingHandCursor)
-        self.set_btn_style_disconnected()
-        self.toggle_btn.clicked.connect(self.toggle_vpn)
-        
+        layout.addStretch(1)
+
+        # Center Power Button
         btn_layout = QHBoxLayout()
         btn_layout.setAlignment(Qt.AlignCenter)
-        btn_layout.addWidget(self.toggle_btn)
-        main_layout.addLayout(btn_layout)
-        
-        main_layout.addSpacing(20)
-        
-        self.next_btn = QPushButton("Сменить сервер")
-        self.next_btn.setFixedSize(160, 40)
-        self.next_btn.setFont(QFont("Segoe UI", 11, QFont.Bold))
-        self.next_btn.setCursor(Qt.PointingHandCursor)
-        self.next_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #333333;
-                color: #ffffff;
-                border-radius: 20px;
-                border: 2px solid #444444;
-            }
-            QPushButton:hover {
-                background-color: #444444;
-            }
-            QPushButton:pressed {
-                background-color: #222222;
-            }
-        """)
-        self.next_btn.clicked.connect(self.next_server)
-        self.next_btn.hide()
-        
-        next_btn_layout = QHBoxLayout()
-        next_btn_layout.setAlignment(Qt.AlignCenter)
-        next_btn_layout.addWidget(self.next_btn)
-        main_layout.addLayout(next_btn_layout)
-        
-        main_layout.addSpacing(20)
+        self.power_btn = PowerButton()
+        self.power_btn.clicked.connect(self.toggle_vpn)
+        btn_layout.addWidget(self.power_btn)
+        layout.addLayout(btn_layout)
 
-        self.status_label = QLabel("Отключено")
-        self.status_label.setFont(QFont("Segoe UI", 16))
-        self.status_label.setAlignment(Qt.AlignCenter)
-        self.status_label.setStyleSheet("color: #aaaaaa;")
-        main_layout.addWidget(self.status_label)
-        
-        main_layout.addSpacing(20)
+        layout.addSpacing(18)
 
-        self.error_label = QLabel("")
-        self.error_label.setFont(QFont("Segoe UI", 10))
-        self.error_label.setAlignment(Qt.AlignCenter)
-        self.error_label.setStyleSheet("color: #ff5555;")
-        self.error_label.setWordWrap(True)
-        main_layout.addWidget(self.error_label)
-        
-        main_layout.addStretch()
+        # Status Description Label
+        self.status_desc = QLabel("Нажмите для подключения")
+        self.status_desc.setFont(QFont("Segoe UI Variable Text", 11))
+        self.status_desc.setAlignment(Qt.AlignCenter)
+        self.status_desc.setStyleSheet("color: #9d9d9d; background: transparent;")
+        layout.addWidget(self.status_desc)
 
-    def build_settings_view(self):
-        T = self.main_module.T
-        layout = QVBoxLayout(self.settings_view)
-        layout.setContentsMargins(10, 10, 10, 10)
-        
-        header = QHBoxLayout()
-        back_btn = QPushButton("←")
-        back_btn.setFixedSize(40, 40)
-        back_btn.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        back_btn.setStyleSheet("""
-            QPushButton { background: transparent; color: white; border: none; border-radius: 20px; }
-            QPushButton:hover { background: rgba(255,255,255,0.1); }
-        """)
-        back_btn.setCursor(Qt.PointingHandCursor)
-        back_btn.clicked.connect(self.hide_settings)
-        
-        title = QLabel(T("Настройки", "Settings"))
-        title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        
-        header.addWidget(back_btn)
-        header.addWidget(title)
-        header.addStretch()
-        
-        layout.addLayout(header)
-        layout.addSpacing(10)
-        
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("""
-            QScrollArea { border: none; background-color: transparent; }
-            QScrollBar:vertical { width: 8px; background: transparent; }
-            QScrollBar::handle:vertical { background: #555; border-radius: 4px; }
-        """)
-        
-        content = QWidget()
-        content_layout = QVBoxLayout(content)
-        content_layout.setSpacing(10)
-        content_layout.setContentsMargins(5, 5, 5, 5)
-        
-        # Mode Combo
-        mode_combo = QComboBox()
-        mode_combo.addItems(["EMPTY", "INETCPL", "TUN", "EVPN"])
-        mode_combo.setCurrentText(self.main_module.mode_type.upper())
-        mode_combo.setStyleSheet("""
-            QComboBox { background: #333; border: 1px solid #555; border-radius: 4px; color: white; padding: 5px; min-width: 100px; font-family: 'Segoe UI'; font-size: 13px; }
-            QComboBox::drop-down { border: none; }
-        """)
-        mode_combo.setCursor(Qt.PointingHandCursor)
-        def on_mode_change(text):
-            self.main_module.set_mode_type(text.lower())
-        mode_combo.currentTextChanged.connect(on_mode_change)
-        content_layout.addWidget(SettingRow(T("Режим", "Proxy Mode", "Mode de proxy"), T("Способ перенаправления трафика", "How traffic is redirected", "Méthode de redirection du trafic"), mode_combo))
-        
-        # Interface Combo
-        ui_combo = QComboBox()
-        ui_combo.addItems([T("Окно", "Window"), T("Трей", "Tray")])
-        ui_combo.setCurrentIndex(0 if self.main_module.config.get("ui_type", "tray") == "window" else 1)
-        ui_combo.setStyleSheet(mode_combo.styleSheet())
-        ui_combo.setCursor(Qt.PointingHandCursor)
-        def on_ui_change(idx):
-            self.main_module.config["ui_type"] = "window" if idx == 0 else "tray"
-            self.main_module.config_manager.save_config(self.main_module.config)
-            if hasattr(self.main_module, 'update_menu'):
-                self.main_module.update_menu()
-        ui_combo.currentIndexChanged.connect(on_ui_change)
-        content_layout.addWidget(SettingRow(T("Интерфейс", "Interface", "Interface"), T("Внешний вид (Окно или меню в трее)", "Window vs Tray menu", "Apparence (Fenêtre ou menu dans la zone de notification)"), ui_combo))
-        
-        # Simple Mode Button
-        simple_btn = QPushButton(T("Сменить", "Toggle"))
-        simple_btn.setStyleSheet("""
-            QPushButton { background: #005FB8; color: white; border: none; border-radius: 4px; padding: 6px 12px; font-family: 'Segoe UI'; }
-            QPushButton:hover { background: #0078D4; }
-        """)
-        simple_btn.setCursor(Qt.PointingHandCursor)
-        simple_btn.clicked.connect(self.main_module.toggle_mode)
-        content_layout.addWidget(SettingRow(T("Вид меню", "Menu Mode", "Mode de menu"), T("Отображение расширенного меню трея", "Toggle simple/advanced tray menu", "Menu simplifié ou avancé"), simple_btn))
-        
-        # Modules and Utilities Button
-        modules_btn = QPushButton(T("Открыть", "Open"))
-        modules_btn.setStyleSheet(simple_btn.styleSheet())
-        modules_btn.setCursor(Qt.PointingHandCursor)
-        modules_btn.clicked.connect(self.show_modules)
-        content_layout.addWidget(SettingRow(T("Модули и утилиты", "Modules & Utilities", "Modules & Utilitaires"), T("Индивидуальное управление компонентами", "Manage individual proxy components", "Gestion individuelle des composants"), modules_btn))
+        layout.addSpacing(8)
 
-        # SSH Tunnel Settings Button
-        ssh_cfg_btn = QPushButton(T("Настроить", "Configure", "Configurer"))
-        ssh_cfg_btn.setStyleSheet(simple_btn.styleSheet())
-        ssh_cfg_btn.setCursor(Qt.PointingHandCursor)
-        ssh_cfg_btn.clicked.connect(lambda: getattr(self.main_module, 'ssh_mgr', None) and self.main_module.ssh_mgr.open_settings())
-        content_layout.addWidget(SettingRow(T("SSH Туннель", "SSH Tunnel", "Tunnel SSH"), T("Настройки SSH сервера и SOCKS5 прокси", "SSH server credentials and SOCKS5 proxy", "Identifiants du serveur SSH et proxy SOCKS5"), ssh_cfg_btn))
+        # Quick Switch Buttons on Main Screen (Tor circuit / EVPN server when active)
+        next_layout = QHBoxLayout()
+        next_layout.setAlignment(Qt.AlignCenter)
+        next_layout.setSpacing(10)
 
-        # Programs & Proxifier Settings Button
-        progs_cfg_btn = QPushButton(T("Настроить", "Configure", "Configurer"))
-        progs_cfg_btn.setStyleSheet(simple_btn.styleSheet())
-        progs_cfg_btn.setCursor(Qt.PointingHandCursor)
-        progs_cfg_btn.clicked.connect(lambda: getattr(self.main_module, 'mode_mgr', None) and self.main_module.mode_mgr.open_proxifier_config())
-        content_layout.addWidget(SettingRow(T("Пути программ", "Program Paths", "Chemins des programmes"), T("Указание Proxifier (TUN) и дополнительных программ", "Configure Proxifier (TUN) and external startup programs", "Configurer Proxifier (TUN) et programmes externes"), progs_cfg_btn))
-        
-        # Auto Start Checkbox
-        # We simulate a modern switch with a checkbox
-        auto_start = QCheckBox()
-        auto_start.setChecked(self.main_module.config.get("auto_start", False))
-        auto_start.setStyleSheet("""
-            QCheckBox::indicator { width: 40px; height: 20px; }
-        """)
-        auto_start.setCursor(Qt.PointingHandCursor)
-        def on_auto_start():
-            if hasattr(self.main_module, 'toggle_auto_start'):
-                self.main_module.toggle_auto_start()
-        auto_start.clicked.connect(on_auto_start)
-        content_layout.addWidget(SettingRow(T("Автозапуск", "Auto Start"), T("Запускать при старте системы", "Run on system startup"), auto_start))
-        
-        # EVPN Encrypted DNS Checkbox
-        evpn_dns = QCheckBox()
-        evpn_dns.setChecked(self.main_module.config.get("evpn_encrypted_dns", False))
-        evpn_dns.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
-        evpn_dns.setCursor(Qt.PointingHandCursor)
-        def on_evpn_dns():
-            self.main_module.config["evpn_encrypted_dns"] = evpn_dns.isChecked()
-            if hasattr(self.main_module, 'config_manager'):
-                self.main_module.config_manager.save_config(self.main_module.config)
-        evpn_dns.clicked.connect(on_evpn_dns)
-        content_layout.addWidget(SettingRow(T("Шифрованный DNS (EVPN)", "Encrypted DNS (EVPN)"), T("Использовать 111.88.96.54/55 (вступит после переподключения)", "Use 111.88.96.54/55 (takes effect on reconnect)"), evpn_dns))
-        
-        # TUN/EVPN Proxy DNS Checkbox
-        proxy_dns = QCheckBox()
-        proxy_dns.setChecked(self.main_module.config.get("proxy_dns_tun_evpn", True))
-        proxy_dns.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
-        proxy_dns.setCursor(Qt.PointingHandCursor)
-        def on_proxy_dns():
-            self.main_module.config["proxy_dns_tun_evpn"] = proxy_dns.isChecked()
-            if hasattr(self.main_module, 'config_manager'):
-                self.main_module.config_manager.save_config(self.main_module.config)
-        proxy_dns.clicked.connect(on_proxy_dns)
-        content_layout.addWidget(SettingRow(T("Проксировать DNS (TUN/EVPN)", "Proxy DNS (TUN/EVPN)"), T("Направлять DNS-запросы через прокси (вступит после переподключения)", "Route DNS requests through proxy (takes effect on reconnect)"), proxy_dns))
-        
-        # Restart Button
-        restart_btn = QPushButton(T("Перезапуск", "Restart App"))
-        restart_btn.setStyleSheet("""
-            QPushButton { background: #333333; color: white; border: 1px solid #555555; border-radius: 4px; padding: 6px 12px; font-family: 'Segoe UI'; font-weight: bold;}
-            QPushButton:hover { background: #444444; }
-        """)
-        restart_btn.setCursor(Qt.PointingHandCursor)
-        restart_btn.clicked.connect(self.main_module.restart_app)
-        content_layout.addWidget(SettingRow(T("Перезапуск", "Restart"), T("Перезапустить все процессы", "Restart all processes"), restart_btn))
-        
-        # Exit Button
-        exit_btn = QPushButton(T("Выйти", "Exit App"))
-        exit_btn.setStyleSheet("""
-            QPushButton { background: transparent; color: #ff5555; border: 1px solid #ff5555; border-radius: 4px; padding: 6px 12px; font-family: 'Segoe UI'; font-weight: bold;}
-            QPushButton:hover { background: rgba(255, 85, 85, 0.1); }
-        """)
-        exit_btn.setCursor(Qt.PointingHandCursor)
-        exit_btn.clicked.connect(self.main_module.exit_app)
-        content_layout.addWidget(SettingRow(T("Завершение", "Termination"), T("Полностью закрыть приложение", "Completely close the application"), exit_btn))
-        
-        
-        content_layout.addStretch()
-        scroll.setWidget(content)
-        layout.addWidget(scroll)
-
-    def set_btn_style_disconnected(self):
-        self.toggle_btn.setText("OFF")
-        self.toggle_btn.setStyleSheet("""
+        self.tor_switch_btn = QPushButton(T("Сменить узел Tor", "New Tor Circuit", "Changer de circuit Tor"))
+        self.tor_switch_btn.setFixedHeight(34)
+        self.tor_switch_btn.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        self.tor_switch_btn.setCursor(Qt.PointingHandCursor)
+        self.tor_switch_btn.setStyleSheet("""
             QPushButton {
                 background-color: #2b2b2b;
-                color: #888888;
-                border-radius: 80px;
-                border: 6px solid #333333;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                border-radius: 6px;
+                padding: 0 16px;
             }
             QPushButton:hover {
                 background-color: #353535;
-                border-color: #444444;
+                border-color: #0078D4;
             }
             QPushButton:pressed {
                 background-color: #222222;
-                border-color: #2a2a2a;
             }
         """)
+        self.tor_switch_btn.clicked.connect(lambda: getattr(self.main_module, 'tor_manager', None) and self.main_module.tor_manager.new_circuit(self))
+        self.tor_switch_btn.hide()
+        next_layout.addWidget(self.tor_switch_btn)
 
-    def set_btn_style_connected(self):
-        self.toggle_btn.setText("ON")
-        self.toggle_btn.setStyleSheet("""
+        self.evpn_switch_btn = QPushButton(T("Сменить сервер EVPN", "Switch EVPN Server", "Changer de serveur EVPN"))
+        self.evpn_switch_btn.setFixedHeight(34)
+        self.evpn_switch_btn.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        self.evpn_switch_btn.setCursor(Qt.PointingHandCursor)
+        self.evpn_switch_btn.setStyleSheet(self.tor_switch_btn.styleSheet())
+        self.evpn_switch_btn.clicked.connect(self.next_server)
+        self.evpn_switch_btn.hide()
+        next_layout.addWidget(self.evpn_switch_btn)
+
+        self.next_btn = self.evpn_switch_btn  # for backward compatibility
+        layout.addLayout(next_layout)
+
+        # Error label
+        self.error_label = QLabel("")
+        self.error_label.setFont(QFont("Segoe UI Variable Text", 9))
+        self.error_label.setAlignment(Qt.AlignCenter)
+        self.error_label.setStyleSheet("color: #FF5555; background: transparent;")
+        self.error_label.setWordWrap(True)
+        layout.addWidget(self.error_label)
+
+        layout.addStretch(1)
+
+        # Bottom Action Buttons in Windows 11 style (no emojis):
+        # [ VPN Провайдер ] and [ Настройки ]
+        bottom_buttons_layout = QHBoxLayout()
+        bottom_buttons_layout.setSpacing(16)
+
+        win11_tonal_btn = """
             QPushButton {
-                background-color: #1abc9c;
-                color: #ffffff;
-                border-radius: 80px;
-                border: 6px solid #16a085;
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                border-radius: 8px;
+                font-family: 'Segoe UI Variable Text', 'Segoe UI';
+                font-size: 13px;
+                font-weight: 600;
+                padding: 10px;
             }
             QPushButton:hover {
-                background-color: #1dd2af;
-                border-color: #1abc9c;
+                background-color: #353535;
+                border-color: #4c4c4c;
             }
             QPushButton:pressed {
-                background-color: #12876f;
-                border-color: #16a085;
+                background-color: #222222;
+                border-color: #333333;
             }
-        """)
-        
-    def set_btn_style_transitioning(self):
-        self.toggle_btn.setText("...")
-        self.toggle_btn.setStyleSheet("""
+        """
+
+        self.btn_provider = QPushButton(T("VPN Провайдер", "VPN Providers", "Fournisseurs VPN"))
+        self.btn_provider.setFixedHeight(50)
+        self.btn_provider.setCursor(Qt.PointingHandCursor)
+        self.btn_provider.setStyleSheet(win11_tonal_btn)
+        self.btn_provider.clicked.connect(self.show_provider_view)
+
+        self.btn_settings = QPushButton(T("Настройки", "Settings", "Paramètres"))
+        self.btn_settings.setFixedHeight(50)
+        self.btn_settings.setCursor(Qt.PointingHandCursor)
+        self.btn_settings.setStyleSheet(win11_tonal_btn)
+        self.btn_settings.clicked.connect(self.show_settings_view)
+
+        bottom_buttons_layout.addWidget(self.btn_provider, 1)
+        bottom_buttons_layout.addWidget(self.btn_settings, 1)
+        layout.addLayout(bottom_buttons_layout)
+
+        layout.addSpacing(16)
+
+        # Win11 Linear Progress Bar along bottom edge
+        self.progress_bar = Win11LinearProgress()
+        layout.addWidget(self.progress_bar)
+
+    # -------------------------------------------------------------------------
+    # Screen 1: VPN Provider Screen (Individual settings per provider)
+    # -------------------------------------------------------------------------
+    def build_provider_view(self):
+        T = self.main_module.T
+        m = self.main_module
+
+        layout = QVBoxLayout(self.provider_view)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(10)
+
+        # Header with back button (no emoji)
+        header = QHBoxLayout()
+        back_btn = QPushButton("←")
+        back_btn.setFixedSize(32, 32)
+        back_btn.setFont(QFont("Segoe UI Variable Text", 14, QFont.Bold))
+        back_btn.setCursor(Qt.PointingHandCursor)
+        back_btn.setStyleSheet("""
             QPushButton {
-                background-color: #e67e22;
-                color: #ffffff;
-                border-radius: 80px;
-                border: 6px solid #d35400;
+                background-color: transparent;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 16px;
             }
             QPushButton:hover {
-                background-color: #f39c12;
-                border-color: #e67e22;
+                background-color: rgba(255, 255, 255, 0.1);
             }
         """)
+        back_btn.clicked.connect(self.show_connect_view)
 
+        header_title = QLabel(T("VPN Провайдер", "VPN Provider"))
+        header_title.setFont(QFont("Segoe UI Variable Text", 15, QFont.Bold))
+        header_title.setStyleSheet("color: #FFFFFF; background: transparent;")
+
+        header.addWidget(back_btn)
+        header.addWidget(header_title)
+        header.addStretch()
+        layout.addLayout(header)
+
+        # Scroll area with strictly dark viewport
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("border: none; background-color: #202020;")
+        scroll.viewport().setStyleSheet("background-color: #202020; border: none;")
+
+        content = QWidget()
+        content.setStyleSheet("background-color: #202020;")
+        c_layout = QVBoxLayout(content)
+        c_layout.setContentsMargins(2, 2, 8, 2)
+        c_layout.setSpacing(12)
+
+        # Card 1: Routing Mode Selection
+        mode_card = QFrame()
+        mode_card.setStyleSheet("""
+            QFrame {
+                background-color: #2b2b2b;
+                border: 1px solid #383838;
+                border-radius: 8px;
+                padding: 12px;
+            }
+        """)
+        mc_layout = QVBoxLayout(mode_card)
+        mc_layout.setSpacing(8)
+
+        mc_title = QLabel(T("Режим маршрутизации", "Routing Mode"))
+        mc_title.setFont(QFont("Segoe UI Variable Text", 11, QFont.Bold))
+        mc_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
+        mc_layout.addWidget(mc_title)
+
+        modes_btn_layout = QHBoxLayout()
+        modes_btn_layout.setSpacing(8)
+
+        self.mode_chips = {}
+        for m_name in ["EMPTY", "INETCPL", "TUN", "EVPN"]:
+            btn = QPushButton(m_name)
+            btn.setFixedHeight(32)
+            btn.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+            btn.setCursor(Qt.PointingHandCursor)
+            def _make_mode_cb(m_val):
+                return lambda: self.select_mode(m_val.lower())
+            btn.clicked.connect(_make_mode_cb(m_name))
+            self.mode_chips[m_name.lower()] = btn
+            modes_btn_layout.addWidget(btn)
+
+        mc_layout.addLayout(modes_btn_layout)
+
+        self.mode_desc_label = QLabel("")
+        self.mode_desc_label.setFont(QFont("Segoe UI Variable Text", 9))
+        self.mode_desc_label.setStyleSheet("color: #9d9d9d; border: none; background: transparent;")
+        self.mode_desc_label.setWordWrap(True)
+        mc_layout.addWidget(self.mode_desc_label)
+
+        c_layout.addWidget(mode_card)
+
+        # Helper for provider action buttons
+        def make_prov_btn(text, callback, is_primary=False, is_accent=False):
+            b = QPushButton(text)
+            b.setCursor(Qt.PointingHandCursor)
+            if is_primary:
+                bg = "#005FB8"
+                h_bg = "#0078D4"
+            elif is_accent:
+                bg = "#107C41"
+                h_bg = "#138747"
+            else:
+                bg = "#2d2d2d"
+                h_bg = "#383838"
+
+            b.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {bg};
+                    color: #FFFFFF;
+                    border: 1px solid #3c3c3c;
+                    border-radius: 6px;
+                    padding: 6px 12px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }}
+                QPushButton:hover {{
+                    background-color: {h_bg};
+                    border-color: #484848;
+                }}
+                QPushButton:pressed {{
+                    background-color: #222222;
+                }}
+            """)
+            b.clicked.connect(callback)
+            return b
+
+        # Helper to create a comprehensive, spacious card for each provider with 2-row button layout
+        def create_provider_card(title, port_desc, description, primary_actions, settings_actions):
+            card = QFrame()
+            card.setStyleSheet("""
+                QFrame {
+                    background-color: #2b2b2b;
+                    border: 1px solid #383838;
+                    border-radius: 8px;
+                    padding: 12px;
+                }
+                QFrame:hover {
+                    border-color: #484848;
+                }
+            """)
+            card_layout = QVBoxLayout(card)
+            card_layout.setSpacing(8)
+
+            top_row = QHBoxLayout()
+            lbl_title = QLabel(title)
+            lbl_title.setFont(QFont("Segoe UI Variable Text", 11, QFont.Bold))
+            lbl_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
+
+            lbl_port = QLabel(port_desc)
+            lbl_port.setFont(QFont("Segoe UI Variable Text", 9))
+            lbl_port.setStyleSheet("border: none; color: #0078D4; background: transparent; font-weight: bold;")
+
+            top_row.addWidget(lbl_title)
+            top_row.addWidget(lbl_port)
+            top_row.addStretch()
+            card_layout.addLayout(top_row)
+
+            lbl_desc = QLabel(description)
+            lbl_desc.setFont(QFont("Segoe UI Variable Text", 9))
+            lbl_desc.setStyleSheet("border: none; color: #9d9d9d; background: transparent;")
+            lbl_desc.setWordWrap(True)
+            card_layout.addWidget(lbl_desc)
+
+            # Row 1: Primary actions (Gateway selector, Start/Stop)
+            if primary_actions:
+                row1 = QHBoxLayout()
+                row1.setSpacing(8)
+                for btn in primary_actions:
+                    row1.addWidget(btn)
+                row1.addStretch()
+                card_layout.addLayout(row1)
+
+            # Row 2: Provider specific settings & Telegram integration
+            if settings_actions:
+                row2 = QHBoxLayout()
+                row2.setSpacing(8)
+                for btn in settings_actions:
+                    row2.addWidget(btn)
+                row2.addStretch()
+                card_layout.addLayout(row2)
+
+            return card
+
+        # Section Header: Providers
+        prov_header = QLabel(T("Провайдеры и параметры шлюзов", "Providers & Gateway Configurations"))
+        prov_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        prov_header.setStyleSheet("color: #9d9d9d; margin-top: 6px; background: transparent;")
+        c_layout.addWidget(prov_header)
+
+        # 1. ByeDPI
+        bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
+        bd_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_byedpi(), self.update_ui_state()))
+        def open_bd_tester():
+            subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
+        bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
+        def toggle_pip():
+            cur = m.config.get("byedpi_pip_enabled", False)
+            m.config["byedpi_pip_enabled"] = not cur
+            m.config_manager.save_config(m.config)
+            self.update_ui_state()
+        bd_pip_btn = make_prov_btn("Pip (1781)", toggle_pip)
+        def add_bd_tg():
+            from managers import system_utils
+            system_utils.add_proxy_to_telegram(1780)
+        bd_tg_btn = make_prov_btn("В Telegram (1780)", add_bd_tg)
+        c_layout.addWidget(create_provider_card(
+            "ByeDPI",
+            "Порт 1780",
+            T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
+              "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
+            [bd_select_btn, bd_toggle_btn],
+            [bd_test_btn, bd_pip_btn, bd_tg_btn]
+        ))
+
+        # 2. Tor
+        tor_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("tor"), is_primary=True)
+        tor_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_tor(), self.update_ui_state()))
+        def open_tor_bridges():
+            subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
+        tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
+        tor_newnym_btn = make_prov_btn(T("Сменить IP (Newnym)", "New Circuit"), lambda: getattr(m, 'tor_manager', None) and m.tor_manager.new_circuit())
+        def add_tor_tg():
+            from managers import system_utils
+            system_utils.add_proxy_to_telegram(9853)
+        tor_tg_btn = make_prov_btn("В Telegram (9853)", add_tor_tg)
+        c_layout.addWidget(create_provider_card(
+            "Tor",
+            "Порт 9853 / HTTP 9854",
+            T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
+              "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
+            [tor_select_btn, tor_toggle_btn],
+            [tor_bridges_btn, tor_newnym_btn, tor_tg_btn]
+        ))
+
+        # 3. Opera Proxy
+        opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
+        opera_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_opera(), self.update_ui_state()))
+        opera_cfg_btn = make_prov_btn(T("Настройки региона (EU/AM/AS)", "Region Options"), lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
+        c_layout.addWidget(create_provider_card(
+            "Opera Proxy",
+            "Порт 1785",
+            T("Высокоскоростной туннель через европейские, американские и азиатские серверы Opera.",
+              "High-speed proxy tunnel through European, American, and Asian Opera infrastructure."),
+            [opera_select_btn, opera_toggle_btn],
+            [opera_cfg_btn]
+        ))
+
+        # 4. SVPN / SSH Tunnel
+        ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
+        ssh_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_ssh(), self.update_ui_state()))
+        ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
+        def add_ssh_tg():
+            from managers import system_utils
+            ssh_p = int(m.config.get("ssh_socks_port", 1770))
+            system_utils.add_proxy_to_telegram(ssh_p)
+        ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
+        ssh_tg_btn = make_prov_btn(f"В Telegram ({ssh_p_str})", add_ssh_tg)
+        c_layout.addWidget(create_provider_card(
+            "SVPN / SSH Туннель",
+            f"Порт {ssh_p_str}",
+            T("Высокоскоростной C++ SOCKS5 туннель к вашему личному VPS с безопасным хранением учетных данных.",
+              "High-speed C++ SOCKS5 tunnel to your personal VPS with secure password management."),
+            [ssh_select_btn, ssh_toggle_btn],
+            [ssh_cfg_btn, ssh_tg_btn]
+        ))
+
+        # 5. VLESS / EVPN
+        vless_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("vless"), is_primary=True)
+        vless_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_vless(), self.update_ui_state()))
+        vless_cfg_btn = make_prov_btn(T("Настройки VLESS", "VLESS Settings"), lambda: getattr(m, 'vless_mgr', None) and m.vless_mgr.open_settings())
+        vless_rot_btn = make_prov_btn(T("Сменить сервер", "Next Server"), lambda: getattr(m, 'evpn_mgr', None) and m.evpn_mgr.next_server())
+        c_layout.addWidget(create_provider_card(
+            "VLESS / EVPN",
+            "Порт 1790",
+            T("Ядро Sing-box: VLESS Reality, ShadowTLS, Trojan и динамическая ротация серверов.",
+              "Sing-box core with VLESS Reality, ShadowTLS, Trojan, and subscription server rotation."),
+            [vless_select_btn, vless_toggle_btn],
+            [vless_rot_btn, vless_cfg_btn]
+        ))
+
+        # Store all gateway select buttons for mode-dependent visibility (hidden in empty mode)
+        self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
+
+        # 6. Telegram WebSocket Proxy (TGWS)
+        tgws_toggle_btn = make_prov_btn("Старт/Стоп", lambda: (m.toggle_tgws(), self.update_ui_state()))
+        def open_tgws_test():
+            subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"])
+        tgws_test_btn = make_prov_btn(T("Тестер TGWS", "TGWS Tester"), open_tgws_test)
+        def add_tgws_socks():
+            from managers import system_utils
+            system_utils.add_proxy_to_telegram(int(m.config.get("tgws_port", 1480)))
+        def add_tgws_mtproto():
+            from managers import system_utils
+            system_utils.add_mtproto_to_telegram(int(m.config.get("tgws_port", 1480)),
+                                                 m.config.get("tgws_secret", "0"*32),
+                                                 m.config.get("tgws_fake_tls", ""))
+        tgws_s_btn = make_prov_btn("В Telegram (SOCKS5)", add_tgws_socks)
+        tgws_m_btn = make_prov_btn("В Telegram (MTProto)", add_tgws_mtproto)
+        c_layout.addWidget(create_provider_card(
+            "Telegram WS Proxy (TGWS)",
+            "Порт 1480",
+            T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
+              "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
+            [tgws_toggle_btn, tgws_test_btn],
+            [tgws_s_btn, tgws_m_btn]
+        ))
+
+        # 7. Gatik Router (dedicated Gatik to Telegram button included!)
+        def add_gatik_tg():
+            from managers import system_utils
+            system_utils.add_proxy_to_telegram(1777)
+        gatik_tg_btn = make_prov_btn(T("Добавить Gatik в Telegram", "Add Gatik to Telegram"), add_gatik_tg, is_primary=True)
+        gatik_restart_btn = make_prov_btn("Перезапуск Gatik", lambda: getattr(m, 'tgws_mgr', None) and m.tgws_mgr.start())
+        c_layout.addWidget(create_provider_card(
+            "Умный шлюз Gatik",
+            "Порт 1777",
+            T("Нативный C++ балансировщик и акселератор для Telegram, оптимизирующий сетевые маршруты.",
+              "Native C++ smart router and balancer for accelerating Telegram connections."),
+            [gatik_tg_btn, gatik_restart_btn],
+            []
+        ))
+
+        # Section: Split Tunneling & Proxifier
+        # Labeled as "Путь к проксификатору" according to user request
+        sc_header = QLabel(T("Системный перехват и проксификация", "System Redirection & Proxification"))
+        sc_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sc_header.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sc_header)
+
+        split_card = QFrame()
+        split_card.setStyleSheet("""
+            QFrame {
+                background-color: #2b2b2b;
+                border: 1px solid #383838;
+                border-radius: 8px;
+                padding: 12px;
+            }
+        """)
+        sc_layout = QHBoxLayout(split_card)
+        sc_layout.setSpacing(10)
+
+        proxi_btn = make_prov_btn(T("Путь к проксификатору", "Path to Proxifier", "Chemin vers Proxifier"),
+                                  lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_proxifier_config())
+        tun_btn = make_prov_btn(T("Параметры TUN (Sing-box) →", "Sing-box TUN Config →", "Paramètres TUN (Sing-box) →"),
+                                lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_advanced_tun_config())
+        rules_btn = make_prov_btn(T("Редактировать правила", "Edit Rules", "Modifier les règles"),
+                                  self.open_rules_editor)
+        sc_layout.addWidget(proxi_btn)
+        sc_layout.addWidget(tun_btn)
+        sc_layout.addWidget(rules_btn)
+        sc_layout.addStretch()
+        c_layout.addWidget(split_card)
+
+        c_layout.addStretch()
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+
+    # -------------------------------------------------------------------------
+    # Screen 2: Settings Screen (Rich parameters from tray menu, strictly dark)
+    # -------------------------------------------------------------------------
+    def build_settings_view(self):
+        T = self.main_module.T
+        m = self.main_module
+
+        layout = QVBoxLayout(self.settings_view)
+        layout.setContentsMargins(20, 16, 20, 16)
+        layout.setSpacing(10)
+
+        # Header with back button (no emoji)
+        header = QHBoxLayout()
+        back_btn = QPushButton("←")
+        back_btn.setFixedSize(32, 32)
+        back_btn.setFont(QFont("Segoe UI Variable Text", 14, QFont.Bold))
+        back_btn.setCursor(Qt.PointingHandCursor)
+        back_btn.setStyleSheet("""
+            QPushButton {
+                background-color: transparent;
+                color: #FFFFFF;
+                border: none;
+                border-radius: 16px;
+            }
+            QPushButton:hover {
+                background-color: rgba(255, 255, 255, 0.1);
+            }
+        """)
+        back_btn.clicked.connect(self.show_connect_view)
+
+        header_title = QLabel(T("Настройки", "Settings"))
+        header_title.setFont(QFont("Segoe UI Variable Text", 15, QFont.Bold))
+        header_title.setStyleSheet("color: #FFFFFF; background: transparent;")
+
+        header.addWidget(back_btn)
+        header.addWidget(header_title)
+        header.addStretch()
+        layout.addLayout(header)
+
+        # Scroll area with strictly dark viewport
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setStyleSheet("border: none; background-color: #202020;")
+        scroll.viewport().setStyleSheet("background-color: #202020; border: none;")
+
+        content = QWidget()
+        content.setStyleSheet("background-color: #202020;")
+        c_layout = QVBoxLayout(content)
+        c_layout.setContentsMargins(2, 2, 8, 2)
+        c_layout.setSpacing(10)
+
+        def make_action_btn(text, callback, is_primary=False, is_danger=False):
+            btn = QPushButton(text)
+            btn.setCursor(Qt.PointingHandCursor)
+            if is_danger:
+                bg = "#C42B1C"
+                h_bg = "#D83B01"
+            elif is_primary:
+                bg = "#005FB8"
+                h_bg = "#0078D4"
+            else:
+                bg = "#2d2d2d"
+                h_bg = "#383838"
+
+            btn.setStyleSheet(f"""
+                QPushButton {{
+                    background-color: {bg};
+                    color: #FFFFFF;
+                    border: 1px solid #3c3c3c;
+                    border-radius: 6px;
+                    padding: 6px 14px;
+                    font-size: 11px;
+                    font-weight: 600;
+                }}
+                QPushButton:hover {{
+                    background-color: {h_bg};
+                    border-color: #484848;
+                }}
+                QPushButton:pressed {{
+                    background-color: #222222;
+                }}
+            """)
+            btn.clicked.connect(callback)
+            return btn
+
+        # Group 1: Diagnostics & Logs (from tray menu)
+        sec_label_diag = QLabel(T("Журнал и диагностика", "Logs & Diagnostics"))
+        sec_label_diag.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_diag.setStyleSheet("color: #9d9d9d; margin-top: 4px; background: transparent;")
+        c_layout.addWidget(sec_label_diag)
+
+        log_btn = make_action_btn(T("Показать логи", "Show Logs"), lambda: m.app_log_window.show() if getattr(m, 'app_log_window', None) else None)
+        c_layout.addWidget(CardRow(T("Журнал событий приложения", "Application Logs"),
+                                   T("Консольный вывод, отладка процессов и статус сетевых служб.",
+                                     "Process console output, debugging, and service status events."),
+                                   log_btn))
+
+        # Group 2: Autostart (from tray menu)
+        sec_label_ast = QLabel(T("Параметры автозапуска", "Autostart Options"))
+        sec_label_ast.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_ast.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_ast)
+
+        auto_start_cb = QCheckBox()
+        auto_start_cb.setChecked(m.config.get("auto_start", False))
+        auto_start_cb.setCursor(Qt.PointingHandCursor)
+        auto_start_cb.setStyleSheet("""
+            QCheckBox { background: transparent; }
+            QCheckBox::indicator {
+                width: 18px;
+                height: 18px;
+                border-radius: 4px;
+                border: 1px solid #555555;
+                background-color: #2d2d2d;
+            }
+            QCheckBox::indicator:hover { border-color: #777777; }
+            QCheckBox::indicator:checked { background-color: #005FB8; border-color: #005FB8; }
+        """)
+        auto_start_cb.clicked.connect(lambda: m.toggle_auto_start() if hasattr(m, 'toggle_auto_start') else None)
+        c_layout.addWidget(CardRow(T("Автозапуск при входе в систему", "Start on Windows Boot"),
+                                   T("Автоматический запуск ToInet-MAX при старте операционной системы.",
+                                     "Automatically launch ToInet-MAX when you log into Windows."),
+                                   auto_start_cb))
+
+        def open_ast_gui():
+            subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")],
+                             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        ast_gui_btn = make_action_btn(T("Настроить службы", "Configure Services"), open_ast_gui)
+        c_layout.addWidget(CardRow(T("Выбор служб для автозапуска", "Autostart Services Selection"),
+                                   T("Выбор конкретных модулей (ByeDPI, Tor, SSH, Opera, Proxifier) при старте.",
+                                     "Select individual services to boot on program startup."),
+                                   ast_gui_btn))
+
+        # Group 3: Pip (PyPI) Proxying (from tray menu)
+        sec_label_pip = QLabel(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"))
+        sec_label_pip.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_pip.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_pip)
+
+        pip_cb = QCheckBox()
+        pip_cb.setChecked(m.config.get("byedpi_pip_enabled", False))
+        pip_cb.setCursor(Qt.PointingHandCursor)
+        pip_cb.setStyleSheet(auto_start_cb.styleSheet())
+        def on_pip_change():
+            m.config["byedpi_pip_enabled"] = pip_cb.isChecked()
+            m.config_manager.save_config(m.config)
+            if hasattr(m, 'update_menu'): m.update_menu()
+        pip_cb.clicked.connect(on_pip_change)
+        c_layout.addWidget(CardRow(T("Проксировать pip через ByeDPI (1781)", "Route pip through ByeDPI (1781)"),
+                                   T("Ускоряет и разблокирует установку Python-пакетов через PyPI.",
+                                     "Accelerate and unblock Python package installations from PyPI."),
+                                   pip_cb))
+
+        pip_tor_cb = QCheckBox()
+        pip_tor_cb.setChecked(m.config.get("byedpi_pip_use_tor", False))
+        pip_tor_cb.setCursor(Qt.PointingHandCursor)
+        pip_tor_cb.setStyleSheet(auto_start_cb.styleSheet())
+        def on_pip_tor_change():
+            m.config["byedpi_pip_use_tor"] = pip_tor_cb.isChecked()
+            m.config_manager.save_config(m.config)
+            if hasattr(m, 'update_menu'): m.update_menu()
+        pip_tor_cb.clicked.connect(on_pip_tor_change)
+        c_layout.addWidget(CardRow(T("Использовать Tor вместо ByeDPI для pip", "Use Tor instead of ByeDPI for pip"),
+                                   T("Направляет установку пакетов pip через порт луковой сети 9853.",
+                                     "Route pip package downloads through local Tor SOCKS port 9853."),
+                                   pip_tor_cb))
+
+        # Group 4: System DNS (Corrected addresses: Comms is 83.220.169.155, 212.109.195.93)
+        sec_label_dns = QLabel(T("Системный DNS (требуются права администратора)", "System DNS (Admin rights required)"))
+        sec_label_dns.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_dns.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_dns)
+
+        dns_widget = QWidget()
+        dw_layout = QHBoxLayout(dns_widget)
+        dw_layout.setContentsMargins(0, 0, 0, 0)
+        dw_layout.setSpacing(6)
+        comms_dns_btn = make_action_btn("Comms DNS", lambda: m.set_dns("comms"), is_primary=True)
+        reset_dns_btn = make_action_btn(T("Сброс", "Reset"), lambda: m.set_dns("reset"))
+        dw_layout.addWidget(comms_dns_btn)
+        dw_layout.addWidget(reset_dns_btn)
+        c_layout.addWidget(CardRow(T("Comms DNS (83.220.169.155 / 212.109.195.93)", "Comms DNS (83.220.169.155 / 212.109.195.93)"),
+                                   T("Надежный DNS без блокировок (Comms DNS) или сброс к DNS провайдера по умолчанию.",
+                                     "Uncensored low-latency DNS (Comms DNS) or reset to network default."),
+                                   dns_widget))
+
+        # Group 5: Background Tools & Utilities (from tray menu)
+        sec_label_tools = QLabel(T("Утилиты и обслуживание системы", "System Maintenance & Utilities"))
+        sec_label_tools.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_tools.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_tools)
+
+        # SOCKS Rehab & Noisy
+        misc_widget = QWidget()
+        mw_layout = QHBoxLayout(misc_widget)
+        mw_layout.setContentsMargins(0, 0, 0, 0)
+        mw_layout.setSpacing(6)
+        def import_subprocess_and_rehab():
+            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"])
+        rehab_btn = make_action_btn(T("Rehab", "Rehab"), import_subprocess_and_rehab)
+        noisy_btn = make_action_btn(T("Noisy", "Noisy"), lambda: (m.toggle_noisy(), self.update_ui_state()))
+        mw_layout.addWidget(rehab_btn)
+        mw_layout.addWidget(noisy_btn)
+        c_layout.addWidget(CardRow("SOCKS-реабилитатор и генератор Noisy",
+                                   T("Восстановление зависших соединений и фоновый трафик для маскировки.",
+                                     "Restore broken socks connections and generate background noise traffic."),
+                                   misc_widget))
+
+        # Clean Cache & Folder
+        utils_widget = QWidget()
+        uw_layout = QHBoxLayout(utils_widget)
+        uw_layout.setContentsMargins(0, 0, 0, 0)
+        uw_layout.setSpacing(6)
+        from managers import system_utils as sys_u
+        clean_btn = make_action_btn(T("Очистить кэш", "Clear Cache"), lambda: sys_u.clean_data_directory())
+        folder_btn = make_action_btn(T("Папка проекта", "Open Folder"), lambda: sys_u.open_project_folder(m.CURRENT_DIR))
+        cpl_btn = make_action_btn(T("Свойства браузера", "Browser CPL"), lambda: sys_u.open_browser_properties())
+        uw_layout.addWidget(clean_btn)
+        uw_layout.addWidget(folder_btn)
+        uw_layout.addWidget(cpl_btn)
+        c_layout.addWidget(CardRow(T("Служебные утилиты", "Service Utilities"),
+                                   T("Очистка временных файлов data, открытие папки программы и inetcpl.cpl.",
+                                     "Clean data directory, open project directory, and browser properties."),
+                                   utils_widget))
+
+        # Desktop Shortcut
+        shortcut_btn = make_action_btn(T("Создать ярлык", "Create Shortcut"),
+                                       lambda: sys_u.create_shortcut("ToInet.exe" if getattr(sys, 'frozen', False) else "main.pyw"))
+        c_layout.addWidget(CardRow(T("Ярлык на рабочем столе", "Desktop Shortcut"),
+                                   T("Создать удобный ярлык быстрого запуска программы на рабочем столе Windows.",
+                                     "Create a quick launch desktop shortcut for easy access."),
+                                   shortcut_btn))
+
+        # Ext Programs (from tray menu)
+        def toggle_ext_progs():
+            if m.ext_programs_manager.is_running():
+                m.ext_programs_manager.stop_all()
+            else:
+                m.ext_programs_manager.start_all()
+            self.update_ui_state()
+        ext_btn = make_action_btn(T("Запуск/Стоп", "Start/Stop"), toggle_ext_progs)
+        c_layout.addWidget(CardRow(T("Дополнительные фоновые программы (Ext)", "External Background Programs"),
+                                   T("Запуск сторонних утилит и проксификаторов, прописанных в конфигурации.",
+                                     "Launch custom background programs specified in configuration."),
+                                   ext_btn))
+
+        # Group 6: Application & Network Interface Settings
+        sec_label_app = QLabel(T("Параметры интерфейса и сети", "Interface & Network Settings"))
+        sec_label_app.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_app.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_app)
+
+        # UI Type (guaranteed strictly dark)
+        ui_combo = QComboBox()
+        ui_combo.addItems([T("Окно", "Window"), T("Трей", "Tray")])
+        ui_combo.setCurrentIndex(0 if m.config.get("ui_type", "tray") == "window" else 1)
+        ui_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2d2d2d;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QComboBox:hover {
+                background-color: #383838;
+                border-color: #484848;
+            }
+            QComboBox::drop-down { border: none; width: 16px; }
+            QComboBox QAbstractItemView {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                selection-background-color: #005FB8;
+                selection-color: #FFFFFF;
+                outline: none;
+            }
+        """)
+        ui_combo.setCursor(Qt.PointingHandCursor)
+        def on_ui_change(idx):
+            m.config["ui_type"] = "window" if idx == 0 else "tray"
+            m.config_manager.save_config(m.config)
+            if hasattr(m, 'update_menu'):
+                m.update_menu()
+        ui_combo.currentIndexChanged.connect(on_ui_change)
+        c_layout.addWidget(CardRow(T("Тип интерфейса", "Interface Type"),
+                                   T("Режим отображения (графическое окно или меню в системном трее).",
+                                     "Presentation mode: application window vs notification area tray menu."),
+                                   ui_combo))
+
+        # Tray Menu Style
+        menu_mode_btn = make_action_btn(T("Сменить", "Toggle"), m.toggle_mode)
+        c_layout.addWidget(CardRow(T("Вид меню трея", "Tray Menu Style"),
+                                   T("Переключение между простым и расширенным меню трея.",
+                                     "Switch between simple and advanced tray menu layouts."),
+                                   menu_mode_btn))
+
+        # Language selection (from tray menu)
+        lang_combo = QComboBox()
+        lang_map = [("auto", T("Авто (Система)", "Auto (System)")),
+                    ("ru", "Русский"),
+                    ("en", "English"),
+                    ("fr", "Français")]
+        for code, label in lang_map:
+            lang_combo.addItem(label, code)
+        cur_l = m.config.get("language", "auto")
+        for i, (code, _) in enumerate(lang_map):
+            if code == cur_l:
+                lang_combo.setCurrentIndex(i)
+                break
+        lang_combo.setStyleSheet(ui_combo.styleSheet())
+        lang_combo.setCursor(Qt.PointingHandCursor)
+        def on_lang_change(idx):
+            selected_code = lang_combo.itemData(idx)
+            m.config["language"] = selected_code
+            m.config_manager.save_config(m.config)
+            from managers import system_utils
+            system_utils.set_language(selected_code)
+            if hasattr(m, 'update_menu'):
+                m.update_menu()
+            self.retranslate_ui()
+        lang_combo.currentIndexChanged.connect(on_lang_change)
+        c_layout.addWidget(CardRow(T("Язык программы", "Application Language"),
+                                   T("Выбор языка интерфейса окна и контекстного меню.",
+                                     "Select display language for window and tray menus."),
+                                   lang_combo))
+
+        # Encrypted DNS (EVPN)
+        evpn_dns_cb = QCheckBox()
+        evpn_dns_cb.setChecked(m.config.get("evpn_encrypted_dns", False))
+        evpn_dns_cb.setCursor(Qt.PointingHandCursor)
+        evpn_dns_cb.setStyleSheet(auto_start_cb.styleSheet())
+        def on_evpn_dns():
+            m.config["evpn_encrypted_dns"] = evpn_dns_cb.isChecked()
+            m.config_manager.save_config(m.config)
+        evpn_dns_cb.clicked.connect(on_evpn_dns)
+        c_layout.addWidget(CardRow(T("Шифрованный DNS (EVPN)", "Encrypted DNS (EVPN)"),
+                                   T("Использовать защищенный DNS для VLESS подписок.",
+                                     "Use encrypted DoH DNS for subscription nodes."),
+                                   evpn_dns_cb))
+
+        # Proxy DNS in TUN/EVPN
+        tun_dns_cb = QCheckBox()
+        tun_dns_cb.setChecked(m.config.get("proxy_dns_tun_evpn", True))
+        tun_dns_cb.setCursor(Qt.PointingHandCursor)
+        tun_dns_cb.setStyleSheet(auto_start_cb.styleSheet())
+        def on_tun_dns():
+            m.config["proxy_dns_tun_evpn"] = tun_dns_cb.isChecked()
+            m.config_manager.save_config(m.config)
+        tun_dns_cb.clicked.connect(on_tun_dns)
+        c_layout.addWidget(CardRow(T("Проксировать DNS (TUN/EVPN)", "Proxy DNS (TUN/EVPN)"),
+                                   T("Направлять DNS-запросы системы через активный туннель.",
+                                     "Direct system DNS requests through the active proxy tunnel."),
+                                   tun_dns_cb))
+
+        # Group 7: Exit & Restart
+        sec_label_sys = QLabel(T("Системные команды", "System Actions"))
+        sec_label_sys.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
+        sec_label_sys.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        c_layout.addWidget(sec_label_sys)
+
+        re_btn = make_action_btn(T("Перезапуск", "Restart"), m.restart_app)
+        c_layout.addWidget(CardRow(T("Перезапуск ToInet-MAX", "Restart ToInet-MAX"),
+                                   T("Перезапустить приложение и завершить все дочерние процессы.",
+                                     "Restart the application and re-initialize background services."),
+                                   re_btn))
+
+        exit_btn = make_action_btn(T("Выход", "Exit"), m.exit_app, is_danger=True)
+        c_layout.addWidget(CardRow(T("Выход из программы", "Exit Application"),
+                                   T("Полностью закрыть ToInet-MAX и восстановить сетевые параметры.",
+                                     "Completely terminate ToInet-MAX and restore network settings."),
+                                   exit_btn))
+
+        c_layout.addStretch()
+        scroll.setWidget(content)
+        layout.addWidget(scroll)
+
+    # -------------------------------------------------------------------------
+    # Navigation between views
+    # -------------------------------------------------------------------------
+    def show_connect_view(self):
+        self.stacked.setCurrentWidget(self.connect_view)
+        self.update_ui_state()
+
+    def show_provider_view(self):
+        self.stacked.setCurrentWidget(self.provider_view)
+        self.update_ui_state()
+
+    def show_settings_view(self):
+        self.stacked.setCurrentWidget(self.settings_view)
+        self.update_ui_state()
+
+    # -------------------------------------------------------------------------
+    # Proxy Control & Mode Actions
+    # -------------------------------------------------------------------------
     def toggle_vpn(self):
         self.error_label.setText("")
         self.main_module.toggle_all()
         self.update_ui_state()
-            
+
     def next_server(self):
         if hasattr(self.main_module, 'evpn_mgr') and self.main_module.evpn_mgr.is_running:
             self.main_module.evpn_mgr.next_server()
-            
+
+    def select_mode(self, mode_str):
+        self.main_module.set_mode_type(mode_str)
+        self.update_ui_state()
+
+    def select_gateway(self, gw_id):
+        m = self.main_module
+        cur_mode = getattr(m, 'mode_type', 'inetcpl')
+
+        if cur_mode == "tun":
+            if gw_id == "tor": m.toggle_singbox_tun_tor()
+            elif gw_id == "byedpi": m.toggle_singbox_tun_bd()
+            elif gw_id == "opera": m.toggle_singbox_tun_opera()
+            elif gw_id == "ssh": m.toggle_singbox_tun_ssh()
+        elif cur_mode == "inetcpl":
+            if gw_id == "tor": m.toggle_inetcpl_tor()
+            elif gw_id == "byedpi": m.toggle_inetcpl_bd()
+            elif gw_id == "opera": m.toggle_inetcpl_opera()
+            elif gw_id == "vless": m.toggle_inetcpl_vless()
+            elif gw_id == "ssh": m.toggle_inetcpl_ssh()
+
+        self.update_ui_state()
+
+    # -------------------------------------------------------------------------
+    # UI State Synchronization (Windows 11 Fluent style, no emojis)
+    # -------------------------------------------------------------------------
     def set_status(self, text):
-        if "VPN Включен" in text or "Подключено" in text:
-            self.status_label.setText("Подключено")
-            self.status_label.setStyleSheet("color: #1abc9c; font-weight: bold;")
-            self.set_btn_style_connected()
+        if "VPN Включен" in text or "Подключено" in text or "Connected" in text:
+            self.power_btn.set_state("on")
+            self.status_desc.setText("Соединение защищено")
+            self.status_desc.setStyleSheet("color: #107C41; font-weight: bold; background: transparent;")
+            self.progress_bar.stop()
+
+            cur_mode = getattr(self.main_module, 'mode_type', 'inetcpl').upper()
+            self.status_chip.setText(f"Подключено • {cur_mode}")
+            self.status_chip.setStyleSheet("""
+                QLabel {
+                    background-color: #2b2b2b;
+                    color: #107C41;
+                    border: 1px solid #107C41;
+                    border-radius: 12px;
+                    padding: 4px 16px;
+                }
+            """)
+
             if hasattr(self.main_module, 'evpn_mgr') and self.main_module.evpn_mgr.is_running:
                 self.next_btn.show()
             else:
                 self.next_btn.hide()
-        elif "VPN Выключен" in text or "Отключено" in text:
-            self.status_label.setText("Отключено")
-            self.status_label.setStyleSheet("color: #aaaaaa;")
-            self.set_btn_style_disconnected()
+
+        elif "VPN Выключен" in text or "Отключено" in text or "Disconnected" in text:
+            self.power_btn.set_state("off")
+            self.status_desc.setText("Нажмите для подключения")
+            self.status_desc.setStyleSheet("color: #9d9d9d; background: transparent;")
+            self.progress_bar.stop()
             self.next_btn.hide()
+
+            self.status_chip.setText("Отключено")
+            self.status_chip.setStyleSheet("""
+                QLabel {
+                    background-color: #2b2b2b;
+                    color: #9d9d9d;
+                    border: 1px solid #383838;
+                    border-radius: 12px;
+                    padding: 4px 16px;
+                }
+            """)
         else:
-            self.status_label.setText(text)
-            self.status_label.setStyleSheet("color: #e67e22;")
-            self.set_btn_style_transitioning()
-            if "Переключение" not in text:
-                self.next_btn.hide()
+            self.power_btn.set_state("starting")
+            self.status_desc.setText(text)
+            self.status_desc.setStyleSheet("color: #CA5010; background: transparent;")
+            self.progress_bar.start()
 
+            self.status_chip.setText("Подключение...")
+            self.status_chip.setStyleSheet("""
+                QLabel {
+                    background-color: #2b2b2b;
+                    color: #CA5010;
+                    border: 1px solid #CA5010;
+                    border-radius: 12px;
+                    padding: 4px 16px;
+                }
+            """)
 
-    def show_modules(self):
-        self.update_modules_state()
-        self.stacked.setCurrentWidget(self.modules_view)
+    def open_rules_editor(self):
+        try:
+            from ui.rules_editor import RulesEditorDialog
+            dialog = RulesEditorDialog(parent=self)
+            dialog.exec_()
+        except Exception as e:
+            QMessageBox.warning(self, T("Ошибка", "Error", "Erreur"), f"Не удалось открыть редактор правил: {e}")
 
-    def hide_modules(self):
-        self.stacked.setCurrentWidget(self.main_view)
+    def retranslate_ui(self):
+        # Update mode descriptions and chips
+        self._last_styled_mode = None
+        self._last_status_text = None
+        self.update_ui_state()
 
-    def update_modules_state(self):
-        # Update text/colors based on running status
-        if hasattr(self, 'module_btns'):
-            for btn, check_func in self.module_btns:
-                is_running = check_func()
-                btn.setText(self.main_module.T("Остановить", "Stop") if is_running else self.main_module.T("Запустить", "Start"))
-                btn.setStyleSheet(f"QPushButton {{ background: {'#ff5555' if is_running else '#1abc9c'}; color: white; font-weight: bold; border: none; border-radius: 4px; padding: 6px 12px; }} QPushButton:hover {{ background: {'#ff6666' if is_running else '#1dd2af'}; }}")
+        # Update bottom buttons
+        if hasattr(self, 'btn_provider'):
+            self.btn_provider.setText(T("VPN Провайдер", "VPN Providers", "Fournisseurs VPN"))
+        if hasattr(self, 'btn_settings'):
+            self.btn_settings.setText(T("Настройки", "Settings", "Paramètres"))
 
-    def build_modules_view(self):
-        T = getattr(self.main_module, 'T', lambda ru, en: ru)
-        layout = QVBoxLayout(self.modules_view)
-        layout.setContentsMargins(10, 10, 10, 10)
-        
-        header = QHBoxLayout()
-        back_btn = QPushButton("←")
-        back_btn.setFixedSize(40, 40)
-        back_btn.setFont(QFont("Segoe UI", 18, QFont.Bold))
-        back_btn.setStyleSheet("QPushButton { background: transparent; color: white; border: none; border-radius: 20px; } QPushButton:hover { background: rgba(255,255,255,0.1); }")
-        back_btn.setCursor(Qt.PointingHandCursor)
-        back_btn.clicked.connect(self.hide_modules)
-        
-        title = QLabel(T("Модули и утилиты", "Modules and utilities"))
-        title.setFont(QFont("Segoe UI", 16, QFont.Bold))
-        
-        header.addWidget(back_btn)
-        header.addWidget(title)
-        header.addStretch()
-        layout.addLayout(header)
-        layout.addSpacing(10)
-        
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setStyleSheet("QScrollArea { border: none; background-color: transparent; } QScrollBar:vertical { width: 8px; background: transparent; } QScrollBar::handle:vertical { background: #555; border-radius: 4px; }")
-        
-        content = QWidget()
-        content_layout = QVBoxLayout(content)
-        content_layout.setSpacing(10)
-        content_layout.setContentsMargins(5, 5, 5, 5)
-        
-        self.module_btns = []
-        
-        def add_module(name, desc, toggle_func, check_func):
-            btn = QPushButton()
-            btn.setCursor(Qt.PointingHandCursor)
-            def on_click():
-                toggle_func()
-                self.update_modules_state()
-            btn.clicked.connect(on_click)
-            self.module_btns.append((btn, check_func))
-            content_layout.addWidget(SettingRow(name, desc, btn))
-            
-        m = self.main_module
-        add_module("TOR", T("TOR Прокси (порт 9853)", "TOR Proxy (port 9853)"), m.toggle_tor, lambda: m.tor_manager.is_running())
-        add_module("ByeDPI", T("Обход блокировок (порт 1080)", "DPI Bypass (port 1080)"), m.toggle_byedpi, lambda: m.byedpi_manager.is_running())
-        add_module("Opera Proxy", T("Opera VPN (порт 1785)", "Opera VPN (port 1785)"), m.toggle_opera, lambda: m.opera_mgr.is_running())
-        ssh_port_desc = str(m.config.get("ssh_socks_port", 1770))
-        add_module("SSH Tunnel", T(f"SSH SOCKS5 (порт {ssh_port_desc})", f"SSH SOCKS5 (port {ssh_port_desc})"), m.toggle_ssh, lambda: m.ssh_mgr.is_running())
-        add_module("TG WS Proxy", T("Telegram прокси (порт 1480)", "Telegram proxy (port 1480)"), m.toggle_tgws, lambda: m.tgws_mgr.running)
-        add_module("VLESS", T("VLESS прокси (порт 1790)", "VLESS proxy (port 1790)"), m.toggle_vless, lambda: m.vless_mgr.is_running())
-        add_module("Noisy", T("Генератор мусорного трафика", "Traffic noise generator"), m.toggle_noisy, lambda: m.noisy_manager.is_running())
-        add_module("Tester", T("Тестер прокси", "Proxy tester"), m.toggle_tester, lambda: m.tester_manager.is_running())
-        add_module("Proxifier (TUN)", T("Глобальный TUN роутинг", "Global TUN routing"), m.toggle_proxifier, lambda: m.mode_mgr.proxifier_running())
-        
-        # EVPN Section
-        evpn_label = QLabel(T("Опции EVPN", "EVPN Options"))
-        evpn_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        content_layout.addWidget(evpn_label)
-        
-        evpn_exclusive_cb = QCheckBox()
-        evpn_exclusive_cb.setChecked(m.config.get("evpn_exclusive_mode", True))
-        evpn_exclusive_cb.setStyleSheet("QCheckBox::indicator { width: 40px; height: 20px; }")
-        evpn_exclusive_cb.setCursor(Qt.PointingHandCursor)
-        def on_evpn_exclusive():
-            m.config["evpn_exclusive_mode"] = evpn_exclusive_cb.isChecked()
-            if hasattr(m, 'config_manager'):
-                m.config_manager.save_config(m.config)
-        evpn_exclusive_cb.clicked.connect(on_evpn_exclusive)
-        content_layout.addWidget(SettingRow(T("Эксклюзивный EVPN", "Exclusive EVPN"), T("Отключать TOR, BD и др. методы при запуске EVPN", "Disable TOR, BD, etc. when running EVPN"), evpn_exclusive_cb))
-        
-        # INETCPL section (отображаются только запущенные или активные)
-        inetcpl_label = QLabel(T("INETCPL (Системный прокси)", "INETCPL (System Proxy)"))
-        inetcpl_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        content_layout.addWidget(inetcpl_label)
-        
-        if m.tor_manager.is_running() or m.mode_mgr.inetcpl_tor_active:
-            add_module("INETCPL -> TOR", T("Направить систему в TOR", "Route system to TOR"), m.toggle_inetcpl_tor, lambda: m.mode_mgr.inetcpl_tor_active)
-        if m.byedpi_manager.is_running() or m.mode_mgr.inetcpl_bd_active:
-            add_module("INETCPL -> ByeDPI", T("Направить систему в ByeDPI", "Route system to ByeDPI"), m.toggle_inetcpl_bd, lambda: m.mode_mgr.inetcpl_bd_active)
-        if m.opera_mgr.is_running() or m.mode_mgr.inetcpl_opera_active:
-            add_module("INETCPL -> Opera", T("Направить систему в Opera", "Route system to Opera"), m.toggle_inetcpl_opera, lambda: m.mode_mgr.inetcpl_opera_active)
-        if hasattr(m, 'vless_mgr') and (m.vless_mgr.is_running() or m.mode_mgr.inetcpl_vless_active):
-            add_module("INETCPL -> VLESS", T("Направить систему в VLESS", "Route system to VLESS"), m.toggle_inetcpl_vless, lambda: m.mode_mgr.inetcpl_vless_active)
-        if hasattr(m, 'ssh_mgr') and (m.ssh_mgr.is_running() or getattr(m.mode_mgr, 'inetcpl_ssh_active', False)):
-            add_module("INETCPL -> SSH", T("Направить систему в SSH", "Route system to SSH"), m.toggle_inetcpl_ssh, lambda: getattr(m.mode_mgr, 'inetcpl_ssh_active', False))
-        
-        # TUN Proxy type
-        tun_label = QLabel(T("TUN Направления (Sing-box)", "TUN Routes (Sing-box)"))
-        tun_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        content_layout.addWidget(tun_label)
-        
-        if m.tor_manager.is_running() or m.mode_mgr.tun_proxy_port == 9853:
-            add_module("TUN -> TOR", T("Завернуть TUN в TOR", "Route TUN to TOR"), m.toggle_singbox_tun_tor, lambda: m.mode_mgr.tun_proxy_port == 9853)
-        if m.byedpi_manager.is_running() or m.mode_mgr.tun_proxy_port == 1780:
-            add_module("TUN -> ByeDPI", T("Завернуть TUN в ByeDPI", "Route TUN to ByeDPI"), m.toggle_singbox_tun_bd, lambda: m.mode_mgr.tun_proxy_port == 1780)
-        if m.opera_mgr.is_running() or m.mode_mgr.tun_proxy_port == 1785:
-            add_module("TUN -> Opera", T("Завернуть TUN в Opera", "Route TUN to Opera"), m.toggle_singbox_tun_opera, lambda: m.mode_mgr.tun_proxy_port == 1785)
-        ssh_port_val = int(m.config.get("ssh_socks_port", 1770))
-        if hasattr(m, 'ssh_mgr') and (m.ssh_mgr.is_running() or m.mode_mgr.tun_proxy_port == ssh_port_val):
-            add_module("TUN -> SSH", T("Завернуть TUN в SSH", "Route TUN to SSH"), m.toggle_singbox_tun_ssh, lambda: m.mode_mgr.tun_proxy_port == ssh_port_val)
-        
-        # DNS section
-
-        dns_label = QLabel(T("DNS настройки (требуют прав админа)", "DNS settings (requires admin rights)"))
-        dns_label.setFont(QFont("Segoe UI", 12, QFont.Bold))
-        content_layout.addWidget(dns_label)
-        
-        def add_dns(name, mode):
-            btn = QPushButton(T("Применить", "Apply"))
-            btn.setStyleSheet("QPushButton { background: #005FB8; color: white; border-radius: 4px; padding: 6px 12px; font-weight: bold; border: none; } QPushButton:hover { background: #0078D4; }")
-            btn.setCursor(Qt.PointingHandCursor)
-            btn.clicked.connect(lambda: m.set_dns(mode))
-            content_layout.addWidget(SettingRow(name, T("Установить системный DNS", "Set system DNS"), btn))
-            
-        add_dns("Comms DNS", "comms")
-        # add_dns("Xbox DNS", "xbox")
-        # add_dns("Xbox DNS IPv6", "xbox_ipv6")
-        add_dns("Сброс DNS", "reset")
-        
-        content_layout.addStretch()
-        scroll.setWidget(content)
-        layout.addWidget(scroll)
-
-    def show_settings(self):
-        if hasattr(self, 'update_modules_state'): self.update_modules_state()
-        self.stacked.setCurrentWidget(self.settings_view)
-
-    def hide_settings(self):
-        self.stacked.setCurrentWidget(self.main_view)
+        # Update main switch buttons
+        if hasattr(self, 'tor_switch_btn'):
+            self.tor_switch_btn.setText(T("Сменить узел Tor", "New Tor Circuit", "Changer de circuit Tor"))
+        if hasattr(self, 'evpn_switch_btn'):
+            self.evpn_switch_btn.setText(T("Сменить сервер EVPN", "Switch EVPN Server", "Changer de serveur EVPN"))
 
     def update_ui_state(self):
-        if self.main_module.proxy_enabled:
-            if getattr(self.main_module, 'mode_type', '') == 'evpn':
-                pass # evpn_mgr will handle status updates
-            else:
-                self.set_status("Подключено")
-        else:
-            self.set_status("Отключено")
+        m = self.main_module
+        proxy_active = getattr(m, 'proxy_enabled', False)
+        
+        status_text = T("Подключено", "Connected", "Connecté") if proxy_active else T("Отключено", "Disconnected", "Déconnecté")
+        if getattr(self, '_last_status_text', None) != status_text:
+            self._last_status_text = status_text
+            self.set_status(status_text)
+
+        # Update quick server switch buttons on main screen (Tor circuit / EVPN server)
+        tor_active = getattr(m, 'tor_manager', None) and m.tor_manager.tor_running
+        evpn_active = getattr(m, 'evpn_mgr', None) and getattr(m.evpn_mgr, 'is_running', False)
+        if hasattr(self, 'tor_switch_btn'):
+            self.tor_switch_btn.setVisible(bool(tor_active))
+        if hasattr(self, 'evpn_switch_btn'):
+            self.evpn_switch_btn.setVisible(bool(evpn_active))
+
+        # Update mode chips only when mode changes
+        cur_mode = getattr(m, 'mode_type', 'inetcpl').lower()
+
+        # Hide 'Выбрать шлюзом' buttons in empty mode
+        is_empty = (cur_mode == "empty")
+        for g_btn in getattr(self, 'gateway_buttons', []):
+            g_btn.setVisible(not is_empty)
+
+        if getattr(self, '_last_styled_mode', None) != cur_mode:
+            self._last_styled_mode = cur_mode
+            mode_descriptions = {
+                "empty": T(
+                    "Локальные порты. Сетевые параметры Windows не изменяются (для ручной настройки).",
+                    "Local ports. Windows system network settings are untouched (for manual configuration).",
+                    "Ports locaux. Les paramètres réseau de Windows restent inchangés (configuration manuelle)."
+                ),
+                "inetcpl": T(
+                    "Системный прокси Windows (браузеры Chrome, Edge, Yandex и др. работают через прокси).",
+                    "System proxy for Windows (browsers Chrome, Edge, etc. route through proxy).",
+                    "Proxy système Windows (Chrome, Edge, etc. passent par le proxy)."
+                ),
+                "tun": T(
+                    "Глобальный сетевой перехват трафика системы (игры, Discord и др.) через Sing-box TUN.",
+                    "Global system network traffic interception (games, Discord, etc.) via Sing-box TUN.",
+                    "Interception globale du trafic système (jeux, Discord, etc.) via Sing-box TUN."
+                ),
+                "evpn": T(
+                    "Глобальное подключение через пул VLESS Reality серверов с автопереключением узлов.",
+                    "Global VPN connection through pool of VLESS Reality servers with auto-failover.",
+                    "Connexion globale via un pool de serveurs VLESS Reality avec basculement automatique."
+                )
+            }
+            self.mode_desc_label.setText(mode_descriptions.get(cur_mode, ""))
+
+            for mode_val, btn in self.mode_chips.items():
+                if mode_val == cur_mode:
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #005FB8;
+                            color: #FFFFFF;
+                            border: 1px solid #005FB8;
+                            border-radius: 6px;
+                            font-weight: bold;
+                        }
+                        QPushButton:hover {
+                            background-color: #0078D4;
+                        }
+                    """)
+                else:
+                    btn.setStyleSheet("""
+                        QPushButton {
+                            background-color: #2d2d2d;
+                            color: #cccccc;
+                            border: 1px solid #3c3c3c;
+                            border-radius: 6px;
+                            font-weight: bold;
+                        }
+                        QPushButton:hover {
+                            background-color: #383838;
+                            color: #FFFFFF;
+                        }
+                    """)
 
     def show_error(self, text):
         self.error_label.setText(text)
 
     def closeEvent(self, event):
+        # Minimize to tray instead of quitting
         self.hide()
         event.ignore()

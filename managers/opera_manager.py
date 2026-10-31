@@ -88,6 +88,7 @@ class OperaProxyManager(QObject):
         self.running = False
 
         self.config = config or {}
+        self._last_scan_time = 0
 
 
 
@@ -108,36 +109,39 @@ class OperaProxyManager(QObject):
                 self.process = None
 
         elif not self.running:
+            import time
+            now = time.time()
+            if now - getattr(self, '_last_scan_time', 0) > 15.0:
+                self._last_scan_time = now
+                target_port = 1785
 
-            target_port = 1785
+                params = self.get_params()
 
-            params = self.get_params()
+                for i, p in enumerate(params):
 
-            for i, p in enumerate(params):
+                    if p == "-bind-address" and i + 1 < len(params):
 
-                if p == "-bind-address" and i + 1 < len(params):
+                        addr = params[i + 1]
 
-                    addr = params[i + 1]
+                        if ":" in addr:
 
-                    if ":" in addr:
+                            try:
 
-                        try:
+                                target_port = int(addr.split(":")[1])
 
-                            target_port = int(addr.split(":")[1])
+                            except:
 
-                        except:
+                                pass
 
-                            pass
+                        break
 
-                    break
+                existing_pid = self.find_existing_process(target_port)
 
-            existing_pid = self.find_existing_process(target_port)
+                if existing_pid:
 
-            if existing_pid:
+                    self.process = AdoptedProcess(existing_pid)
 
-                self.process = AdoptedProcess(existing_pid)
-
-                self.running = True
+                    self.running = True
 
         return self.running
 

@@ -1,4 +1,5 @@
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import time
 from managers import system_utils as lang
 from managers.system_utils import AdoptedProcess
 import os
@@ -24,6 +25,7 @@ class ByeDPIManager(QObject):
         self.config = config or {}
         self.default_port = default_port
         self.config_key = config_key
+        self._last_scan_time = 0
         
     def is_running(self):
         if self.running and self.process:
@@ -31,10 +33,13 @@ class ByeDPIManager(QObject):
                 self.running = False
                 self.process = None
         elif not self.running:
-            existing_pid = self.find_existing_process()
-            if existing_pid:
-                self.process = AdoptedProcess(existing_pid)
-                self.running = True
+            now = time.time()
+            if now - getattr(self, '_last_scan_time', 0) > 15.0:
+                self._last_scan_time = now
+                existing_pid = self.find_existing_process()
+                if existing_pid:
+                    self.process = AdoptedProcess(existing_pid)
+                    self.running = True
         return self.running
 
     def find_existing_process(self):
@@ -111,7 +116,8 @@ class ByeDPIManager(QObject):
         params = self.get_params()
         if isinstance(params, str) and params.startswith("{"):
             router_script = os.path.join(CURRENT_DIR, os.path.join("byedpi", "byedpi_router.py"))
-            if not os.path.exists(router_script):
+            router_exists = os.path.exists(router_script) or (getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', None) and os.path.exists(os.path.join(sys._MEIPASS, "byedpi", "byedpi_router.py")))
+            if not router_exists:
                 error_msg = f"Файл маршрутизатора не найден:\n{router_script}"
                 self.error_occurred.emit(error_msg)
                 return False

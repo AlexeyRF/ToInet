@@ -12,6 +12,17 @@ from managers import config_manager
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 
+def get_subs_path():
+    candidates = [
+        os.path.join(CURRENT_DIR, "evpn", "subs.txt"),
+        os.path.join(CURRENT_DIR, "subs.txt"),
+        os.path.join(PARENT_DIR, "evpn", "subs.txt"),
+    ]
+    for c in candidates:
+        if os.path.exists(c):
+            return c
+    return candidates[0]
+
 def T(ru_text, en_text):
     return en_text if lang._is_en else ru_text
 
@@ -130,7 +141,7 @@ class VlessSettingsWindow(QMainWindow):
         self.inp_sid.setText(config.get("vless_sid", ""))
         self.inp_interval.setValue(config.get("vless_rot_interval", 300))
         
-        subs_path = os.path.join(CURRENT_DIR, "subs.txt")
+        subs_path = get_subs_path()
         if os.path.exists(subs_path):
             with open(subs_path, "r", encoding="utf-8") as f:
                 self.subs_text.setPlainText(f.read())
@@ -153,7 +164,7 @@ class VlessSettingsWindow(QMainWindow):
         
         config_manager.save_config(config)
         
-        subs_path = os.path.join(CURRENT_DIR, "subs.txt")
+        subs_path = get_subs_path()
         with open(subs_path, "w", encoding="utf-8") as f:
             f.write(self.subs_text.toPlainText())
             

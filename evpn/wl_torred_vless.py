@@ -1,4 +1,4 @@
-﻿import os
+import os
 import sys
 def safe_print(*args, **kwargs):
     try:
@@ -42,9 +42,23 @@ def b64decode_padding(s):
     return base64.b64decode(s + '=' * (-len(s) % 4)).decode('utf-8', errors='ignore')
 
 def fetch_subs():
-    subs_path = os.path.join(CURRENT_DIR, "subs.txt")
-    if not os.path.exists(subs_path):
+    candidates = [
+        os.path.join(CURRENT_DIR, "evpn", "subs.txt"),
+        os.path.join(CURRENT_DIR, "subs.txt"),
+        os.path.join(os.path.dirname(os.path.abspath(__file__)), "subs.txt"),
+    ]
+    subs_path = None
+    for c in candidates:
+        if os.path.exists(c):
+            subs_path = c
+            break
+    if not subs_path:
         return []
+
+
+
+
+
         
     urls = []
     with open(subs_path, "r", encoding="utf-8") as f:

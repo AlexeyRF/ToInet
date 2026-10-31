@@ -281,12 +281,14 @@ def build_python_zip():
             "bin/cpller.exe",
             "bin/gatik.exe",
             "bin/ssh_tunnel.exe",
+            "bin/programs_settings.exe",
             "bin/opera-proxy.windows-amd64.exe",
             "bin/sing-box",
             "bin/tgws_accel.dll",
             "data/geoip",
             "data/geoip6",
             "data/bridges.txt",
+            "data/google_cidrs.json",
             "tor/tor.exe",
             "tor/tor-gencert.exe",
             "tor/pluggable_transports",
@@ -331,11 +333,12 @@ def compile_exe():
         "managers.system_utils", "managers.config_manager", "managers.bdsher",
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
         "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
+        "managers.ssh_manager",
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
-        "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui",
+        "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
         "small_actions.noisy_manager", "small_actions.tester_manager", "small_actions.socks5_layer",
-        "tgws.manager"
+        "tgws.manager", "tgws.settings"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
@@ -386,18 +389,22 @@ def build_portable_zip(compiled_exe_path):
         for bf in glob.glob("byedpi/*.txt"):
             add_to_zip(zipf, bf)
         add_to_zip(zipf, "byedpi/ciadpi.exe")
+        add_to_zip(zipf, "byedpi/byedpi_router.py")
         
         # Ресурсы sing-box, Tor, Opera, базы
         portable_resources = [
             "bin/cpller.exe",
             "bin/gatik.exe",
             "bin/ssh_tunnel.exe",
+            "bin/programs_settings.exe",
             "bin/opera-proxy.windows-amd64.exe",
             "bin/sing-box",
             "bin/tgws_accel.dll",
             "data/geoip",
             "data/geoip6",
             "data/bridges.txt",
+            "data/google_cidrs.json",
+            "evpn/subs.txt",
             "tor/tor.exe",
             "tor/tor-gencert.exe",
             "tor/pluggable_transports",

@@ -45,11 +45,16 @@ if getattr(sys, 'frozen', False):
         if original_func(path):
             return True
         if isinstance(path, str) and path.endswith(('.py', '.pyw')):
-            if path.startswith(exe_dir):
-                rel = os.path.relpath(path, exe_dir)
+            norm_p = os.path.normpath(path)
+            norm_exe = os.path.normpath(exe_dir)
+            if norm_p.lower().startswith(norm_exe.lower()):
+                rel = os.path.relpath(norm_p, norm_exe)
                 meipass_path = os.path.join(sys._MEIPASS, rel)
                 if original_func(meipass_path):
                     return True
+            meipass_rel = os.path.join(sys._MEIPASS, norm_p)
+            if original_func(meipass_rel):
+                return True
             meipass_path = os.path.join(sys._MEIPASS, os.path.basename(path))
             if original_func(meipass_path):
                 return True
@@ -64,15 +69,15 @@ if getattr(sys, 'frozen', False):
         
         # Если передан абсолютный путь, который начинается с папки программы,
         # преобразуем его в относительный, чтобы найти внутри _MEIPASS
-        if os.path.isabs(script_path) and script_path.startswith(exe_dir):
+        norm_script = os.path.normcase(os.path.normpath(script_path))
+        norm_exe = os.path.normcase(os.path.normpath(exe_dir))
+        base_path = getattr(sys, '_MEIPASS', exe_dir)
+        if os.path.isabs(script_path) and norm_script.startswith(norm_exe):
             rel_path = os.path.relpath(script_path, exe_dir)
-            full_path = os.path.join(getattr(sys, '_MEIPASS', exe_dir), rel_path)
+            full_path = os.path.join(base_path, rel_path)
         else:
-            # Иначе просто склеиваем (сработает для относительных путей)
-            # или берем только имя файла как запасной вариант
-            base_path = getattr(sys, '_MEIPASS', exe_dir)
-            full_path = os.path.join(base_path, script_path)
-            if not original_exists(full_path) and os.path.isabs(script_path):
+            full_path = os.path.join(base_path, os.path.normpath(script_path))
+            if not original_exists(full_path):
                 full_path = os.path.join(base_path, os.path.basename(script_path))
                 
         if not original_exists(full_path):
@@ -554,18 +559,7 @@ def set_dns(mode):
     if mode == "comms":
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('83.220.169.155', '212.109.195.93')"
         msg = T("Запрос на установку Comms DNS отправлен. Подтвердите права администратора.", "Request to set Comms DNS sent. Please confirm admin rights.")
-    elif mode == "xbox":
-        if not lang._is_en or config.get("enable_ru_features", False):
-            cmd = "Add-DnsClientDohServerAddress -ServerAddress '111.88.96.54' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '111.88.96.55' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55')"
-        else:
-            cmd = "Add-DnsClientDohServerAddress -ServerAddress '111.88.96.50' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '111.88.96.51' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51')"
-        msg = T("Запрос на установку Xbox DNS отправлен. Подтвердите права администратора.", "Request to set Xbox DNS sent. Please confirm admin rights.")
-    elif mode == "xbox_ipv6":
-        if not lang._is_en or config.get("enable_ru_features", False):
-            cmd = "Add-DnsClientDohServerAddress -ServerAddress '111.88.96.54' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '111.88.96.55' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '2a00:ab00:1233:26::54' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '2a00:ab00:1233:26::55' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.54', '111.88.96.55', '2a00:ab00:1233:26::54', '2a00:ab00:1233:26::55')"
-        else:
-            cmd = "Add-DnsClientDohServerAddress -ServerAddress '111.88.96.50' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '111.88.96.51' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '2a00:ab00:1233:26::50' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Add-DnsClientDohServerAddress -ServerAddress '2a00:ab00:1233:26::51' -DohTemplate 'https://xbox-dns.ru/dns-query' -AllowFallbackToUdp $True -AutoUpgrade $True -ErrorAction SilentlyContinue; Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ServerAddresses ('111.88.96.50', '111.88.96.51', '2a00:ab00:1233:26::50', '2a00:ab00:1233:26::51')"
-        msg = T("Запрос на установку Xbox DNS (с IPv6) отправлен. Подтвердите права администратора.", "Request to set Xbox DNS (with IPv6) sent. Please confirm admin rights.")
+
     elif mode == "reset":
         cmd = "Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Set-DnsClientServerAddress -ResetServerAddresses"
         msg = T("Запрос на сброс DNS отправлен. Подтвердите права администратора.", "Request to reset DNS sent. Please confirm admin rights.")
@@ -708,6 +702,10 @@ def create_tray_menu():
     tray_menu.aboutToShow.connect(_update_menu_impl)
     
     _update_menu_impl()
+    if config.get("ui_type", "tray") == "window":
+        main_window.update_ui_state()
+        main_window.show()
+        main_window.activateWindow()
     
     status_timer = QTimer(tray)
     status_timer.timeout.connect(update_proxy_status)

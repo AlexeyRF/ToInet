@@ -43,16 +43,12 @@ class SSHTunnelManager(QObject):
         self.process = None
         self.running = False
         self.config = config or {}
+        self._last_scan_time = 0
 
     def update_config(self, new_config):
         self.config = new_config
 
     def is_running(self):
-        try:
-            self.config = config_manager.load_config()
-        except Exception:
-            pass
-
         if self.running and self.process:
             if self.process.poll() is not None:
                 self.running = False
@@ -60,18 +56,19 @@ class SSHTunnelManager(QObject):
                 self.status_changed.emit(False)
             else:
                 return True
-
-        socks_port = self.config.get("ssh_socks_port", 1770)
-        existing_pid = self.find_existing_process(socks_port)
-        if existing_pid:
-            self.process = AdoptedProcess(existing_pid)
-            self.running = True
-            self.status_changed.emit(True)
-            return True
-        else:
-            self.running = False
-            self.process = None
-            return False
+        elif not self.running:
+            import time
+            now = time.time()
+            if now - getattr(self, '_last_scan_time', 0) > 15.0:
+                self._last_scan_time = now
+                socks_port = self.config.get("ssh_socks_port", 1770)
+                existing_pid = self.find_existing_process(socks_port)
+                if existing_pid:
+                    self.process = AdoptedProcess(existing_pid)
+                    self.running = True
+                    self.status_changed.emit(True)
+                    return True
+        return self.running
 
     def find_existing_process(self, port=1770):
         exe_name = os.path.basename(SSH_TUNNEL_EXE).lower()
