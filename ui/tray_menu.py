@@ -338,19 +338,8 @@ def _update_menu_impl_unsafe():
         
         # 6. Системные опции
 
-        # Узконаправленное
-        m.log('[Menu] Building narrow_menu')
-        narrow_menu = QMenu(m.T("Узконаправленное", "Narrow-focused"), m.tray_menu)
-
-        narrow_menu.addAction(m.T("Реабилитатор SOCKS", "Rehabilitate SOCKS"), lambda: m.utils.run_script("small_actions/socks-reabilitator.pyw"))
-
-        if not lang._is_en or m.config.get("enable_ru_features", False):
-
-            noisy_act = QAction(m.noisy_manager.get_status_text(), narrow_menu); noisy_act.triggered.connect(m.toggle_noisy); narrow_menu.addAction(noisy_act)
-
-            tester_act = QAction(m.tester_manager.get_status_text(), narrow_menu); tester_act.triggered.connect(m.toggle_tester); narrow_menu.addAction(tester_act)
-
-        m.tray_menu.addMenu(narrow_menu)
+        if getattr(m, 'noisy_manager', None) and m.noisy_manager.is_running():
+            m.noisy_manager.stop()
 
         m.log('[Menu] Building sys_menu')
         sys_menu = QMenu(m.T("Системные опции", "System Options"), m.tray_menu)

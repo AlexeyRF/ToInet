@@ -1659,12 +1659,6 @@ class ModeManager:
         quic_cb.setChecked(config.get("tun_block_quic", False))
         layout.addWidget(quic_cb)
         
-        # Smart Routing
-        smart_cb = QCheckBox("Умная маршрутизация (по правилам)")
-        smart_cb.setToolTip("Использовать кастомные правила маршрутизации трафика")
-        smart_cb.setChecked(config.get("tun_smart_route", False))
-        layout.addWidget(smart_cb)
-        
         btn_layout = QHBoxLayout()
         btn_layout.setSpacing(8)
         
@@ -1697,7 +1691,6 @@ class ModeManager:
             config["tun_dns_detour"] = "direct" if detour_cb.currentIndex() == 0 else "proxy"
             config["tun_stack"] = stack_cb.currentText()
             config["tun_block_quic"] = quic_cb.isChecked()
-            config["tun_smart_route"] = smart_cb.isChecked()
             config_manager.save_config(config)
             QMessageBox.information(None, "Успех", "Настройки сохранены. Если TUN запущен, переподключитесь, чтобы применить.")
 

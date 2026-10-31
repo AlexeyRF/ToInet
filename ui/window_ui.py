@@ -744,18 +744,11 @@ class MainWindow(QMainWindow):
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
         
         def open_torrc():
-            torrc_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "torrc")
-            if not os.path.exists(torrc_path):
-                if hasattr(m, 'tor_manager') and hasattr(m.tor_manager, '_generate_torrc_from_bridges'):
-                    m.tor_manager._generate_torrc_from_bridges()
-            try:
-                if os.name == 'nt':
-                    os.startfile(torrc_path)
-                else:
-                    subprocess.Popen(['xdg-open', torrc_path])
-            except Exception:
-                subprocess.Popen(['notepad.exe', torrc_path] if os.name == 'nt' else ['gedit', torrc_path])
-        tor_torrc_btn = make_prov_btn(T("Редактировать torrc", "Edit torrc", "Modifier torrc"), open_torrc)
+            if hasattr(m, 'tor_manager') and hasattr(m.tor_manager, 'open_settings'):
+                m.tor_manager.open_settings()
+            else:
+                subprocess.Popen([sys.executable, os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ui", "maestro.pyw")])
+        tor_torrc_btn = make_prov_btn(T("Конфигуратор torrc (Maestro)", "Torrc Config (Maestro)", "Config torrc (Maestro)"), open_torrc)
 
         def add_tor_tg():
             from managers import system_utils
@@ -913,6 +906,14 @@ class MainWindow(QMainWindow):
                 m.tgws_mgr.start()
             self.update_ui_state()
 
+        def open_tgws_settings():
+            if hasattr(m, 'utils') and hasattr(m.utils, 'run_script'):
+                m.utils.run_script("tgws/settings.pyw")
+            else:
+                from managers import system_utils
+                system_utils.run_script("tgws/settings.pyw")
+        tgws_cfg_btn = make_prov_btn(T("Настройки TGWS", "TGWS Settings", "Paramètres TGWS"), open_tgws_settings)
+
         self.tgws_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_tgws)
         self.tgws_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_tgws(), self.update_ui_state()))
 
@@ -921,7 +922,7 @@ class MainWindow(QMainWindow):
             "Порт 1480",
             T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
               "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
-            [],
+            [tgws_cfg_btn],
             self.tgws_restart_btn,
             self.tgws_toggle_btn,
             mini_tg_btn=tgws_tg_btn
@@ -933,16 +934,38 @@ class MainWindow(QMainWindow):
             system_utils.add_proxy_to_telegram(1777)
         gatik_tg_btn = make_mini_tg_btn(T("Добавить Gatik в Telegram (1777)", "Add Gatik to Telegram (1777)"), add_gatik_tg)
 
-        self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), lambda: (getattr(m, 'tgws_mgr', None) and m.tgws_mgr.start(), self.update_ui_state()))
+        def toggle_gatik():
+            if getattr(m, 'tgws_mgr', None):
+                if m.tgws_mgr.is_gatik_running():
+                    m.tgws_mgr.stop_gatik()
+                else:
+                    m.tgws_mgr.start_gatik()
+            self.update_ui_state()
+
+        def stop_gatik():
+            if getattr(m, 'tgws_mgr', None):
+                m.tgws_mgr.stop_gatik()
+            self.update_ui_state()
+
+        def restart_gatik():
+            if getattr(m, 'tgws_mgr', None):
+                m.tgws_mgr.stop_gatik()
+                import time; time.sleep(0.5)
+                m.tgws_mgr.start_gatik()
+            self.update_ui_state()
+
+        self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), restart_gatik)
+        self.gatik_toggle_btn = make_mini_btn("▶", T("Запустить / Остановить Gatik", "Start / Stop Gatik"), toggle_gatik)
+        self.gatik_off_btn = make_prov_btn(T("Выключить Gatik", "Stop Gatik", "Arrêter Gatik"), stop_gatik)
 
         c_layout.addWidget(create_provider_card(
             "Умный шлюз Gatik",
             "Порт 1777",
             T("Нативный C++ балансировщик и акселератор для Telegram, оптимизирующий сетевые маршруты.",
               "Native C++ smart router and balancer for accelerating Telegram connections."),
-            [],
+            [self.gatik_off_btn],
             self.gatik_restart_btn,
-            None,
+            self.gatik_toggle_btn,
             mini_tg_btn=gatik_tg_btn
         ))
 
@@ -1215,22 +1238,8 @@ class MainWindow(QMainWindow):
         sec_label_tools.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_tools)
 
-        # SOCKS Rehab & Noisy
-        misc_widget = QWidget()
-        misc_widget.setStyleSheet("background: transparent; border: none;")
-        mw_layout = QHBoxLayout(misc_widget)
-        mw_layout.setContentsMargins(0, 0, 0, 0)
-        mw_layout.setSpacing(6)
-        def import_subprocess_and_rehab():
-            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"])
-        rehab_btn = make_action_btn(T("Rehab", "Rehab"), import_subprocess_and_rehab)
-        noisy_btn = make_action_btn(T("Noisy", "Noisy"), lambda: (m.toggle_noisy(), self.update_ui_state()))
-        mw_layout.addWidget(rehab_btn)
-        mw_layout.addWidget(noisy_btn)
-        c_layout.addWidget(CardRow("SOCKS-реабилитатор и генератор Noisy",
-                                   T("Восстановление зависших соединений и фоновый трафик для маскировки.",
-                                     "Restore broken socks connections and generate background noise traffic."),
-                                   misc_widget))
+        if getattr(m, 'noisy_manager', None) and m.noisy_manager.is_running():
+            m.noisy_manager.stop()
 
         # Clean Cache & Folder
         utils_widget = QWidget()
@@ -1616,6 +1625,12 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'tgws_toggle_btn'):
             tgws_on = getattr(m, 'tgws_mgr', None) and getattr(m.tgws_mgr, 'running', False)
             self._update_mini_controls(getattr(self, 'tgws_restart_btn', None), self.tgws_toggle_btn, tgws_on)
+
+        if hasattr(self, 'gatik_toggle_btn'):
+            gatik_on = getattr(m, 'tgws_mgr', None) and m.tgws_mgr.is_gatik_running()
+            self._update_mini_controls(getattr(self, 'gatik_restart_btn', None), self.gatik_toggle_btn, gatik_on)
+            if hasattr(self, 'gatik_off_btn'):
+                self.gatik_off_btn.setEnabled(bool(gatik_on))
 
         if hasattr(self, 'prox_toggle_btn'):
             prox_on = getattr(m, 'mode_mgr', None) and m.mode_mgr.proxifier_running()

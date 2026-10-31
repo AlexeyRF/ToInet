@@ -225,6 +225,58 @@ class TGWSManager:
         except Exception:
             pass
 
+    def is_gatik_running(self):
+        if hasattr(self, 'gatik_process') and self.gatik_process and self.gatik_process.poll() is None:
+            return True
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name']):
+                try:
+                    if (proc.info.get('name') or '').lower() == 'gatik.exe':
+                        return True
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        return False
+
+    def start_gatik(self):
+        if self.is_gatik_running():
+            return True
+        try:
+            gatik_exe = os.path.join(CURRENT_DIR, 'bin', 'gatik.exe')
+            if os.path.exists(gatik_exe):
+                creationflags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                self.gatik_process = subprocess.Popen([gatik_exe], cwd=CURRENT_DIR, creationflags=creationflags)
+                self.log('Шлюз Gatik (C++) запущен')
+                return True
+        except Exception as e:
+            self.log(f'Failed to start gatik.exe: {e}')
+        return False
+
+    def stop_gatik(self):
+        if hasattr(self, 'gatik_process') and self.gatik_process:
+            try:
+                self.gatik_process.terminate()
+                self.gatik_process.wait(timeout=2)
+            except Exception:
+                try:
+                    self.gatik_process.kill()
+                except Exception:
+                    pass
+            self.gatik_process = None
+        try:
+            import psutil
+            for proc in psutil.process_iter(['name']):
+                try:
+                    if (proc.info.get('name') or '').lower() == 'gatik.exe':
+                        proc.kill()
+                except Exception:
+                    pass
+        except Exception:
+            pass
+        self.log('Шлюз Gatik (C++) остановлен')
+
 _manager = TGWSManager()
 
 def get_manager():
