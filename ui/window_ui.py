@@ -711,12 +711,6 @@ class MainWindow(QMainWindow):
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
-        def toggle_pip():
-            cur = m.config.get("byedpi_pip_enabled", False)
-            m.config["byedpi_pip_enabled"] = not cur
-            m.config_manager.save_config(m.config)
-            self.update_ui_state()
-        bd_pip_btn = make_prov_btn("Pip (1781)", toggle_pip)
         def add_bd_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(1780)
@@ -737,7 +731,7 @@ class MainWindow(QMainWindow):
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
-            [bd_select_btn, bd_test_btn, bd_pip_btn],
+            [bd_select_btn, bd_test_btn],
             self.bd_restart_btn,
             self.bd_toggle_btn,
             mini_tg_btn=bd_tg_btn
@@ -748,7 +742,21 @@ class MainWindow(QMainWindow):
         def open_tor_bridges():
             subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
-        tor_newnym_btn = make_prov_btn(T("Сменить IP (Newnym)", "New Circuit"), lambda: getattr(m, 'tor_manager', None) and m.tor_manager.new_circuit())
+        
+        def open_torrc():
+            torrc_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "torrc")
+            if not os.path.exists(torrc_path):
+                if hasattr(m, 'tor_manager') and hasattr(m.tor_manager, '_generate_torrc_from_bridges'):
+                    m.tor_manager._generate_torrc_from_bridges()
+            try:
+                if os.name == 'nt':
+                    os.startfile(torrc_path)
+                else:
+                    subprocess.Popen(['xdg-open', torrc_path])
+            except Exception:
+                subprocess.Popen(['notepad.exe', torrc_path] if os.name == 'nt' else ['gedit', torrc_path])
+        tor_torrc_btn = make_prov_btn(T("Редактировать torrc", "Edit torrc", "Modifier torrc"), open_torrc)
+
         def add_tor_tg():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(9853)
@@ -770,7 +778,7 @@ class MainWindow(QMainWindow):
             "Порт 9853 / HTTP 9854",
             T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
               "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
-            [tor_select_btn, tor_bridges_btn, tor_newnym_btn],
+            [tor_select_btn, tor_bridges_btn, tor_torrc_btn],
             self.tor_restart_btn,
             self.tor_toggle_btn,
             mini_tg_btn=tor_tg_btn
@@ -778,7 +786,8 @@ class MainWindow(QMainWindow):
 
         # 3. Opera Proxy
         opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
-        opera_cfg_btn = make_prov_btn(T("Настройки региона (EU/AM/AS)", "Region Options"), lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
+        opera_cfg_btn = make_prov_btn(T("Настройки operaproxy", "Opera Proxy Settings", "Paramètres Opera Proxy"), 
+                                     lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
 
         def restart_opera():
             if getattr(m, 'opera_mgr', None):
@@ -862,9 +871,6 @@ class MainWindow(QMainWindow):
         self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
 
         # 6. Telegram WebSocket Proxy (TGWS)
-        def open_tgws_test():
-            subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"])
-        tgws_test_btn = make_prov_btn(T("Тестер TGWS", "TGWS Tester"), open_tgws_test)
         def add_tgws_socks():
             from managers import system_utils
             system_utils.add_proxy_to_telegram(int(m.config.get("tgws_port", 1480)))
@@ -915,7 +921,7 @@ class MainWindow(QMainWindow):
             "Порт 1480",
             T("Мультиплексированный SOCKS5 и MTProto прокси с маскировкой Fake TLS для Telegram.",
               "Multiplexed SOCKS5 and MTProto proxy with Fake TLS obfuscation for Telegram Desktop."),
-            [tgws_test_btn],
+            [],
             self.tgws_restart_btn,
             self.tgws_toggle_btn,
             mini_tg_btn=tgws_tg_btn
@@ -950,8 +956,6 @@ class MainWindow(QMainWindow):
                                   lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_proxifier_config())
         tun_btn = make_prov_btn(T("Параметры TUN (Sing-box) →", "Sing-box TUN Config →", "Paramètres TUN (Sing-box) →"),
                                 lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_advanced_tun_config())
-        rules_btn = make_prov_btn(T("Редактировать правила", "Edit Rules", "Modifier les règles"),
-                                  self.open_rules_editor)
 
         self.prox_restart_btn = make_mini_btn("↻", T("Перезапустить Proxifier", "Restart Proxifier"), lambda: (getattr(m, 'mode_mgr', None) and m.mode_mgr.restart_proxifier(), self.update_ui_state()))
         self.prox_toggle_btn = make_mini_btn("▶", T("Запустить Proxifier", "Start Proxifier"), lambda: (m.toggle_proxifier(), self.update_ui_state()))
@@ -961,7 +965,7 @@ class MainWindow(QMainWindow):
             "",
             T("Маршрутизация приложений и хостов через Toinet.ppx с гибкой фильтрацией.",
               "Application and hostname routing via Toinet.ppx with flexible filtering rules."),
-            [proxi_btn, tun_btn, rules_btn],
+            [proxi_btn, tun_btn],
             self.prox_restart_btn,
             self.prox_toggle_btn
         ))
@@ -1082,52 +1086,108 @@ class MainWindow(QMainWindow):
                                      "Select individual services to boot on program startup."),
                                    ast_gui_btn))
 
-        # Group 3: Pip (PyPI) Proxying (from tray menu)
-        sec_label_pip = QLabel(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying"))
+        # Group 3: Pip (PyPI) Proxying (Single compact card with provider selection)
+        sec_label_pip = QLabel(T("Проксирование pip (PyPI)", "pip (PyPI) Proxying", "Proxy pip (PyPI)"))
         sec_label_pip.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
-        sec_label_pip.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
+        sec_label_pip.setStyleSheet("color: #8e8e8e; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_pip)
 
-        cb_style = """
-            QCheckBox { background: transparent; }
-            QCheckBox::indicator {
-                width: 18px;
-                height: 18px;
-                border-radius: 4px;
-                border: 1px solid #555555;
-                background-color: #2d2d2d;
+        pip_combo = QComboBox()
+        pip_combo.setFixedWidth(160)
+        pip_combo.setFixedHeight(28)
+        pip_combo.setStyleSheet("""
+            QComboBox {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 5px;
+                padding: 2px 8px;
+                font-size: 11px;
+                font-weight: 500;
             }
-            QCheckBox::indicator:hover { border-color: #777777; }
-            QCheckBox::indicator:checked { background-color: #005FB8; border-color: #005FB8; }
-        """
+            QComboBox:hover {
+                border-color: #0078D4;
+            }
+            QComboBox QAbstractItemView {
+                background-color: #2b2b2b;
+                color: #ffffff;
+                selection-background-color: #005FB8;
+            }
+        """)
+        pip_combo.setCursor(Qt.PointingHandCursor)
 
-        pip_cb = QCheckBox()
-        pip_cb.setChecked(m.config.get("byedpi_pip_enabled", False))
-        pip_cb.setCursor(Qt.PointingHandCursor)
-        pip_cb.setStyleSheet(cb_style)
-        def on_pip_change():
-            m.config["byedpi_pip_enabled"] = pip_cb.isChecked()
-            m.config_manager.save_config(m.config)
-            if hasattr(m, 'update_menu'): m.update_menu()
-        pip_cb.clicked.connect(on_pip_change)
-        c_layout.addWidget(CardRow(T("Проксировать pip через ByeDPI (1781)", "Route pip through ByeDPI (1781)"),
-                                   T("Ускоряет и разблокирует установку Python-пакетов через PyPI.",
-                                     "Accelerate and unblock Python package installations from PyPI."),
-                                   pip_cb))
+        ssh_port_val = str(m.config.get("ssh_socks_port", 1770))
+        pip_options = [
+            ("none", T("Нет (Отключено)", "None (Disabled)", "Aucun (Désactivé)")),
+            ("byedpi", "ByeDPI (1781)"),
+            ("tor", "Tor (9853)"),
+            ("opera", "Opera Proxy (1785)"),
+            ("ssh", f"SSH ({ssh_port_val})"),
+            ("vless", "VLESS / EVPN (1790)")
+        ]
+        pip_combo.blockSignals(True)
+        for val, label in pip_options:
+            pip_combo.addItem(label, val)
 
-        pip_tor_cb = QCheckBox()
-        pip_tor_cb.setChecked(m.config.get("byedpi_pip_use_tor", False))
-        pip_tor_cb.setCursor(Qt.PointingHandCursor)
-        pip_tor_cb.setStyleSheet(cb_style)
-        def on_pip_tor_change():
-            m.config["byedpi_pip_use_tor"] = pip_tor_cb.isChecked()
+        cur_pip_provider = m.config.get("pip_provider")
+        if not cur_pip_provider:
+            if m.config.get("byedpi_pip_enabled", False):
+                cur_pip_provider = "tor" if m.config.get("byedpi_pip_use_tor", False) else "byedpi"
+            else:
+                cur_pip_provider = "none"
+
+        for idx, (val, _) in enumerate(pip_options):
+            if val == cur_pip_provider:
+                pip_combo.setCurrentIndex(idx)
+                break
+        pip_combo.blockSignals(False)
+
+        def on_pip_provider_change(idx):
+            prov = pip_combo.itemData(idx)
+            m.config["pip_provider"] = prov
+            from managers import bdsher
+            if prov == "none":
+                m.config["byedpi_pip_enabled"] = False
+                m.config["byedpi_pip_use_tor"] = False
+                bdsher.clear_pip_proxy()
+                pip_mgr = getattr(bdsher, '_byedpi_pip_manager', None)
+                if pip_mgr:
+                    try: pip_mgr.stop()
+                    except: pass
+            elif prov == "byedpi":
+                m.config["byedpi_pip_enabled"] = True
+                m.config["byedpi_pip_use_tor"] = False
+                pip_mgr = bdsher.get_pip_manager(m.config)
+                pip_mgr.start()
+                bdsher.set_pip_proxy("http://127.0.0.1:1781")
+            elif prov == "tor":
+                m.config["byedpi_pip_enabled"] = True
+                m.config["byedpi_pip_use_tor"] = True
+                bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
+            elif prov == "opera":
+                m.config["byedpi_pip_enabled"] = True
+                bdsher.set_pip_proxy("http://127.0.0.1:1785")
+            elif prov == "ssh":
+                m.config["byedpi_pip_enabled"] = True
+                p_ssh = int(m.config.get("ssh_socks_port", 1770))
+                bdsher.set_pip_proxy(f"socks5://127.0.0.1:{p_ssh}")
+            elif prov == "vless":
+                m.config["byedpi_pip_enabled"] = True
+                bdsher.set_pip_proxy("socks5://127.0.0.1:1790")
+
             m.config_manager.save_config(m.config)
-            if hasattr(m, 'update_menu'): m.update_menu()
-        pip_tor_cb.clicked.connect(on_pip_tor_change)
-        c_layout.addWidget(CardRow(T("Использовать Tor вместо ByeDPI для pip", "Use Tor instead of ByeDPI for pip"),
-                                   T("Направляет установку пакетов pip через порт луковой сети 9853.",
-                                     "Route pip package downloads through local Tor SOCKS port 9853."),
-                                   pip_tor_cb))
+            if hasattr(m, 'update_menu'):
+                m.update_menu()
+
+        pip_combo.currentIndexChanged.connect(on_pip_provider_change)
+
+        c_layout.addWidget(CardRow(
+            T("Провайдер проксирования pip", "pip Proxy Provider", "Fournisseur de proxy pip"),
+            T("Ускоряет и разблокирует загрузку и установку Python-пакетов через PyPI.",
+              "Accelerate and unblock Python package installations from PyPI.",
+              "Accélérer et débloquer les téléchargements de paquets Python depuis PyPI."),
+            pip_combo
+        ))
 
         # Group 4: System DNS (Corrected addresses: Comms is 83.220.169.155, 212.109.195.93)
         sec_label_dns = QLabel(T("Системный DNS (требуются права администратора)", "System DNS (Admin rights required)"))
@@ -1259,17 +1319,19 @@ class MainWindow(QMainWindow):
 
         # Language selection (from tray menu)
         lang_combo = QComboBox()
-        lang_map = [("auto", T("Авто (Система)", "Auto (System)")),
+        lang_map = [("auto", T("Авто (Система)", "Auto (System)", "Auto (Système)")),
                     ("ru", "Русский"),
                     ("en", "English"),
                     ("fr", "Français")]
         for code, label in lang_map:
             lang_combo.addItem(label, code)
         cur_l = m.config.get("language", "auto")
+        lang_combo.blockSignals(True)
         for i, (code, _) in enumerate(lang_map):
             if code == cur_l:
                 lang_combo.setCurrentIndex(i)
                 break
+        lang_combo.blockSignals(False)
         lang_combo.setStyleSheet(ui_combo.styleSheet())
         lang_combo.setCursor(Qt.PointingHandCursor)
         def on_lang_change(idx):
@@ -1282,9 +1344,10 @@ class MainWindow(QMainWindow):
                 m.update_menu()
             self.retranslate_ui()
         lang_combo.currentIndexChanged.connect(on_lang_change)
-        c_layout.addWidget(CardRow(T("Язык программы", "Application Language"),
+        c_layout.addWidget(CardRow(T("Язык программы", "Application Language", "Langue de l'application"),
                                    T("Выбор языка интерфейса окна и контекстного меню.",
-                                     "Select display language for window and tray menus."),
+                                     "Select display language for window and tray menus.",
+                                     "Sélectionnez la langue d'affichage des fenêtres et des menus contextuels."),
                                    lang_combo))
 
 
@@ -1478,10 +1541,9 @@ class MainWindow(QMainWindow):
             QMessageBox.warning(self, T("Ошибка", "Error", "Erreur"), f"Не удалось открыть редактор правил: {e}")
 
     def retranslate_ui(self):
-        # Update mode descriptions and chips
-        self._last_styled_mode = None
-        self._last_status_text = None
-        self.update_ui_state()
+        curr_widget = self.stacked.currentWidget()
+        was_settings = (curr_widget == self.settings_view)
+        was_provider = (curr_widget == self.provider_view)
 
         # Update bottom buttons
         if hasattr(self, 'btn_provider'):
@@ -1494,6 +1556,32 @@ class MainWindow(QMainWindow):
             self.tor_switch_btn.setText(T("Сменить узел Tor", "New Tor Circuit", "Changer de circuit Tor"))
         if hasattr(self, 'evpn_switch_btn'):
             self.evpn_switch_btn.setText(T("Сменить сервер EVPN", "Switch EVPN Server", "Changer de serveur EVPN"))
+
+        # Rebuild settings view with translated strings
+        self.stacked.removeWidget(self.settings_view)
+        self.settings_view.deleteLater()
+        self.settings_view = QWidget()
+        self.stacked.insertWidget(2, self.settings_view)
+        self.build_settings_view()
+
+        # Rebuild provider view with translated strings
+        self.stacked.removeWidget(self.provider_view)
+        self.provider_view.deleteLater()
+        self.provider_view = QWidget()
+        self.stacked.insertWidget(1, self.provider_view)
+        self.build_provider_view()
+
+        # Restore active view
+        if was_settings:
+            self.stacked.setCurrentWidget(self.settings_view)
+        elif was_provider:
+            self.stacked.setCurrentWidget(self.provider_view)
+        else:
+            self.stacked.setCurrentWidget(self.connect_view)
+
+        self._last_styled_mode = None
+        self._last_status_text = None
+        self.update_ui_state()
 
     def update_ui_state(self):
         m = self.main_module
