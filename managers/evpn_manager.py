@@ -64,15 +64,14 @@ def get_subs_file_path():
 def build_singbox_config(nodes):
 
     outbounds = [
-
         {
-
+            "type": "block",
+            "tag": "block"
+        },
+        {
             "type": "direct",
-
             "tag": "direct"
-
         }
-
     ]
 
     
@@ -215,21 +214,27 @@ def build_singbox_config(nodes):
 
             
 
-    outbounds.insert(0, {
-
-        "type": "urltest",
-
-        "tag": "auto",
-
-        "outbounds": proxy_tags,
-
-        "url": "http://cp.cloudflare.com/generate_204",
-
-        "interval": "3m",
-
-        "tolerance": 5000
-
-    })
+    if proxy_tags:
+        urltest_group = {
+            "type": "urltest",
+            "tag": "urltest-auto",
+            "outbounds": proxy_tags,
+            "url": "http://cp.cloudflare.com/generate_204",
+            "interval": "3m",
+            "tolerance": 5000
+        }
+        outbounds.insert(0, urltest_group)
+        outbounds.insert(0, {
+            "type": "selector",
+            "tag": "auto",
+            "outbounds": [proxy_tags[0], "urltest-auto"] + [t for t in proxy_tags[1:]],
+            "default": proxy_tags[0]
+        })
+    else:
+        outbounds.insert(0, {
+            "type": "block",
+            "tag": "auto"
+        })
 
 
 
@@ -263,12 +268,13 @@ def build_singbox_config(nodes):
         "route": {
             "rules": [
                 {"port": 53, "action": "hijack-dns"} if proxy_dns else {"port": 53, "outbound": "direct"},
-                {"inbound": ["tun-in"], "outbound": "auto"}
+                {"inbound": ["tun-in"], "outbound": "auto"},
+                {"inbound": ["tun-in"], "outbound": "block"}
             ],
 
             "auto_detect_interface": True,
 
-            "final": "auto"
+            "final": "block"
 
         }
 

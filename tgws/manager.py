@@ -242,19 +242,28 @@ class TGWSManager:
             pass
 
     def is_gatik_running(self):
-        if hasattr(self, 'gatik_process') and self.gatik_process and self.gatik_process.poll() is None:
-            return True
+        if hasattr(self, 'gatik_process') and self.gatik_process:
+            if self.gatik_process.poll() is None:
+                return True
+            self.gatik_process = None
+
+        now = time.time()
+        if hasattr(self, '_gatik_last_check') and (now - self._gatik_last_check < 2.0):
+            return getattr(self, '_gatik_is_running_cached', False)
+        self._gatik_last_check = now
+
+        running = False
         try:
-            import psutil
-            for proc in psutil.process_iter(['name']):
-                try:
-                    if (proc.info.get('name') or '').lower() == 'gatik.exe':
-                        return True
-                except Exception:
-                    pass
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.02)
+            res = sock.connect_ex(('127.0.0.1', 1777))
+            sock.close()
+            if res == 0:
+                running = True
         except Exception:
             pass
-        return False
+        self._gatik_is_running_cached = running
+        return running
 
     def start_gatik(self):
         if self.is_gatik_running():

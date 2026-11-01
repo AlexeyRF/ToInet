@@ -708,6 +708,7 @@ class MainWindow(QMainWindow):
 
         # 1. ByeDPI
         bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
+        self.bd_select_btn = bd_select_btn
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
@@ -739,6 +740,7 @@ class MainWindow(QMainWindow):
 
         # 2. Tor
         tor_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("tor"), is_primary=True)
+        self.tor_select_btn = tor_select_btn
         def open_tor_bridges():
             subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
@@ -779,6 +781,7 @@ class MainWindow(QMainWindow):
 
         # 3. Opera Proxy
         opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
+        self.opera_select_btn = opera_select_btn
         opera_cfg_btn = make_prov_btn(T("Настройки operaproxy", "Opera Proxy Settings", "Paramètres Opera Proxy"), 
                                      lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
 
@@ -804,6 +807,7 @@ class MainWindow(QMainWindow):
 
         # 4. SVPN / SSH Tunnel
         ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
+        self.ssh_select_btn = ssh_select_btn
         ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
         ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
         def add_ssh_tg():
@@ -833,6 +837,7 @@ class MainWindow(QMainWindow):
 
         # 5. VLESS / EVPN (hidden when mode is not evpn)
         vless_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("vless"), is_primary=True)
+        self.vless_select_btn = vless_select_btn
         vless_cfg_btn = make_prov_btn(T("Настройки VLESS", "VLESS Settings"), lambda: getattr(m, 'vless_mgr', None) and m.vless_mgr.open_settings())
 
         def restart_vless():
@@ -959,14 +964,13 @@ class MainWindow(QMainWindow):
 
         self.gatik_restart_btn = make_mini_btn("↻", T("Перезапуск Gatik", "Restart Gatik"), restart_gatik)
         self.gatik_toggle_btn = make_mini_btn("▶", T("Запустить / Остановить Gatik", "Start / Stop Gatik"), toggle_gatik)
-        self.gatik_off_btn = make_prov_btn(T("Выключить Gatik", "Stop Gatik", "Arrêter Gatik"), stop_gatik)
 
         c_layout.addWidget(create_provider_card(
             "Умный шлюз Gatik",
             "Порт 1777",
             T("Нативный C++ балансировщик и акселератор для Telegram, оптимизирующий сетевые маршруты.",
               "Native C++ smart router and balancer for accelerating Telegram connections."),
-            [self.gatik_off_btn],
+            [],
             self.gatik_restart_btn,
             self.gatik_toggle_btn,
             mini_tg_btn=gatik_tg_btn
@@ -1484,10 +1488,10 @@ class MainWindow(QMainWindow):
                 }
             """)
 
-            if hasattr(self.main_module, 'evpn_mgr') and self.main_module.evpn_mgr.is_running:
-                self.next_btn.show()
-            else:
-                self.next_btn.hide()
+            cur_mode = getattr(self.main_module, 'mode_type', 'inetcpl').lower()
+            evpn_running = hasattr(self.main_module, 'evpn_mgr') and getattr(self.main_module.evpn_mgr, 'is_running', False)
+            if hasattr(self, 'evpn_switch_btn'):
+                self.evpn_switch_btn.setVisible(cur_mode == "evpn" and bool(evpn_running))
 
         elif "VPN Выключен" in text or "Отключено" in text or "Disconnected" in text:
             self.power_btn.set_state("off")
@@ -1522,6 +1526,51 @@ class MainWindow(QMainWindow):
                     padding: 4px 16px;
                 }
             """)
+
+    def _update_gateway_btn(self, btn, is_active):
+        if not btn:
+            return
+        T = self.main_module.T
+        if is_active:
+            btn.setText(T("Отключить шлюз", "Disconnect Gateway", "Déconnecter passerelle"))
+            btn.setStyleSheet('''
+                QPushButton {
+                    background-color: #107C41;
+                    color: #FFFFFF;
+                    border: 1px solid #107C41;
+                    border-radius: 6px;
+                    padding: 5px 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #A4262C;
+                    border-color: #A4262C;
+                }
+                QPushButton:pressed {
+                    background-color: #7A1C20;
+                }
+            ''')
+        else:
+            btn.setText(T("Выбрать шлюзом", "Select Gateway", "Choisir passerelle"))
+            btn.setStyleSheet('''
+                QPushButton {
+                    background-color: #005FB8;
+                    color: #FFFFFF;
+                    border: 1px solid #005FB8;
+                    border-radius: 6px;
+                    padding: 5px 12px;
+                    font-size: 11px;
+                    font-weight: bold;
+                }
+                QPushButton:hover {
+                    background-color: #0078D4;
+                    border-color: #0078D4;
+                }
+                QPushButton:pressed {
+                    background-color: #004C87;
+                }
+            ''')
 
     def _update_mini_controls(self, restart_btn, toggle_btn, is_running):
         T = self.main_module.T
@@ -1659,8 +1708,6 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'gatik_toggle_btn'):
             gatik_on = getattr(m, 'tgws_mgr', None) and m.tgws_mgr.is_gatik_running()
             self._update_mini_controls(getattr(self, 'gatik_restart_btn', None), self.gatik_toggle_btn, gatik_on)
-            if hasattr(self, 'gatik_off_btn'):
-                self.gatik_off_btn.setEnabled(bool(gatik_on))
 
         if hasattr(self, 'prox_toggle_btn'):
             prox_on = getattr(m, 'mode_mgr', None) and m.mode_mgr.proxifier_running()
@@ -1683,10 +1730,17 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'evpn_switch_btn'):
             self.evpn_switch_btn.setVisible(cur_mode == "evpn" and bool(evpn_active))
 
-        # Hide 'Выбрать шлюзом' buttons in empty mode
-        is_empty = (cur_mode == "empty")
+        # Hide 'Выбрать шлюзом' buttons outside inetcpl mode
+        is_inetcpl = (cur_mode == "inetcpl")
         for g_btn in getattr(self, 'gateway_buttons', []):
-            g_btn.setVisible(not is_empty)
+            g_btn.setVisible(is_inetcpl)
+
+        if is_inetcpl and getattr(m, 'mode_mgr', None):
+            self._update_gateway_btn(getattr(self, 'bd_select_btn', None), getattr(m.mode_mgr, 'inetcpl_bd_active', False))
+            self._update_gateway_btn(getattr(self, 'tor_select_btn', None), getattr(m.mode_mgr, 'inetcpl_tor_active', False))
+            self._update_gateway_btn(getattr(self, 'opera_select_btn', None), getattr(m.mode_mgr, 'inetcpl_opera_active', False))
+            self._update_gateway_btn(getattr(self, 'ssh_select_btn', None), getattr(m.mode_mgr, 'inetcpl_ssh_active', False))
+            self._update_gateway_btn(getattr(self, 'vless_select_btn', None), getattr(m.mode_mgr, 'inetcpl_vless_active', False))
 
         if getattr(self, '_last_styled_mode', None) != cur_mode:
             self._last_styled_mode = cur_mode

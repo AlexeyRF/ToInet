@@ -138,27 +138,17 @@ def _update_menu_impl_unsafe():
                 m.tray_menu.addAction(ssh_cpl)            
 
         elif m.mode_type == "tun":
-            if m.tor_manager.is_running() or m.mode_mgr.tun_proxy_port == 9853:
-                tor_tun = QAction(m.T("Подключиться к TOR (TUN)", "Connect to TOR (TUN)") if m.mode_mgr.tun_proxy_port != 9853 else m.T("Отключиться от TOR (TUN)", "Disconnect from TOR (TUN)"), m.tray_menu)
-                tor_tun.triggered.connect(m.toggle_singbox_tun_tor)
-                m.tray_menu.addAction(tor_tun)
-            
-            if m.byedpi_manager.is_running() or m.mode_mgr.tun_proxy_port == 1780:
-                bd_tun = QAction(m.T("Подключиться к BD (TUN)", "Connect to BD (TUN)") if m.mode_mgr.tun_proxy_port != 1780 else m.T("Отключиться от BD (TUN)", "Disconnect from BD (TUN)"), m.tray_menu)
-                bd_tun.triggered.connect(m.toggle_singbox_tun_bd)
-                m.tray_menu.addAction(bd_tun)
-            
-            if m.opera_mgr.is_running() or m.mode_mgr.tun_proxy_port == 1785:
-                opera_tun = QAction(m.T("Подключиться к Opera (TUN)", "Connect to Opera (TUN)") if m.mode_mgr.tun_proxy_port != 1785 else m.T("Отключиться от Opera (TUN)", "Disconnect from Opera (TUN)"), m.tray_menu)
-                opera_tun.triggered.connect(m.toggle_singbox_tun_opera)
-                m.tray_menu.addAction(opera_tun)
+            tun_act = QAction(m.T("Отключить TUN (по правилам)", "Disconnect TUN (by rules)") if m.mode_mgr.tun_running() else m.T("Подключить TUN (по правилам)", "Connect TUN (by rules)"), m.tray_menu)
+            def toggle_tun_rules():
+                if m.mode_mgr.tun_running():
+                    m.mode_mgr.stop_tun()
+                else:
+                    m.mode_mgr.start_tun()
+                m.update_proxy_status()
+                m.update_menu()
+            tun_act.triggered.connect(toggle_tun_rules)
+            m.tray_menu.addAction(tun_act)
 
-            ssh_port = int(m.config.get("ssh_socks_port", 1770))
-            if m.ssh_mgr.is_running() or m.mode_mgr.tun_proxy_port == ssh_port:
-                ssh_tun = QAction(m.T("Подключиться к SSH (TUN)", "Connect to SSH (TUN)") if m.mode_mgr.tun_proxy_port != ssh_port else m.T("Отключиться от SSH (TUN)", "Disconnect from SSH (TUN)"), m.tray_menu)
-                ssh_tun.triggered.connect(m.toggle_singbox_tun_ssh)
-                m.tray_menu.addAction(ssh_tun)
-            
             adv_tun_simp = QAction(m.T("Продвинутые настройки TUN", "Advanced TUN Settings"), m.tray_menu)
             adv_tun_simp.triggered.connect(m.mode_mgr.open_advanced_tun_config)
             m.tray_menu.addAction(adv_tun_simp)

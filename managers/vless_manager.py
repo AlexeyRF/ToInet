@@ -1,3 +1,4 @@
+import time
 import os
 
 import subprocess
@@ -42,22 +43,43 @@ class VlessManager(QObject):
             if self.process.poll() is not None:
                 self.running = False
                 self.process = None
-        elif not self.running:
-            existing_pid = self.find_existing_process()
-            if existing_pid:
-                self.process = AdoptedProcess(existing_pid)
-                self.running = True
+                return False
+            return True
+
+        now = time.time()
+        if hasattr(self, '_last_check') and (now - self._last_check < 2.0):
+            return getattr(self, '_cached_running', False)
+        self._last_check = now
+
+        existing_pid = self.find_existing_process()
+        if existing_pid:
+            self.process = AdoptedProcess(existing_pid)
+            self.running = True
+        else:
+            self.running = False
+        self._cached_running = self.running
         return self.running
 
     def find_existing_process(self):
+        # Quick loopback port check first - if port 1790 isn't open, sing-box vless isn't running
+        try:
+            import socket
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.02)
+            res = sock.connect_ex(('127.0.0.1', 1790))
+            sock.close()
+            if res != 0:
+                return None
+        except Exception:
+            return None
+
+        # Port is open, find the pid quickly
         try:
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
                     name = (proc.info.get('name') or "").lower()
                     if 'sing-box' in name:
-                        cmdline = proc.cmdline() or []
-                        if any('vless' in arg.lower() for arg in cmdline) or any('config.json' in arg.lower() for arg in cmdline):
-                            return proc.info['pid']
+                        return proc.info['pid']
                     elif 'python' in name:
                         cmdline = proc.cmdline() or []
                         if any('wl_torred_vless.py' in arg for arg in cmdline):
@@ -65,23 +87,6 @@ class VlessManager(QObject):
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
         except Exception:
-            pass
-
-        try:
-            import socket
-            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            sock.settimeout(0.5)
-            res = sock.connect_ex(('127.0.0.1', 1790))
-            sock.close()
-            if res == 0:
-                for proc in psutil.process_iter(['pid', 'name']):
-                    try:
-                        name = (proc.info.get('name') or "").lower()
-                        if 'sing-box' in name:
-                            return proc.info['pid']
-                    except:
-                        pass
-        except:
             pass
         return None
 

@@ -471,15 +471,24 @@ def set_mode_type(mode):
     if mode == mode_type:
         return
 
-    if mode_type == "inetcpl" and mode != "inetcpl":
-        mode_mgr.reset_inetcpl_proxy()
+    old_mode = mode_type
+    was_connected = proxy_enabled
 
-    if mode_type == "tun" and mode != "tun":
+    # 1. Stop old mode proxy redirection/tunnels
+    if old_mode == "inetcpl":
+        mode_mgr.reset_inetcpl_proxy()
+    elif old_mode == "tun":
         mode_mgr.stop_tun()
-        
-    if mode_type == "evpn" and mode != "evpn":
+    elif old_mode == "evpn":
         evpn_mgr.stop()
-        if proxy_enabled and config.get("evpn_exclusive_mode", True):
+    elif old_mode == "empty":
+        mode_mgr.stop_proxifier()
+
+    # Always ensure evpn is stopped if moving away from evpn
+    if mode != "evpn":
+        if getattr(evpn_mgr, 'is_running', False):
+            evpn_mgr.stop()
+        if was_connected and config.get("evpn_exclusive_mode", True):
             tor_manager.start()
             byedpi_manager.start()
             opera_mgr.start()
@@ -493,19 +502,29 @@ def set_mode_type(mode):
                     pip_mgr.start()
                     bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
 
-    if mode_type == "empty" and mode != "empty":
-        mode_mgr.stop_proxifier()
+    mode_type = mode
+    config["mode_type"] = mode
+    config_manager.save_config(config)
 
-    if mode == "tun":
-        if proxy_enabled:
+    # 2. Reconnect to new mode if previously connected
+    if was_connected:
+        proxy_enabled = True
+        if mode == "tun":
+            byedpi_manager.start()
+            tor_manager.start()
+            opera_mgr.start()
             mode_mgr.start_tun()
-
-    if mode == "empty":
-        if proxy_enabled:
+        elif mode == "inetcpl":
+            byedpi_manager.start()
+            tor_manager.start()
+            opera_mgr.start()
+            toggle_inetcpl_bd()
+        elif mode == "empty":
+            byedpi_manager.start()
+            tor_manager.start()
+            opera_mgr.start()
             mode_mgr.start_proxifier()
-            
-    if mode == "evpn":
-        if proxy_enabled:
+        elif mode == "evpn":
             if config.get("evpn_exclusive_mode", True):
                 tor_manager.stop()
                 byedpi_manager.stop()
@@ -517,10 +536,6 @@ def set_mode_type(mode):
                 bdsher.clear_pip_proxy()
             evpn_mgr.start()
 
-    mode_type = mode
-    config["mode_type"] = mode
-    config_manager.save_config(config)
-    
     update_proxy_status()
     update_menu()
 
