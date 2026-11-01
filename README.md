@@ -1,9 +1,4 @@
 # ToInet-MAX
-
-<p align="center">
-  <img src="icon.ico" width="96" height="96" alt="ToInet Logo">
-</p>
-
 <p align="center">
   <a href="#русский">Русский</a> •
   <a href="#english">English</a> •
