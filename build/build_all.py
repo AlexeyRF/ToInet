@@ -33,6 +33,8 @@ EXCLUDE_EXTENSIONS = {".pyc", ".pyo", ".log", ".tmp"}
 EXCLUDE_DATA_FILES = {"cached-certs", "cached-descriptors", "cached-descriptors.new",
                       "cached-microdesc-consensus", "cached-microdescs", "cached-microdescs.new",
                       "lock", "state", "torrc", "keys", "pt_state"}
+EXCLUDE_EVPN_FILES = {"subs_cache.json", "working_nodes.json", "evpn_config.json",
+                      "vless_state.json", "blacklist.json", "evpn.log"}
 
 
 def download_file(url, output_path, timeout=60):
@@ -254,6 +256,8 @@ def add_to_zip(zipf, rel_path, arc_prefix=PROJECT_NAME):
                 continue
             if file_path.parent.name == "data" and file_path.name in EXCLUDE_DATA_FILES:
                 continue
+            if file_path.parent.name == "evpn" and file_path.name in EXCLUDE_EVPN_FILES:
+                continue
             rel_file = file_path.resolve().relative_to(BASE_DIR)
             arcname = os.path.join(arc_prefix, str(rel_file).replace("\\", "/"))
             zipf.write(file_path, arcname)
@@ -289,6 +293,7 @@ def build_python_zip():
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/telegram.png",
             "tor/tor.exe",
             "tor/tor-gencert.exe",
             "tor/pluggable_transports",
@@ -404,6 +409,7 @@ def build_portable_zip(compiled_exe_path):
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/telegram.png",
             "evpn/subs.txt",
             "tor/tor.exe",
             "tor/tor-gencert.exe",
@@ -425,6 +431,21 @@ def clean_temp_files():
             print(f"Удален временный файл: {pf}")
         except Exception:
             pass
+    evpn_junk = [
+        "evpn/subs_cache.json",
+        "evpn/working_nodes.json",
+        "evpn/evpn_config.json",
+        "evpn/evpn.log",
+        "evpn/vless_state.json",
+        "evpn/blacklist.json",
+    ]
+    for jf in evpn_junk:
+        if os.path.exists(jf):
+            try:
+                os.remove(jf)
+                print(f"Удален временный файл EVPN: {jf}")
+            except Exception:
+                pass
 
 
 def build_all(update_binaries=False):

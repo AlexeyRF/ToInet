@@ -22,8 +22,7 @@ T = system_utils.T
 def find_ppx_path():
     candidates = [
         os.path.join(CURRENT_DIR, "Toinet.ppx"),
-        os.path.join(os.path.dirname(CURRENT_DIR), "Toinet.ppx"),
-        r"D:\Documents\ToInet-MAX\Toinet.ppx"
+        os.path.join(os.path.dirname(CURRENT_DIR), "Toinet.ppx")
     ]
     for c in candidates:
         if c and os.path.exists(c):

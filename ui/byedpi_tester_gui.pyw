@@ -60,7 +60,7 @@ def find_ciadpi_executable():
     candidates = [
         os.path.join(SCRIPT_DIR, "ciadpi.exe"),
         os.path.join(SCRIPT_DIR, "byedpi", "ciadpi.exe"),
-        r"D:\Documents\ToInet-MAX\byedpi\ciadpi.exe",
+        os.path.join(os.path.dirname(SCRIPT_DIR), "byedpi", "ciadpi.exe"),
         r"C:\Program Files\byedpi\ciadpi.exe",
         r"C:\Program Files (x86)\byedpi\ciadpi.exe",
     ]
@@ -1741,7 +1741,8 @@ class ByeDPITesterGUI(QMainWindow):
                 config_candidates = [
                     os.path.join(SCRIPT_DIR, "data", "config.json"),
                     os.path.join(SCRIPT_DIR, "config.json"),
-                    r"D:\Documents\ToInet-MAX\data\config.json"
+                    os.path.join(os.path.dirname(SCRIPT_DIR), "data", "config.json"),
+                    os.path.join(os.path.dirname(SCRIPT_DIR), "config.json")
                 ]
                 for c_path in config_candidates:
                     if os.path.exists(c_path):

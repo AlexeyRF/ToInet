@@ -138,7 +138,7 @@ class ModeManager:
 
                 os.path.join(CURRENT_DIR, "Toinet.ppx"),
 
-                r"D:\Documents\ToInet-MAX\Toinet.ppx"
+                os.path.join(os.path.dirname(CURRENT_DIR), "Toinet.ppx")
 
             ]
 
