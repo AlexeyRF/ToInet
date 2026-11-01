@@ -152,6 +152,12 @@ pip_manager = bdsher.get_pip_manager(config)
 
 def activate_inetcpl_gateway(gw):
     """Explicitly connects the specified inetcpl gateway without toggling off."""
+    if not gw or gw == "none":
+        mode_mgr.reset_inetcpl_proxy()
+        update_proxy_status()
+        update_menu()
+        return
+
     if gw != "tor" and mode_mgr.inetcpl_tor_active:
         if mode_mgr.run_cpller(9853, 0):
             mode_mgr.inetcpl_tor_active = False
@@ -201,7 +207,10 @@ def activate_inetcpl_gateway(gw):
 
 def connect_default_inetcpl_gateway():
     """Connects the user-selected default gateway when in inetcpl mode."""
-    gw = config.get("inetcpl_default_gateway", "byedpi")
+    gw = config.get("inetcpl_default_gateway", "none")
+    if not gw or gw == "none":
+        mode_mgr.reset_inetcpl_proxy()
+        return
     activate_inetcpl_gateway(gw)
 
 def _start_background_providers():
@@ -247,6 +256,14 @@ def update_proxy_status():
                 getattr(mode_mgr, 'inetcpl_ssh_active', False) or
                 getattr(mode_mgr, 'inetcpl_vless_active', False)
             )
+            if not is_active and config.get("inetcpl_default_gateway", "none") == "none":
+                is_active = (
+                    tor_manager.is_running() or
+                    byedpi_manager.is_running() or
+                    opera_mgr.is_running() or
+                    ssh_mgr.is_running() or
+                    tgws_mgr.running
+                )
         elif mode_type == "empty":
             is_active = (
                 mode_mgr.proxifier_running() or
@@ -293,7 +310,11 @@ def toggle_all():
                 ssh_mgr.start()
         
         if mode_type == "inetcpl":
-            connect_default_inetcpl_gateway()
+            gw = config.get("inetcpl_default_gateway", "none")
+            if gw and gw != "none":
+                activate_inetcpl_gateway(gw)
+            else:
+                mode_mgr.reset_inetcpl_proxy()
         elif mode_type == "tun":
             mode_mgr.start_tun()
         elif mode_type == "evpn":
@@ -571,8 +592,8 @@ def set_mode_type(mode):
         return
 
     old_mode = mode_type
-    # Switching modes via top UI buttons always auto-connects to the chosen mode
-    was_connected = True
+    # Mode switch only reconnects if already active ("из вкл в вкл")
+    was_connected = bool(proxy_enabled)
 
     # 1. Stop old mode proxy redirection/tunnels
     if old_mode == "inetcpl":
@@ -588,36 +609,39 @@ def set_mode_type(mode):
     if mode != "evpn":
         if getattr(evpn_mgr, 'is_running', False):
             evpn_mgr.stop()
-        if config.get("evpn_exclusive_mode", True):
+        if was_connected and config.get("evpn_exclusive_mode", True):
             _start_background_providers()
 
     mode_type = mode
     config["mode_type"] = mode
     config_manager.save_config(config)
 
-    # 2. Reconnect to new mode
-    proxy_enabled = True
-    mode_mgr._mode_switching_until = time.time() + 4.0
-    if mode == "tun":
-        _start_background_providers()
-        mode_mgr.start_tun()
-    elif mode == "inetcpl":
-        _start_background_providers()
-        connect_default_inetcpl_gateway()
-    elif mode == "empty":
-        _start_background_providers()
-        mode_mgr.start_proxifier()
-    elif mode == "evpn":
-        if config.get("evpn_exclusive_mode", True):
-            tor_manager.stop()
-            byedpi_manager.stop()
-            opera_mgr.stop()
-            vless_mgr.stop()
-            ssh_mgr.stop()
-            tgws_mgr.stop()
-            pip_manager.stop()
-            bdsher.clear_pip_proxy()
-        evpn_mgr.start()
+    # 2. Reconnect to new mode ONLY if previously connected
+    if was_connected:
+        proxy_enabled = True
+        mode_mgr._mode_switching_until = time.time() + 4.0
+        if mode == "tun":
+            _start_background_providers()
+            mode_mgr.start_tun()
+        elif mode == "inetcpl":
+            _start_background_providers()
+            connect_default_inetcpl_gateway()
+        elif mode == "empty":
+            _start_background_providers()
+            mode_mgr.start_proxifier()
+        elif mode == "evpn":
+            if config.get("evpn_exclusive_mode", True):
+                tor_manager.stop()
+                byedpi_manager.stop()
+                opera_mgr.stop()
+                vless_mgr.stop()
+                ssh_mgr.stop()
+                tgws_mgr.stop()
+                pip_manager.stop()
+                bdsher.clear_pip_proxy()
+            evpn_mgr.start()
+    else:
+        proxy_enabled = False
 
     update_proxy_status()
     update_menu()

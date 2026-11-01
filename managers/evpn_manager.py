@@ -59,9 +59,86 @@ def get_subs_file_path():
     except Exception:
         return candidates[0]
 
+def get_blacklist_file():
+    return os.path.join(get_evpn_dir(), "blacklist.json")
+
+def load_blacklist():
+    path = get_blacklist_file()
+    if os.path.exists(path):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return set(data)
+        except Exception:
+            pass
+    return set()
+
+def save_blacklist(bl_set):
+    path = get_blacklist_file()
+    try:
+        with open(path, "w", encoding="utf-8") as f:
+            json.dump(sorted(list(bl_set)), f, indent=2, ensure_ascii=False)
+    except Exception as e:
+        print(f"[EVPN] Error saving blacklist: {e}")
+
+def get_node_key(link):
+    if not link:
+        return ""
+    try:
+        parsed = urllib.parse.urlparse(link.strip())
+        host = parsed.hostname or ""
+        port = parsed.port or 443
+        return f"{host}:{port}".lower()
+    except Exception:
+        return link.strip().lower()
+
+def is_node_blacklisted(link, bl_set=None):
+    if not link:
+        return False
+    if bl_set is None:
+        bl_set = load_blacklist()
+    if not bl_set:
+        return False
+    clean = link.strip()
+    if clean in bl_set:
+        return True
+    key = get_node_key(clean)
+    if key and key in bl_set:
+        return True
+    try:
+        parsed = urllib.parse.urlparse(clean)
+        if parsed.hostname and parsed.hostname.lower() in bl_set:
+            return True
+    except Exception:
+        pass
+    return False
+
+def add_to_blacklist(link):
+    if not link:
+        return set()
+    bl = load_blacklist()
+    clean = link.strip()
+    bl.add(clean)
+    key = get_node_key(clean)
+    if key:
+        bl.add(key)
+    try:
+        parsed = urllib.parse.urlparse(clean)
+        if parsed.hostname:
+            bl.add(parsed.hostname.lower())
+    except Exception:
+        pass
+    save_blacklist(bl)
+    return bl
+
+
 
 
 def build_singbox_config(nodes):
+    bl = load_blacklist()
+    if bl:
+        nodes = [n for n in nodes if not is_node_blacklisted(n, bl)]
 
     outbounds = [
         {
@@ -374,6 +451,10 @@ class ProxyTester(QThread):
                     except Exception as e:
 
                         pass
+            bl = load_blacklist()
+            if nodes and bl:
+                nodes = [n for n in nodes if not is_node_blacklisted(n, bl)]
+
 
             
 
@@ -392,11 +473,9 @@ class ProxyTester(QThread):
             working_nodes = []
 
             checked = 0
-
-            
-
             def check_node(link):
-
+                if is_node_blacklisted(link, bl):
+                    return None
                 try:
 
                     parsed = urllib.parse.urlparse(link)
@@ -568,6 +647,17 @@ class EvpnManager(QObject):
                     self.log_file.close()
                 except:
                     pass
+            if self.sb_process:
+                try:
+                    self.sb_process.terminate()
+                    self.sb_process.wait(timeout=1.5)
+                except Exception:
+                    try:
+                        self.sb_process.kill()
+                    except Exception:
+                        pass
+                self.sb_process = None
+
             log_path = os.path.join(evpn_dir, "evpn.log")
             self.log_file = open(log_path, "w", encoding="utf-8")
             
@@ -587,31 +677,47 @@ class EvpnManager(QObject):
         top_node = self.working_nodes.pop(0)
         self.working_nodes.append(top_node)
 
-        # Build config before stopping current process to eliminate direct leak window
-        try:
-            current_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            cfg = build_singbox_config(self.working_nodes)
-            evpn_dir = os.path.join(current_dir, "evpn")
-            os.makedirs(evpn_dir, exist_ok=True)
-            cfg_path = os.path.join(evpn_dir, "evpn_config.json")
-            with open(cfg_path, "w", encoding="utf-8") as f:
-                json.dump(cfg, f, indent=2)
-        except Exception as e:
-            self.emit_error(f"Ошибка смены сервера: {e}")
+        # Skip any blacklisted nodes
+        bl = load_blacklist()
+        if bl:
+            self.working_nodes = [n for n in self.working_nodes if not is_node_blacklisted(n, bl)]
+
+        if not self.working_nodes:
+            self.emit_error("Нет доступных серверов!")
+            self.stop()
             return
 
-        if self.sb_process:
-            try:
-                self.sb_process.terminate()
-                self.sb_process.wait(timeout=1.5)
-            except Exception:
-                try:
-                    self.sb_process.kill()
-                except Exception:
-                    pass
-            self.sb_process = None
-        
         self._start_singbox_with_nodes()
+
+    def blacklist_current_server(self):
+        if not self.working_nodes:
+            self.emit_error("Нет активного сервера для добавления в Ч/С")
+            return None
+        
+        banned_node = self.working_nodes.pop(0)
+        add_to_blacklist(banned_node)
+        
+        bl = load_blacklist()
+        self.working_nodes = [n for n in self.working_nodes if not is_node_blacklisted(n, bl)]
+        
+        banned_key = get_node_key(banned_node) or "сервер"
+        self.emit_status(f"Сервер {banned_key} добавлен в Ч/С. Переключение...")
+        print(f"[EVPN] Added to blacklist: {banned_key}. Remaining active nodes: {len(self.working_nodes)}")
+
+        try:
+            cache_file = os.path.join(get_evpn_dir(), "working_nodes.json")
+            with open(cache_file, "w", encoding="utf-8") as f:
+                json.dump({"timestamp": time.time(), "nodes": self.working_nodes}, f)
+        except Exception:
+            pass
+
+        if not self.working_nodes:
+            self.emit_error("Все доступные серверы в Ч/С. Запустите обновление подписок.")
+            self.stop()
+            return banned_node
+
+        self._start_singbox_with_nodes()
+        return banned_node
 
     def stop(self):
         if not self.is_running:

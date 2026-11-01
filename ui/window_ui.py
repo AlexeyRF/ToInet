@@ -383,6 +383,31 @@ class MainWindow(QMainWindow):
         self.evpn_switch_btn.hide()
         next_layout.addWidget(self.evpn_switch_btn)
 
+        self.evpn_ban_btn = QPushButton(T("В Ч/С", "Blacklist", "Bloquer"))
+        self.evpn_ban_btn.setFixedHeight(34)
+        self.evpn_ban_btn.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        self.evpn_ban_btn.setCursor(Qt.PointingHandCursor)
+        self.evpn_ban_btn.setStyleSheet("""
+            QPushButton {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #383838;
+                border-radius: 6px;
+                padding: 0 16px;
+            }
+            QPushButton:hover {
+                background-color: #3b2222;
+                border-color: #D13438;
+                color: #FFAAAA;
+            }
+            QPushButton:pressed {
+                background-color: #201010;
+            }
+        """)
+        self.evpn_ban_btn.clicked.connect(self.blacklist_evpn_server)
+        self.evpn_ban_btn.hide()
+        next_layout.addWidget(self.evpn_ban_btn)
+
         self.next_btn = self.evpn_switch_btn  # for backward compatibility
         layout.addLayout(next_layout)
 
@@ -854,12 +879,27 @@ class MainWindow(QMainWindow):
         self.vless_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_vless)
         self.vless_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_vless(), self.update_ui_state()))
 
+        def open_evpn_blacklist():
+            bl_path = os.path.join(getattr(m, 'CURRENT_DIR', '.'), "evpn", "blacklist.json")
+            if not os.path.exists(bl_path):
+                try:
+                    os.makedirs(os.path.dirname(bl_path), exist_ok=True)
+                    with open(bl_path, "w", encoding="utf-8") as f:
+                        f.write("[]")
+                except Exception:
+                    pass
+            try:
+                os.startfile(bl_path)
+            except Exception:
+                pass
+        vless_bl_btn = make_prov_btn(T("Черный список", "Blacklist", "Liste noire"), open_evpn_blacklist)
+
         self.vless_card = create_provider_card(
             "VLESS / EVPN",
             "Порт 1790",
             T("Ядро Sing-box: VLESS Reality, ShadowTLS, Trojan и динамическая ротация серверов.",
               "Sing-box core with VLESS Reality, ShadowTLS, Trojan, and subscription server rotation."),
-            [vless_select_btn, vless_cfg_btn],
+            [vless_select_btn, vless_cfg_btn, vless_bl_btn],
             self.vless_restart_btn,
             self.vless_toggle_btn
         )
@@ -1344,7 +1384,8 @@ class MainWindow(QMainWindow):
         self.inetcpl_gw_combo.setStyleSheet(combo_style)
         self.inetcpl_gw_combo.setCursor(Qt.PointingHandCursor)
         inetcpl_gw_options = [
-            ("byedpi", "ByeDPI (1781)"),
+            ("none", T("Без шлюза (Отключено)", "No gateway (Disabled)", "Sans passerelle (Désactivé)")),
+            ("byedpi", "ByeDPI (1780)"),
             ("tor", "Tor (9853)"),
             ("opera", "Opera Proxy (1785)"),
             ("ssh", f"SSH ({ssh_port_val})"),
@@ -1353,7 +1394,7 @@ class MainWindow(QMainWindow):
         self.inetcpl_gw_combo.blockSignals(True)
         for val, label in inetcpl_gw_options:
             self.inetcpl_gw_combo.addItem(label, val)
-        cur_default_gw = m.config.get("inetcpl_default_gateway", "byedpi")
+        cur_default_gw = m.config.get("inetcpl_default_gateway", "none")
         for idx, (val, _) in enumerate(inetcpl_gw_options):
             if val == cur_default_gw:
                 self.inetcpl_gw_combo.setCurrentIndex(idx)
@@ -1465,6 +1506,11 @@ class MainWindow(QMainWindow):
         if hasattr(self.main_module, 'evpn_mgr') and self.main_module.evpn_mgr.is_running:
             self.main_module.evpn_mgr.next_server()
 
+    def blacklist_evpn_server(self):
+        if hasattr(self.main_module, 'evpn_mgr') and self.main_module.evpn_mgr.is_running:
+            self.main_module.evpn_mgr.blacklist_current_server()
+            self.update_ui_state()
+
     def select_mode(self, mode_str):
         self.main_module.set_mode_type(mode_str)
         self.update_ui_state()
@@ -1479,15 +1525,6 @@ class MainWindow(QMainWindow):
             elif gw_id == "opera": m.toggle_singbox_tun_opera()
             elif gw_id == "ssh": m.toggle_singbox_tun_ssh()
         elif cur_mode == "inetcpl":
-            m.config["inetcpl_default_gateway"] = gw_id
-            m.config_manager.save_config(m.config)
-            if hasattr(self, 'inetcpl_gw_combo'):
-                self.inetcpl_gw_combo.blockSignals(True)
-                for i in range(self.inetcpl_gw_combo.count()):
-                    if self.inetcpl_gw_combo.itemData(i) == gw_id:
-                        self.inetcpl_gw_combo.setCurrentIndex(i)
-                        break
-                self.inetcpl_gw_combo.blockSignals(False)
             if hasattr(m, 'activate_inetcpl_gateway'):
                 m.activate_inetcpl_gateway(gw_id)
             else:
@@ -1532,6 +1569,8 @@ class MainWindow(QMainWindow):
             self.status_desc.setStyleSheet("color: #9d9d9d; background: transparent;")
             self.progress_bar.stop()
             self.next_btn.hide()
+            if hasattr(self, 'evpn_ban_btn'):
+                self.evpn_ban_btn.hide()
 
             self.status_chip.setText("Отключено")
             self.status_chip.setStyleSheet("""
@@ -1766,6 +1805,8 @@ class MainWindow(QMainWindow):
         # EVPN switch button only visible if in evpn mode and actively running
         if hasattr(self, 'evpn_switch_btn'):
             self.evpn_switch_btn.setVisible(cur_mode == "evpn" and bool(evpn_active))
+        if hasattr(self, 'evpn_ban_btn'):
+            self.evpn_ban_btn.setVisible(cur_mode == "evpn" and bool(evpn_active))
 
         # Hide 'Выбрать шлюзом' buttons outside inetcpl mode
         is_inetcpl = (cur_mode == "inetcpl")
