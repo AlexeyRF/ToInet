@@ -26,8 +26,116 @@
   ],
   "outbounds": [
     {
-      "type": "urltest",
+      "type": "selector",
       "tag": "auto",
+      "outbounds": [
+        "proxy-0",
+        "urltest-auto",
+        "proxy-1",
+        "proxy-2",
+        "proxy-3",
+        "proxy-4",
+        "proxy-5",
+        "proxy-6",
+        "proxy-7",
+        "proxy-8",
+        "proxy-9",
+        "proxy-10",
+        "proxy-11",
+        "proxy-12",
+        "proxy-13",
+        "proxy-14",
+        "proxy-15",
+        "proxy-16",
+        "proxy-17",
+        "proxy-18",
+        "proxy-19",
+        "proxy-20",
+        "proxy-21",
+        "proxy-22",
+        "proxy-23",
+        "proxy-24",
+        "proxy-25",
+        "proxy-26",
+        "proxy-27",
+        "proxy-28",
+        "proxy-29",
+        "proxy-30",
+        "proxy-31",
+        "proxy-32",
+        "proxy-33",
+        "proxy-34",
+        "proxy-35",
+        "proxy-36",
+        "proxy-37",
+        "proxy-38",
+        "proxy-39",
+        "proxy-40",
+        "proxy-41",
+        "proxy-42",
+        "proxy-43",
+        "proxy-44",
+        "proxy-45",
+        "proxy-46",
+        "proxy-47",
+        "proxy-48",
+        "proxy-49",
+        "proxy-50",
+        "proxy-51",
+        "proxy-52",
+        "proxy-53",
+        "proxy-54",
+        "proxy-55",
+        "proxy-56",
+        "proxy-57",
+        "proxy-58",
+        "proxy-59",
+        "proxy-60",
+        "proxy-61",
+        "proxy-62",
+        "proxy-63",
+        "proxy-64",
+        "proxy-65",
+        "proxy-66",
+        "proxy-67",
+        "proxy-68",
+        "proxy-69",
+        "proxy-70",
+        "proxy-71",
+        "proxy-72",
+        "proxy-73",
+        "proxy-74",
+        "proxy-75",
+        "proxy-76",
+        "proxy-77",
+        "proxy-78",
+        "proxy-79",
+        "proxy-80",
+        "proxy-81",
+        "proxy-82",
+        "proxy-83",
+        "proxy-84",
+        "proxy-85",
+        "proxy-86",
+        "proxy-87",
+        "proxy-88",
+        "proxy-89",
+        "proxy-90",
+        "proxy-91",
+        "proxy-92",
+        "proxy-93",
+        "proxy-94",
+        "proxy-95",
+        "proxy-96",
+        "proxy-97",
+        "proxy-98",
+        "proxy-99"
+      ],
+      "default": "proxy-0"
+    },
+    {
+      "type": "urltest",
+      "tag": "urltest-auto",
       "outbounds": [
         "proxy-0",
         "proxy-1",
@@ -128,111 +236,15 @@
         "proxy-96",
         "proxy-97",
         "proxy-98",
-        "proxy-99",
-        "proxy-100",
-        "proxy-101",
-        "proxy-102",
-        "proxy-103",
-        "proxy-104",
-        "proxy-105",
-        "proxy-106",
-        "proxy-107",
-        "proxy-108",
-        "proxy-109",
-        "proxy-110",
-        "proxy-111",
-        "proxy-112",
-        "proxy-113",
-        "proxy-114",
-        "proxy-115",
-        "proxy-116",
-        "proxy-117",
-        "proxy-118",
-        "proxy-119",
-        "proxy-120",
-        "proxy-121",
-        "proxy-122",
-        "proxy-123",
-        "proxy-124",
-        "proxy-125",
-        "proxy-126",
-        "proxy-127",
-        "proxy-128",
-        "proxy-129",
-        "proxy-130",
-        "proxy-131",
-        "proxy-132",
-        "proxy-133",
-        "proxy-134",
-        "proxy-135",
-        "proxy-136",
-        "proxy-137",
-        "proxy-138",
-        "proxy-139",
-        "proxy-140",
-        "proxy-141",
-        "proxy-142",
-        "proxy-143",
-        "proxy-144",
-        "proxy-145",
-        "proxy-146",
-        "proxy-147",
-        "proxy-148",
-        "proxy-149",
-        "proxy-150",
-        "proxy-151",
-        "proxy-152",
-        "proxy-153",
-        "proxy-154",
-        "proxy-155",
-        "proxy-156",
-        "proxy-157",
-        "proxy-158",
-        "proxy-159",
-        "proxy-160",
-        "proxy-161",
-        "proxy-162",
-        "proxy-163",
-        "proxy-164",
-        "proxy-165",
-        "proxy-166",
-        "proxy-167",
-        "proxy-168",
-        "proxy-169",
-        "proxy-170",
-        "proxy-171",
-        "proxy-172",
-        "proxy-173",
-        "proxy-174",
-        "proxy-175",
-        "proxy-176",
-        "proxy-177",
-        "proxy-178",
-        "proxy-179",
-        "proxy-180",
-        "proxy-181",
-        "proxy-182",
-        "proxy-183",
-        "proxy-184",
-        "proxy-185",
-        "proxy-186",
-        "proxy-187",
-        "proxy-188",
-        "proxy-189",
-        "proxy-190",
-        "proxy-191",
-        "proxy-192",
-        "proxy-193",
-        "proxy-194",
-        "proxy-195",
-        "proxy-196",
-        "proxy-197",
-        "proxy-198",
-        "proxy-199"
+        "proxy-99"
       ],
       "url": "http://cp.cloudflare.com/generate_204",
       "interval": "3m",
       "tolerance": 5000
+    },
+    {
+      "type": "block",
+      "tag": "block"
     },
     {
       "type": "direct",
@@ -241,61 +253,389 @@
     {
       "type": "vless",
       "tag": "proxy-0",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "lorettmay.top",
         "utls": {
           "enabled": true,
-          "fingerprint": "random"
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-1",
-      "server": "188.72.103.4",
+      "server": "185.178.208.167",
       "server_port": 443,
-      "uuid": "9737cc16-7266-45ce-94d9-6e05a45e0b9c",
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "ru.nnight.cfd",
+        "server_name": "lorettmay.top",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "ios"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-2",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-3",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
+        "server_name": "business.lesotorg-kirov.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "qq"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-4",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "lorettmay.top",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-5",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "business.lesotorg-kirov.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-6",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-7",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-8",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-9",
+      "server": "185.86.145.37",
+      "server_port": 443,
+      "uuid": "fd8b05d0-0a98-4fba-9b48-5c0367abfcf5",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "ara.rtkdvbr.cc",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "qq"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/amws",
+        "headers": {
+          "Host": "ara.rtkdvbr.cc"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-10",
+      "server": "185.86.145.142",
+      "server_port": 2096,
+      "uuid": "b877b58f-5995-4b25-abec-3213a2f95512",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "cdn.freetato-converting.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-11",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "business.lesotorg-kirov.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-12",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "business.lesotorg-kirov.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "ios"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-13",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-14",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "lorettmay.top",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-15",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "lorettmay.top",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-16",
+      "server": "188.225.83.133",
+      "server_port": 443,
+      "uuid": "5f1c2e83-d4aa-4f10-81e9-e0ccc018974c",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "xnodtwx.artemida.live",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
+          "short_id": "a1b2c3d4e5f6a7b8"
+        }
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": ""
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-17",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -304,14 +644,157 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-4",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-18",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-19",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-20",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-21",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "qq"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-22",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-23",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "ios"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-24",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "edge"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-25",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "qq"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-26",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "safari"
@@ -320,462 +803,94 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-5",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-6",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-7",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-8",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-9",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-10",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-11",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-12",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "37.18.14.168",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-13",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-14",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-15",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-16",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-17",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-18",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-19",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-20",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-21",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-22",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-23",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-24",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "78.159.246.85",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-25",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-26",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
       "tag": "proxy-27",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "random"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-28",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "ios"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-29",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "qq"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-30",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "randomquaint.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "random"
+          "fingerprint": "chrome"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-31",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "firefox"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-32",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-33",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -784,62 +899,78 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-34",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-33",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "qq"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-34",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-35",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "randomquaint.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "chrome"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-36",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "random"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-37",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -849,45 +980,45 @@
     {
       "type": "vless",
       "tag": "proxy-38",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-39",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "safari"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-40",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -897,13 +1028,13 @@
     {
       "type": "vless",
       "tag": "proxy-41",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -913,13 +1044,13 @@
     {
       "type": "vless",
       "tag": "proxy-42",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "185.141.227.180",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -929,13 +1060,13 @@
     {
       "type": "vless",
       "tag": "proxy-43",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -945,395 +1076,386 @@
     {
       "type": "vless",
       "tag": "proxy-44",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-45",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-46",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "37.18.14.168",
+        "server_name": "business.lesotorg-kirov.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "safari"
+          "fingerprint": "ios"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-47",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "randomquaint.net",
+        "server_name": "business.lesotorg-kirov.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "safari"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-48",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "safari"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-49",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "37.18.14.168",
+        "server_name": "business.lesotorg-kirov.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "qq"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-50",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "qq"
+          "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-51",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
+        "server_name": "lorettmay.top",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "chrome"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-52",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.229.9.135",
+      "server_port": 443,
+      "uuid": "4df3e06b-85e9-4b69-b38a-be37bad2fe9d",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "78.159.246.179",
+        "server_name": "business.lesotorg-kirov.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "firefox"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/chws",
+        "headers": {
+          "Host": "business.lesotorg-kirov.ru"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-53",
-      "server": "87.242.94.66",
-      "server_port": 7452,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "passport.yandex.ru",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
         },
         "reality": {
           "enabled": true,
-          "public_key": "0w339GBhpDiYwa9Wgqu3z3epu8dHAzeYUFXPtvzK8To",
-          "short_id": "190c27ae5f2e4d2c"
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-54",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "188.225.83.133",
+      "server_port": 443,
+      "uuid": "5f1c2e83-d4aa-4f10-81e9-e0ccc018974c",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "randomquaint.net",
+        "server_name": "xnodtwx.artemida.live",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
+          "short_id": "a1b2c3d4e5f6a7b8"
         }
+      },
+      "transport": {
+        "type": "grpc",
+        "service_name": ""
       }
     },
     {
       "type": "vless",
       "tag": "proxy-55",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "randomquaint.net",
+        "server_name": "lorettmay.top",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-56",
-      "server": "185.229.9.234",
+      "server": "185.86.145.37",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "fd8b05d0-0a98-4fba-9b48-5c0367abfcf5",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "max.ru",
+        "server_name": "ara.rtkdvbr.cc",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "AD7roAsP-vrlxeyfnVEWj7Cq_2viTSICXo2Psm6B_3E",
-          "short_id": "cb425a961bb7d67c"
+          "fingerprint": "qq"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/amws",
+        "headers": {
+          "Host": "ara.rtkdvbr.cc"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-57",
-      "server": "185.229.9.235",
-      "server_port": 45505,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "server": "185.86.145.142",
+      "server_port": 2096,
+      "uuid": "b877b58f-5995-4b25-abec-3213a2f95512",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "max.ru",
+        "server_name": "cdn.freetato-converting.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "tP_mtYuA3fZq8C6WatAA4TmDv0_Wigq9xYcmb5UsTRA",
-          "short_id": "93653ee07ff5124c"
+          "fingerprint": "chrome"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-58",
-      "server": "185.229.9.234",
+      "server": "185.178.208.167",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "yandex.ru",
+        "server_name": "lorettmay.top",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "fsyvGBPzzwpnSA0UnJML_cDqviNSEdj9zktpC1EeFhY",
-          "short_id": "743541f932fa3959"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-59",
-      "server": "185.229.9.175",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "max.ru",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "2QoNARj5aaa5-kUEiwx38KzbbiENQZ95V7x9jFo6f2A",
-          "short_id": "88a84e3390fcf4a7"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-60",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-61",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "chrome"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-62",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-63",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-64",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-65",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-66",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -1342,14 +1464,92 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-67",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-63",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "lorettmay.top",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "ios"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-64",
+      "server": "185.178.208.167",
+      "server_port": 443,
+      "uuid": "2232d904-8e6a-4202-8240-6efd8aec02e9",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "lorettmay.top",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        }
+      },
+      "transport": {
+        "type": "ws",
+        "path": "/blog/posts",
+        "headers": {
+          "Host": "lorettmay.top"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-65",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-66",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-67",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -1359,13 +1559,29 @@
     {
       "type": "vless",
       "tag": "proxy-68",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "edge"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-69",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -1374,52 +1590,30 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-69",
-      "server": "185.229.9.175",
+      "tag": "proxy-70",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "api.ok.ru",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "Eutx4frdhG1y7THj7k3CjazAsrCMj932RtbV4a1QfQk",
-          "short_id": "d5b6308860d578bb"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-70",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-71",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -1429,131 +1623,29 @@
     {
       "type": "vless",
       "tag": "proxy-72",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-73",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-74",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-75",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-76",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-77",
-      "server": "188.225.45.79",
-      "server_port": 7443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "passport.yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "0w339GBhpDiYwa9Wgqu3z3epu8dHAzeYUFXPtvzK8To",
-          "short_id": "190c27ae5f2e4d2c"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-78",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-79",
-      "server": "188.72.103.4",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "c37e8a11-cff8-4f11-bbbb-f0f8d7cbcb0c",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "cdn2.papar.online",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "qq"
@@ -1562,14 +1654,115 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-80",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "tag": "proxy-74",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "ios"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-75",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-76",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "max.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-77",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-78",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "ios"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-79",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "chrome"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-80",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -1579,947 +1772,82 @@
     {
       "type": "vless",
       "tag": "proxy-81",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
+        },
+        "reality": {
+          "enabled": true,
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-82",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "qq"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-83",
-      "server": "185.229.9.175",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "yandex.ru",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "1ea_kTf2MvXh9PtpzQdjQWb5ls5BjyUtSbn-qiR8ZXk",
-          "short_id": "cb0e256070ac91c7"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-84",
-      "server": "185.229.9.234",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
       "tls": {
         "enabled": true,
-        "server_name": "api.ok.ru",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "lIgF8B3ICGAQ6ExbRe9YDu8ZD1Ozzqu7-YO7hfuXfRw",
-          "short_id": "cc8069f6c2cbcb32"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
       "tag": "proxy-85",
-      "server": "185.229.9.175",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "www.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "ZO7C9aMpoVJ6CmkKWUBS20eKe542_tGIc6wZFGB-yjY",
-          "short_id": "b4e5b7cefcd0d47c"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-86",
-      "server": "31.177.111.140",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "cdn.rucdncomp.pro",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/client/collect/6b3a32fb9f37/",
-        "headers": {}
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-87",
-      "server": "95.129.236.149",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "d.nehtar.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/gateway/v1/ws/74c4d5e82a8e50ccf09fc628c17dc9be",
-        "headers": {}
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-88",
-      "server": "82.202.179.107",
-      "server_port": 12443,
-      "uuid": "8822fe1c-7a83-49c0-af96-c2027cb6ddd5",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "smartcaptcha.yandexcloud.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "6RMior0_TlChA0R_T8yXvjrrpb_nUiS50uRJrLqFeWM",
-          "short_id": "780f5e"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-89",
-      "server": "153.76.169.132",
-      "server_port": 2096,
-      "uuid": "768712b8-81dc-440f-9b38-4523bf767df4",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "id.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "SbVKOEMjK0sIlbwg4akyBg5mL5KZwwB-ed4eEE7YnRc",
-          "short_id": ""
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": "vless-grpc-reality"
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-90",
-      "server": "185.229.9.234",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "www.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "7o36V1H4H_34kTMpwCfJmDB1bbd21Rgbk2dM_dAonyM",
-          "short_id": "0bb3fbdc6cb178d4"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-91",
-      "server": "79.174.92.222",
-      "server_port": 443,
-      "uuid": "03ca8c3f-e777-45b5-a1b1-592094ca99ee",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "m.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "_PYBo3dyZRpGC44vADqcmlBCSeAVh1X8l3mulghVsTI",
-          "short_id": "a1b2c3d4"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-92",
-      "server": "79.174.92.222",
-      "server_port": 443,
-      "uuid": "03ca8c3f-e777-45b5-a1b1-592094ca99ee",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "m.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "_PYBo3dyZRpGC44vADqcmlBCSeAVh1X8l3mulghVsTI",
-          "short_id": "a1b2c3d4"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-93",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-94",
-      "server": "82.202.179.107",
-      "server_port": 12443,
-      "uuid": "8822fe1c-7a83-49c0-af96-c2027cb6ddd5",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "smartcaptcha.yandexcloud.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "6RMior0_TlChA0R_T8yXvjrrpb_nUiS50uRJrLqFeWM",
-          "short_id": "780f5e"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-95",
-      "server": "87.242.95.164",
-      "server_port": 9443,
-      "uuid": "3d5c43eb-3ec5-4e42-bf4b-a41c922e8ec4",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "passport.yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "qq"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "9YcV-gA7iaXFnI0HXQa624OIqm4zxO_U2eMCWXQAiCQ",
-          "short_id": "8375b32501373f41"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": "grpc"
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-96",
-      "server": "188.225.83.133",
-      "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "188.225.83.133",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-97",
-      "server": "37.18.14.145",
-      "server_port": 4510,
-      "uuid": "c3db7657-88ce-42a6-b998-1e0364b277ac",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "9c99da.usecache.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "hkvjyE8WMKHvdGfMta7PAIGz6HAv2WiXvWvAQmsE_DM",
-          "short_id": "2d0c188798bae174"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-98",
-      "server": "37.18.14.145",
-      "server_port": 4510,
-      "uuid": "c3db7657-88ce-42a6-b998-1e0364b277ac",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "9c99da.usecache.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "hkvjyE8WMKHvdGfMta7PAIGz6HAv2WiXvWvAQmsE_DM",
-          "short_id": "2d0c188798bae174"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-99",
-      "server": "188.225.83.133",
-      "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "xnodtwx.artemida.live",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-100",
-      "server": "82.202.179.107",
-      "server_port": 12443,
-      "uuid": "8822fe1c-7a83-49c0-af96-c2027cb6ddd5",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "smartcaptcha.yandexcloud.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "6RMior0_TlChA0R_T8yXvjrrpb_nUiS50uRJrLqFeWM",
-          "short_id": "780f5e"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-101",
-      "server": "37.18.14.145",
-      "server_port": 7445,
-      "uuid": "66217279-de40-4b62-b2bb-9c33b8fb7a01",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "passport.yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "edge"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "S_s3FVodJIep88KnIgT0cZLUMB2tAJHTJEn0o-J03G8",
-          "short_id": "283f4b51fbe39ad9"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-102",
-      "server": "37.18.14.145",
-      "server_port": 4510,
-      "uuid": "c3db7657-88ce-42a6-b998-1e0364b277ac",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "9c99da.usecache.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "ios"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "hkvjyE8WMKHvdGfMta7PAIGz6HAv2WiXvWvAQmsE_DM",
-          "short_id": "2d0c188798bae174"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-103",
-      "server": "82.202.178.132",
-      "server_port": 443,
-      "uuid": "03218c7c-acd1-45c0-87a1-9cc77101c6b4",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "mobile-api-12.sova.toys",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "1A9loATtqTbKfErpj24clMebWdbmBRDgUIADwtlvtAw",
-          "short_id": "70c20a2f5a7d542e"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": "google.storage.v2.Storage"
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-104",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-105",
-      "server": "82.202.178.132",
-      "server_port": 443,
-      "uuid": "03ca8c3f-e777-45b5-a1b1-592094ca99ee",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "mobile-api-12.sova.toys",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "1A9loATtqTbKfErpj24clMebWdbmBRDgUIADwtlvtAw",
-          "short_id": "70c20a2f5a7d542e"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": "google.storage.v2.Storage"
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-106",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-107",
-      "server": "82.202.178.132",
-      "server_port": 443,
-      "uuid": "03218c7c-acd1-45c0-87a1-9cc77101c6b4",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "mobile-api-12.sova.toys",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "1A9loATtqTbKfErpj24clMebWdbmBRDgUIADwtlvtAw",
-          "short_id": "70c20a2f5a7d542e"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": "google.storage.v2.Storage"
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-108",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "185.141.227.180",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-109",
-      "server": "188.225.83.133",
-      "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "188.225.83.133",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-110",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-111",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-112",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-113",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-114",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-115",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-116",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-117",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-118",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-119",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-120",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-121",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-122",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-123",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-124",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-125",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-126",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-127",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-128",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-129",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "safari"
@@ -2528,55 +1856,46 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-130",
-      "server": "188.225.83.133",
+      "tag": "proxy-86",
+      "server": "185.178.208.140",
       "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "xnodtwx.artemida.live",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "random"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-131",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "qq"
         }
       }
     },
     {
       "type": "vless",
-      "tag": "proxy-132",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-87",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "summerculture.net",
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "safari"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-88",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -2585,14 +1904,30 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-133",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-89",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "edge"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-90",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
@@ -2601,46 +1936,30 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-134",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "tag": "proxy-91",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "edge"
         }
       }
     },
     {
       "type": "vless",
-      "tag": "proxy-135",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
+      "tag": "proxy-92",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-136",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
@@ -2649,327 +1968,23 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-137",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
+      "tag": "proxy-93",
+      "server": "185.178.208.140",
+      "server_port": 443,
+      "uuid": "ea277838-a188-44f1-a2e8-94aa110c4f27",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "dismissaltree.net",
+        "server_name": "static.bakarova-top.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "chrome"
+          "fingerprint": "qq"
         }
       }
     },
     {
       "type": "vless",
-      "tag": "proxy-138",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-139",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-140",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-141",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-142",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-143",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-144",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-145",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-146",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-147",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-148",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-149",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "78.159.246.85",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-150",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-151",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-152",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "randomquaint.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-153",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "37.18.14.168",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-154",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-155",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-156",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-157",
+      "tag": "proxy-94",
       "server": "188.72.103.4",
       "server_port": 443,
       "uuid": "9737cc16-7266-45ce-94d9-6e05a45e0b9c",
@@ -2985,744 +2000,92 @@
     },
     {
       "type": "vless",
-      "tag": "proxy-158",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-159",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "randomquaint.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-160",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-161",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-162",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-163",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "37.18.14.168",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "safari"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-164",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-165",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-166",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-167",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-168",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-169",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-170",
-      "server": "78.159.246.179",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "randomquaint.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "safari"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-171",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-172",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-173",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-174",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-175",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-176",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "78.159.246.179",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-177",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "randomquaint.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-178",
-      "server": "87.242.94.66",
-      "server_port": 7452,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "passport.yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "0w339GBhpDiYwa9Wgqu3z3epu8dHAzeYUFXPtvzK8To",
-          "short_id": "190c27ae5f2e4d2c"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-179",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-180",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-181",
-      "server": "78.159.246.179",
-      "server_port": 8443,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "randomquaint.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-182",
-      "server": "78.159.250.84",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "summerculture.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-183",
-      "server": "95.129.236.149",
+      "tag": "proxy-95",
+      "server": "188.72.103.4",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "9737cc16-7266-45ce-94d9-6e05a45e0b9c",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "d.nehtar.ru",
+        "server_name": "ru.nnight.cfd",
         "utls": {
           "enabled": true,
           "fingerprint": "firefox"
-        }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/gateway/v1/ws/74c4d5e82a8e50ccf09fc628c17dc9be",
-        "headers": {}
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-184",
-      "server": "185.229.9.175",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "api.ok.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "Eutx4frdhG1y7THj7k3CjazAsrCMj932RtbV4a1QfQk",
-          "short_id": "d5b6308860d578bb"
         }
       }
     },
     {
       "type": "vless",
-      "tag": "proxy-185",
-      "server": "185.229.9.234",
+      "tag": "proxy-96",
+      "server": "188.72.103.4",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "9737cc16-7266-45ce-94d9-6e05a45e0b9c",
       "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
+      "tls": {
+        "enabled": true,
+        "server_name": "ru.nnight.cfd",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-97",
+      "server": "188.72.103.4",
+      "server_port": 443,
+      "uuid": "9737cc16-7266-45ce-94d9-6e05a45e0b9c",
+      "packet_encoding": "xudp",
+      "tls": {
+        "enabled": true,
+        "server_name": "ru.nnight.cfd",
+        "utls": {
+          "enabled": true,
+          "fingerprint": "firefox"
+        }
+      }
+    },
+    {
+      "type": "vless",
+      "tag": "proxy-98",
+      "server": "84.201.146.8",
+      "server_port": 443,
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
+      "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
         "server_name": "max.ru",
         "utls": {
           "enabled": true,
-          "fingerprint": "firefox"
+          "fingerprint": "safari"
         },
         "reality": {
           "enabled": true,
-          "public_key": "AD7roAsP-vrlxeyfnVEWj7Cq_2viTSICXo2Psm6B_3E",
-          "short_id": "cb425a961bb7d67c"
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
       }
     },
     {
       "type": "vless",
-      "tag": "proxy-186",
-      "server": "185.229.9.175",
+      "tag": "proxy-99",
+      "server": "84.201.146.8",
       "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "1ea_kTf2MvXh9PtpzQdjQWb5ls5BjyUtSbn-qiR8ZXk",
-          "short_id": "cb0e256070ac91c7"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-187",
-      "server": "185.229.9.234",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "www.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "7o36V1H4H_34kTMpwCfJmDB1bbd21Rgbk2dM_dAonyM",
-          "short_id": "0bb3fbdc6cb178d4"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-188",
-      "server": "185.229.9.175",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "www.vk.com",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "ZO7C9aMpoVJ6CmkKWUBS20eKe542_tGIc6wZFGB-yjY",
-          "short_id": "b4e5b7cefcd0d47c"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-189",
-      "server": "31.177.111.140",
-      "server_port": 443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
+      "uuid": "1e2b9c0c-4f9b-56f5-a062-1c4f2d2aa200",
       "packet_encoding": "xudp",
       "tls": {
         "enabled": true,
-        "server_name": "cdn.rucdncomp.pro",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      },
-      "transport": {
-        "type": "ws",
-        "path": "/client/collect/6b3a32fb9f37/",
-        "headers": {}
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-190",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "37.18.14.168",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-191",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-192",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "qq"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-193",
-      "server": "78.159.246.85",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "fitindoor.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-194",
-      "server": "37.18.14.168",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "kaoangeltrahnimenya.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-195",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "95a608b6-bff1-4e10-bb61-0a39f221bb7d",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "185.141.227.180",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "chrome"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-196",
-      "server": "188.225.45.79",
-      "server_port": 7443,
-      "uuid": "476b28c3-c833-41ed-974e-8e0152f559a1",
-      "packet_encoding": "xudp",
-      "flow": "xtls-rprx-vision",
-      "tls": {
-        "enabled": true,
-        "server_name": "passport.yandex.ru",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "firefox"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "0w339GBhpDiYwa9Wgqu3z3epu8dHAzeYUFXPtvzK8To",
-          "short_id": "190c27ae5f2e4d2c"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-197",
-      "server": "185.141.227.180",
-      "server_port": 2053,
-      "uuid": "2c634977-584e-4e1f-b501-1b70c77a6743",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "dismissaltree.net",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        }
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-198",
-      "server": "188.225.83.133",
-      "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "xnodtwx.artemida.live",
+        "server_name": "max.ru",
         "utls": {
           "enabled": true,
           "fingerprint": "chrome"
         },
         "reality": {
           "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
+          "public_key": "biyXF3Egpu0ul4Jyf04Vh1Zl6u3JGXJ2k5y5y7pDjgo",
+          "short_id": ""
         }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
-      }
-    },
-    {
-      "type": "vless",
-      "tag": "proxy-199",
-      "server": "188.225.83.133",
-      "server_port": 443,
-      "uuid": "4c346148-ece9-487a-bffb-ba5a399b2d71",
-      "packet_encoding": "xudp",
-      "tls": {
-        "enabled": true,
-        "server_name": "xnodtwx.artemida.live",
-        "utls": {
-          "enabled": true,
-          "fingerprint": "random"
-        },
-        "reality": {
-          "enabled": true,
-          "public_key": "JqmkP6Fys7jN2Fu1iDJuWKVNPhlgHfy_pj1DHFVKVhw",
-          "short_id": "a1b2c3d4e5f6a7b8"
-        }
-      },
-      "transport": {
-        "type": "grpc",
-        "service_name": ""
       }
     }
   ],
@@ -3737,9 +2100,15 @@
           "tun-in"
         ],
         "outbound": "auto"
+      },
+      {
+        "inbound": [
+          "tun-in"
+        ],
+        "outbound": "block"
       }
     ],
     "auto_detect_interface": true,
-    "final": "auto"
+    "final": "block"
   }
 }

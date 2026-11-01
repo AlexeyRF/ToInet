@@ -150,19 +150,114 @@ ssh_mgr.update_config(config)
 # Инициализируем менеджер для pip
 pip_manager = bdsher.get_pip_manager(config)
 
+def activate_inetcpl_gateway(gw):
+    """Explicitly connects the specified inetcpl gateway without toggling off."""
+    if gw != "tor" and mode_mgr.inetcpl_tor_active:
+        if mode_mgr.run_cpller(9853, 0):
+            mode_mgr.inetcpl_tor_active = False
+    if gw != "byedpi" and mode_mgr.inetcpl_bd_active:
+        if mode_mgr.run_cpller(1780, 0):
+            mode_mgr.inetcpl_bd_active = False
+    if gw != "opera" and mode_mgr.inetcpl_opera_active:
+        if mode_mgr.run_cpller(1785, 0):
+            mode_mgr.inetcpl_opera_active = False
+    if gw != "vless" and mode_mgr.inetcpl_vless_active:
+        if mode_mgr.run_cpller(1790, 0):
+            mode_mgr.inetcpl_vless_active = False
+    if gw != "ssh" and getattr(mode_mgr, 'inetcpl_ssh_active', False):
+        ssh_port = int(config.get("ssh_socks_port", 1770))
+        if mode_mgr.run_cpller(ssh_port, 0):
+            mode_mgr.inetcpl_ssh_active = False
+
+    if gw == "tor":
+        if not tor_manager.is_running():
+            tor_manager.start()
+        if mode_mgr.run_cpller(9853, 1):
+            mode_mgr.inetcpl_tor_active = True
+    elif gw == "opera":
+        if not opera_mgr.is_running():
+            opera_mgr.start()
+        if mode_mgr.run_cpller(1785, 1):
+            mode_mgr.inetcpl_opera_active = True
+    elif gw == "ssh":
+        if not ssh_mgr.is_running():
+            ssh_mgr.start(silent_if_not_configured=True)
+        ssh_port = int(config.get("ssh_socks_port", 1770))
+        if mode_mgr.run_cpller(ssh_port, 1):
+            mode_mgr.inetcpl_ssh_active = True
+    elif gw == "vless":
+        if not vless_mgr.is_running():
+            vless_mgr.start()
+        if mode_mgr.run_cpller(1790, 1):
+            mode_mgr.inetcpl_vless_active = True
+    else:  # byedpi
+        if not byedpi_manager.is_running():
+            byedpi_manager.start()
+        if mode_mgr.run_cpller(1780, 1):
+            mode_mgr.inetcpl_bd_active = True
+
+    update_proxy_status()
+    update_menu()
+
+def connect_default_inetcpl_gateway():
+    """Connects the user-selected default gateway when in inetcpl mode."""
+    gw = config.get("inetcpl_default_gateway", "byedpi")
+    activate_inetcpl_gateway(gw)
+
+def _start_background_providers():
+    try:
+        from managers import config_manager
+        latest = config_manager.load_config()
+        if latest:
+            config.update(latest)
+            if hasattr(ssh_mgr, 'update_config'):
+                ssh_mgr.update_config(config)
+    except Exception:
+        pass
+
+    byedpi_manager.start()
+    tor_manager.start()
+    opera_mgr.start()
+    if not lang._is_en or config.get("enable_ru_features", False):
+        tgws_mgr.start()
+    tools = config.get("autostart_tools", ["byedpi", "tor", "opera", "tgws", "ext"])
+    ssh_configured = bool(config.get("ssh_host", "").strip() and config.get("ssh_user", "").strip())
+    if "ssh" in tools or ssh_configured:
+        if hasattr(ssh_mgr, 'is_running') and not ssh_mgr.is_running():
+            ssh_mgr.start(silent_if_not_configured=True)
+    if "vless" in tools:
+        vless_mgr.start()
+
 def update_proxy_status():
     global proxy_enabled
-    proxy_enabled = (tor_manager.is_running() or 
-                     byedpi_manager.is_running() or 
-                     tgws_mgr.running or 
-                     opera_mgr.is_running() or
-                     ssh_mgr.is_running() or
-                     mode_mgr.inetcpl_tor_active or 
-                     mode_mgr.inetcpl_bd_active or 
-                     getattr(mode_mgr, 'inetcpl_ssh_active', False) or
-                     evpn_mgr.is_running or
-                     (mode_mgr.tun_process is not None) or
-                     (mode_type == "empty" and mode_mgr.proxifier_running()))
+    now = time.time()
+    if getattr(mode_mgr, '_mode_switching_until', 0) > now:
+        proxy_enabled = True
+    else:
+        is_active = False
+        if mode_type == "evpn":
+            is_active = getattr(evpn_mgr, 'is_running', False)
+        elif mode_type == "tun":
+            is_active = mode_mgr.tun_running()
+        elif mode_type == "inetcpl":
+            is_active = (
+                getattr(mode_mgr, 'inetcpl_bd_active', False) or
+                getattr(mode_mgr, 'inetcpl_tor_active', False) or
+                getattr(mode_mgr, 'inetcpl_opera_active', False) or
+                getattr(mode_mgr, 'inetcpl_ssh_active', False) or
+                getattr(mode_mgr, 'inetcpl_vless_active', False)
+            )
+        elif mode_type == "empty":
+            is_active = (
+                mode_mgr.proxifier_running() or
+                tor_manager.is_running() or
+                byedpi_manager.is_running() or
+                opera_mgr.is_running() or
+                ssh_mgr.is_running() or
+                tgws_mgr.running
+            )
+        proxy_enabled = is_active
+
     if main_window and hasattr(main_window, 'update_ui_state'):
         try:
             main_window.update_ui_state()
@@ -197,7 +292,9 @@ def toggle_all():
             if "ssh" in config.get("autostart_tools", []):
                 ssh_mgr.start()
         
-        if mode_type == "tun":
+        if mode_type == "inetcpl":
+            connect_default_inetcpl_gateway()
+        elif mode_type == "tun":
             mode_mgr.start_tun()
         elif mode_type == "evpn":
             if config.get("evpn_exclusive_mode", True):
@@ -462,6 +559,8 @@ def toggle_singbox_tun_opera():
     toggle_singbox_tun(1785)
 
 def toggle_singbox_tun_ssh():
+    if not ssh_mgr.is_running():
+        ssh_mgr.start(silent_if_not_configured=True)
     port = int(config.get("ssh_socks_port", 1770))
     toggle_singbox_tun(port)
 
@@ -472,7 +571,8 @@ def set_mode_type(mode):
         return
 
     old_mode = mode_type
-    was_connected = proxy_enabled
+    # Switching modes via top UI buttons always auto-connects to the chosen mode
+    was_connected = True
 
     # 1. Stop old mode proxy redirection/tunnels
     if old_mode == "inetcpl":
@@ -488,53 +588,36 @@ def set_mode_type(mode):
     if mode != "evpn":
         if getattr(evpn_mgr, 'is_running', False):
             evpn_mgr.stop()
-        if was_connected and config.get("evpn_exclusive_mode", True):
-            tor_manager.start()
-            byedpi_manager.start()
-            opera_mgr.start()
-            if not lang._is_en or config.get("enable_ru_features", False):
-                tgws_mgr.start()
-            if config.get("byedpi_pip_enabled", False):
-                if config.get("byedpi_pip_use_tor", False):
-                    bdsher.set_pip_proxy("socks5://127.0.0.1:9853")
-                else:
-                    pip_mgr = bdsher.get_pip_manager(config)
-                    pip_mgr.start()
-                    bdsher.set_pip_proxy("socks5://127.0.0.1:1781")
+        if config.get("evpn_exclusive_mode", True):
+            _start_background_providers()
 
     mode_type = mode
     config["mode_type"] = mode
     config_manager.save_config(config)
 
-    # 2. Reconnect to new mode if previously connected
-    if was_connected:
-        proxy_enabled = True
-        if mode == "tun":
-            byedpi_manager.start()
-            tor_manager.start()
-            opera_mgr.start()
-            mode_mgr.start_tun()
-        elif mode == "inetcpl":
-            byedpi_manager.start()
-            tor_manager.start()
-            opera_mgr.start()
-            toggle_inetcpl_bd()
-        elif mode == "empty":
-            byedpi_manager.start()
-            tor_manager.start()
-            opera_mgr.start()
-            mode_mgr.start_proxifier()
-        elif mode == "evpn":
-            if config.get("evpn_exclusive_mode", True):
-                tor_manager.stop()
-                byedpi_manager.stop()
-                opera_mgr.stop()
-                vless_mgr.stop()
-                ssh_mgr.stop()
-                tgws_mgr.stop()
-                pip_manager.stop()
-                bdsher.clear_pip_proxy()
-            evpn_mgr.start()
+    # 2. Reconnect to new mode
+    proxy_enabled = True
+    mode_mgr._mode_switching_until = time.time() + 4.0
+    if mode == "tun":
+        _start_background_providers()
+        mode_mgr.start_tun()
+    elif mode == "inetcpl":
+        _start_background_providers()
+        connect_default_inetcpl_gateway()
+    elif mode == "empty":
+        _start_background_providers()
+        mode_mgr.start_proxifier()
+    elif mode == "evpn":
+        if config.get("evpn_exclusive_mode", True):
+            tor_manager.stop()
+            byedpi_manager.stop()
+            opera_mgr.stop()
+            vless_mgr.stop()
+            ssh_mgr.stop()
+            tgws_mgr.stop()
+            pip_manager.stop()
+            bdsher.clear_pip_proxy()
+        evpn_mgr.start()
 
     update_proxy_status()
     update_menu()
@@ -766,7 +849,9 @@ def create_tray_menu():
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             tgws_mgr.start()
             
-        if "proxifier" in tools and mode_type != "evpn":
+        if mode_type == "inetcpl":
+            connect_default_inetcpl_gateway()
+        elif "proxifier" in tools and mode_type != "evpn":
             if mode_type == "empty":
                 mode_mgr.start_proxifier()
             else:

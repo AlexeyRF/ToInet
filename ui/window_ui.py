@@ -1153,7 +1153,7 @@ class MainWindow(QMainWindow):
             ("tor", "Tor (9853)"),
             ("opera", "Opera Proxy (1785)"),
             ("ssh", f"SSH ({ssh_port_val})"),
-            ("vless", "VLESS / EVPN (1790)")
+            ("vless", "VLESS (1790)")
         ]
         pip_combo.blockSignals(True)
         for val, label in pip_options:
@@ -1293,11 +1293,7 @@ class MainWindow(QMainWindow):
         sec_label_app.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_app)
 
-        # UI Type (guaranteed strictly dark)
-        ui_combo = QComboBox()
-        ui_combo.addItems([T("Окно", "Window"), T("Трей", "Tray")])
-        ui_combo.setCurrentIndex(0 if m.config.get("ui_type", "tray") == "window" else 1)
-        ui_combo.setStyleSheet("""
+        combo_style = """
             QComboBox {
                 background-color: #2d2d2d;
                 color: #FFFFFF;
@@ -1320,45 +1316,70 @@ class MainWindow(QMainWindow):
                 selection-color: #FFFFFF;
                 outline: none;
             }
-        """)
-        ui_combo.setCursor(Qt.PointingHandCursor)
-        def on_ui_change(idx):
-            new_type = "window" if idx == 0 else "tray"
-            m.config["ui_type"] = new_type
+        """
+
+        # Switch to tray mode action button
+        def switch_to_tray_clicked():
+            m.config["ui_type"] = "tray"
             m.config_manager.save_config(m.config)
             if hasattr(m, 'update_menu'):
                 m.update_menu()
-            if new_type == "tray":
-                self.hide()
-                if hasattr(m, 'tray') and m.tray:
-                    m.tray.showMessage(
-                        "ToInet-MAX",
-                        T("Программа переведена в режим трея", "Program switched to system tray mode", "Programme réduit dans la barre"),
-                        QSystemTrayIcon.Information,
-                        2500
-                    )
-        ui_combo.currentIndexChanged.connect(on_ui_change)
-
-        ui_widget = QWidget()
-        ui_widget.setStyleSheet("background: transparent; border: none;")
-        ui_w_layout = QHBoxLayout(ui_widget)
-        ui_w_layout.setContentsMargins(0, 0, 0, 0)
-        ui_w_layout.setSpacing(6)
-        ui_w_layout.addWidget(ui_combo)
-
-        def switch_to_tray_clicked():
-            if ui_combo.currentIndex() != 1:
-                ui_combo.setCurrentIndex(1)
-            else:
-                on_ui_change(1)
+            self.hide()
+            if hasattr(m, 'tray') and m.tray:
+                m.tray.showMessage(
+                    "ToInet-MAX",
+                    T("Программа переведена в режим трея", "Program switched to system tray mode", "Programme réduit dans la barre"),
+                    QSystemTrayIcon.Information,
+                    2500
+                )
 
         to_tray_btn = make_action_btn(T("В трей", "To Tray", "En barre"), switch_to_tray_clicked)
-        ui_w_layout.addWidget(to_tray_btn)
+        c_layout.addWidget(CardRow(T("Режим трея", "Tray Mode"),
+                                   T("Свернуть программу в системный трей (фоновый режим работы).",
+                                     "Minimize application window to system tray background mode."),
+                                   to_tray_btn))
 
-        c_layout.addWidget(CardRow(T("Тип интерфейса", "Interface Type"),
-                                   T("Режим отображения (графическое окно или меню в системном трее).",
-                                     "Presentation mode: application window vs notification area tray menu."),
-                                   ui_widget))
+        # Default inetcpl Gateway selection
+        self.inetcpl_gw_combo = QComboBox()
+        self.inetcpl_gw_combo.setStyleSheet(combo_style)
+        self.inetcpl_gw_combo.setCursor(Qt.PointingHandCursor)
+        inetcpl_gw_options = [
+            ("byedpi", "ByeDPI (1781)"),
+            ("tor", "Tor (9853)"),
+            ("opera", "Opera Proxy (1785)"),
+            ("ssh", f"SSH ({ssh_port_val})"),
+            ("vless", "VLESS (1790)")
+        ]
+        self.inetcpl_gw_combo.blockSignals(True)
+        for val, label in inetcpl_gw_options:
+            self.inetcpl_gw_combo.addItem(label, val)
+        cur_default_gw = m.config.get("inetcpl_default_gateway", "byedpi")
+        for idx, (val, _) in enumerate(inetcpl_gw_options):
+            if val == cur_default_gw:
+                self.inetcpl_gw_combo.setCurrentIndex(idx)
+                break
+        self.inetcpl_gw_combo.blockSignals(False)
+
+        def on_inetcpl_gw_change(idx):
+            selected_gw = self.inetcpl_gw_combo.itemData(idx)
+            if selected_gw:
+                m.config["inetcpl_default_gateway"] = selected_gw
+                m.config_manager.save_config(m.config)
+                if getattr(m, 'mode_type', '') == "inetcpl" and getattr(m, 'proxy_enabled', False):
+                    if hasattr(m, 'activate_inetcpl_gateway'):
+                        m.activate_inetcpl_gateway(selected_gw)
+                    else:
+                        m.connect_default_inetcpl_gateway()
+                self.update_ui_state()
+
+        self.inetcpl_gw_combo.currentIndexChanged.connect(on_inetcpl_gw_change)
+
+        c_layout.addWidget(CardRow(
+            T("Шлюз по умолчанию (inetcpl)", "Default inetcpl Gateway"),
+            T("Шлюз для автоподключения системного прокси Windows при переключении на режим inetcpl и автозапуске.",
+              "Gateway automatically connected for Windows system proxy when entering inetcpl mode or on autostart."),
+            self.inetcpl_gw_combo
+        ))
 
         # Language selection (from tray menu)
         lang_combo = QComboBox()
@@ -1375,7 +1396,7 @@ class MainWindow(QMainWindow):
                 lang_combo.setCurrentIndex(i)
                 break
         lang_combo.blockSignals(False)
-        lang_combo.setStyleSheet(ui_combo.styleSheet())
+        lang_combo.setStyleSheet(combo_style)
         lang_combo.setCursor(Qt.PointingHandCursor)
         def on_lang_change(idx):
             selected_code = lang_combo.itemData(idx)
@@ -1458,11 +1479,23 @@ class MainWindow(QMainWindow):
             elif gw_id == "opera": m.toggle_singbox_tun_opera()
             elif gw_id == "ssh": m.toggle_singbox_tun_ssh()
         elif cur_mode == "inetcpl":
-            if gw_id == "tor": m.toggle_inetcpl_tor()
-            elif gw_id == "byedpi": m.toggle_inetcpl_bd()
-            elif gw_id == "opera": m.toggle_inetcpl_opera()
-            elif gw_id == "vless": m.toggle_inetcpl_vless()
-            elif gw_id == "ssh": m.toggle_inetcpl_ssh()
+            m.config["inetcpl_default_gateway"] = gw_id
+            m.config_manager.save_config(m.config)
+            if hasattr(self, 'inetcpl_gw_combo'):
+                self.inetcpl_gw_combo.blockSignals(True)
+                for i in range(self.inetcpl_gw_combo.count()):
+                    if self.inetcpl_gw_combo.itemData(i) == gw_id:
+                        self.inetcpl_gw_combo.setCurrentIndex(i)
+                        break
+                self.inetcpl_gw_combo.blockSignals(False)
+            if hasattr(m, 'activate_inetcpl_gateway'):
+                m.activate_inetcpl_gateway(gw_id)
+            else:
+                if gw_id == "tor": m.toggle_inetcpl_tor()
+                elif gw_id == "byedpi": m.toggle_inetcpl_bd()
+                elif gw_id == "opera": m.toggle_inetcpl_opera()
+                elif gw_id == "vless": m.toggle_inetcpl_vless()
+                elif gw_id == "ssh": m.toggle_inetcpl_ssh()
 
         self.update_ui_state()
 
@@ -1676,9 +1709,13 @@ class MainWindow(QMainWindow):
         proxy_active = getattr(m, 'proxy_enabled', False)
         
         status_text = T("Подключено", "Connected", "Connecté") if proxy_active else T("Отключено", "Disconnected", "Déconnecté")
-        if getattr(self, '_last_status_text', None) != status_text:
+        cur_mode_str = getattr(m, 'mode_type', '')
+        if getattr(self, '_last_status_text', None) != status_text or getattr(self, '_last_status_mode', None) != cur_mode_str:
             self._last_status_text = status_text
+            self._last_status_mode = cur_mode_str
             self.set_status(status_text)
+        elif proxy_active and hasattr(self, 'power_btn') and self.power_btn._state != "on":
+            self.power_btn.set_state("on")
 
         # Update provider live status miniature buttons (copy tray menu mechanism)
         if hasattr(self, 'bd_toggle_btn'):

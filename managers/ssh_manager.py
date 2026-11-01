@@ -109,7 +109,14 @@ class SSHTunnelManager(QObject):
 
         return None
 
-    def start(self):
+    def start(self, silent_if_not_configured=False):
+        try:
+            from managers import config_manager
+            latest = config_manager.load_config()
+            if latest:
+                self.config.update(latest)
+        except Exception:
+            pass
         if self.is_running():
             return True
 
@@ -129,8 +136,9 @@ class SSHTunnelManager(QObject):
                 "SSH host or username is not configured. Open SSH settings."
             )
             print(f"[SSHTunnel] {msg}")
-            self.error_occurred.emit(msg)
-            self.open_settings()
+            if not silent_if_not_configured:
+                self.error_occurred.emit(msg)
+                self.open_settings()
             return False
 
         if not os.path.exists(SSH_TUNNEL_EXE):

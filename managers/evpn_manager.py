@@ -80,7 +80,7 @@ def build_singbox_config(nodes):
 
     
 
-    for i, link in enumerate(nodes[:200]):
+    for i, link in enumerate(nodes[:30]):
 
         try:
 
@@ -244,7 +244,7 @@ def build_singbox_config(nodes):
 
     config = {
         "log": {
-            "level": "info"
+            "level": "warn"
         },
         "dns": {
             "servers": [
@@ -421,7 +421,7 @@ class ProxyTester(QThread):
 
             
 
-            with concurrent.futures.ThreadPoolExecutor(max_workers=100) as executor:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=25) as executor:
 
                 futures = {executor.submit(check_node, n): n for n in nodes}
 
@@ -429,15 +429,19 @@ class ProxyTester(QThread):
 
                     checked += 1
 
-                    if checked % 20 == 0:
-
-                        self.emit_progress(f"Проверка: {checked}/{len(nodes)} (Рабочих: {len(working_nodes)})")
-
                     res = future.result()
 
                     if res:
 
                         working_nodes.append(res)
+
+                    if checked % 30 == 0 or len(working_nodes) >= 25:
+
+                        self.emit_progress(f"Проверка: {checked}/{len(nodes)} (Рабочих: {len(working_nodes)})")
+
+                    if len(working_nodes) >= 25:
+
+                        break
 
             
 
@@ -580,16 +584,32 @@ class EvpnManager(QObject):
             return
         
         self.emit_status("Переключение сервера...")
-        if self.sb_process:
-            self.sb_process.terminate()
-            try:
-                self.sb_process.wait(timeout=3)
-            except subprocess.TimeoutExpired:
-                self.sb_process.kill()
-            self.sb_process = None
-            
         top_node = self.working_nodes.pop(0)
         self.working_nodes.append(top_node)
+
+        # Build config before stopping current process to eliminate direct leak window
+        try:
+            current_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            cfg = build_singbox_config(self.working_nodes)
+            evpn_dir = os.path.join(current_dir, "evpn")
+            os.makedirs(evpn_dir, exist_ok=True)
+            cfg_path = os.path.join(evpn_dir, "evpn_config.json")
+            with open(cfg_path, "w", encoding="utf-8") as f:
+                json.dump(cfg, f, indent=2)
+        except Exception as e:
+            self.emit_error(f"Ошибка смены сервера: {e}")
+            return
+
+        if self.sb_process:
+            try:
+                self.sb_process.terminate()
+                self.sb_process.wait(timeout=1.5)
+            except Exception:
+                try:
+                    self.sb_process.kill()
+                except Exception:
+                    pass
+            self.sb_process = None
         
         self._start_singbox_with_nodes()
 
