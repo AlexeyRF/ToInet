@@ -1,7 +1,8 @@
 import time, os, sys, subprocess
 from managers import system_utils as lang
-from PyQt5.QtWidgets import QMenu, QAction, QWidgetAction, QWidget, QHBoxLayout, QLabel, QPushButton, QApplication
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PySide6.QtWidgets import QMenu, QWidgetAction, QWidget, QHBoxLayout, QLabel, QPushButton, QApplication
+from PySide6.QtGui import QAction
+from PySide6.QtCore import Qt, QTimer, Signal, QObject
 
 m = None
 def init(main_module):
@@ -9,7 +10,7 @@ def init(main_module):
     m = main_module
 
 class MenuUpdater(QObject):
-    update_signal = pyqtSignal()
+    update_signal = Signal()
 
 menu_updater = MenuUpdater()
 

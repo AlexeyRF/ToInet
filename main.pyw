@@ -6,7 +6,7 @@ def _ensure_dependencies():
         return
 
     required = [
-        ('PyQt5.QtWidgets', 'PyQt5'),
+        ('PySide6.QtWidgets', 'PySide6'),
         ('psutil', 'psutil'),
         ('requests', 'requests'),
         ('cryptography', 'cryptography'),
@@ -209,9 +209,9 @@ if getattr(sys, 'frozen', False):
 
 import time
 import subprocess
-from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidget, QWidgetAction, QHBoxLayout, QLabel, QCheckBox
-from PyQt5.QtGui import QIcon, QPixmap, QCursor
-from PyQt5.QtCore import Qt, QTimer, pyqtSignal, QObject
+from PySide6.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidget, QWidgetAction, QHBoxLayout, QLabel, QCheckBox
+from PySide6.QtGui import QIcon, QPixmap, QCursor, QAction
+from PySide6.QtCore import Qt, QTimer, Signal, QObject
 
 from ui.app_log_window import setup_logging, OutputLogger, AppLogWindow
 from managers import config_manager

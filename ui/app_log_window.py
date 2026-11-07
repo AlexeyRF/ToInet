@@ -1,11 +1,11 @@
 import sys, os
 import re
-from PyQt5.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QCheckBox
-from PyQt5.QtCore import QObject, pyqtSignal, Qt
+from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QCheckBox
+from PySide6.QtCore import QObject, Signal, Qt
 from managers.system_utils import T
 
 class OutputLogger(QObject):
-    log_signal = pyqtSignal(str)
+    log_signal = Signal(str)
     def __init__(self, original_stream):
         super().__init__()
         self.original_stream = original_stream

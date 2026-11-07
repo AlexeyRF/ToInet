@@ -337,7 +337,7 @@ def compile_exe():
     hidden_imports = [
         "requests", "pythoncom", "win32com", "win32com.client",
         "psutil", "cryptography", "pyperclip", "socks", "h2", "certifi", "httpx",
-        "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets",
+        "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
         "managers.system_utils", "managers.config_manager", "managers.bdsher",
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
         "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
@@ -350,6 +350,9 @@ def compile_exe():
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
+        
+    for em in ["PyQt5", "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets", "PyQt6", "PySide2", "tkinter"]:
+        cmd.extend(["--exclude-module", em])
         
     # Вшиваем модули в sys._MEIPASS
     sep = ";" if os.name == "nt" else ":"
@@ -459,7 +462,7 @@ def build_onefile_release():
     hidden_imports = [
         "requests", "pythoncom", "win32com", "win32com.client",
         "psutil", "cryptography", "pyperclip", "socks", "h2", "certifi", "httpx",
-        "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets",
+        "PySide6.QtCore", "PySide6.QtGui", "PySide6.QtWidgets",
         "managers.system_utils", "managers.config_manager", "managers.bdsher",
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
         "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
@@ -472,6 +475,9 @@ def build_onefile_release():
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
+        
+    for em in ["PyQt5", "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets", "PyQt6", "PySide2", "tkinter"]:
+        cmd.extend(["--exclude-module", em])
         
     sep = ";" if os.name == "nt" else ":"
     

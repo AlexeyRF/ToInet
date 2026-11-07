@@ -10,7 +10,7 @@ import time
 
 import psutil
 
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 from managers import system_utils as lang
 
@@ -1016,7 +1016,7 @@ class ModeManager:
 
 
 
-        from PyQt5.QtWidgets import QMessageBox
+        from PySide6.QtWidgets import QMessageBox
 
         from managers import system_utils as lang
 
@@ -1148,7 +1148,7 @@ class ModeManager:
 
         import shlex
 
-        from PyQt5.QtWidgets import QMessageBox
+        from PySide6.QtWidgets import QMessageBox
 
         from managers import system_utils as lang
 
@@ -1543,7 +1543,7 @@ class ModeManager:
 
 
     def open_advanced_tun_config(self):
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QCheckBox, QMessageBox
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QPushButton, QComboBox, QCheckBox, QMessageBox
         
         config = config_manager.load_config()
         

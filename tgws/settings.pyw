@@ -10,10 +10,10 @@ if PARENT_DIR not in sys.path:
 from managers import system_utils as lang
 import json
 import socket
-from PyQt5.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
+from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QTextEdit, QCheckBox, 
                              QMessageBox, QApplication)
-from PyQt5.QtCore import Qt
+from PySide6.QtCore import Qt
 
 from tgws import config as tgws_config
 

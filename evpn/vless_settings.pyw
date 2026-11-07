@@ -2,11 +2,11 @@ import sys
 import os
 PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PARENT_DIR not in sys.path: sys.path.insert(0, PARENT_DIR)
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QMessageBox, QGroupBox, QComboBox, QSpinBox, QTextEdit)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QIcon
 from managers import system_utils as lang
 from managers import config_manager
 

@@ -7,11 +7,11 @@ import sys
 import subprocess
 import json
 from pathlib import Path
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout,
     QLabel, QLineEdit, QPushButton, QComboBox, QMessageBox, QTextEdit
 )
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PySide6.QtCore import Qt, QThread, Signal
 import socket
 import struct
 import time
@@ -56,7 +56,7 @@ def kill_process_tree(proc):
         proc.terminate()
 
 class StrategyVerifier(QThread):
-    result = pyqtSignal(bool, str)  # флаг успеха, сообщение
+    result = Signal(bool, str)  # флаг успеха, сообщение
 
     def __init__(self, script_path: Path, strat_index: int, upstream_host: str, upstream_port: int, username: str, password: str, parent=None):
         super().__init__(parent)
@@ -135,8 +135,8 @@ class StrategyVerifier(QThread):
 
 class AllStrategyVerifier(QThread):
     # Отправка результата по каждой стратегии: индекс, успех, сообщение
-    per_result = pyqtSignal(int, bool, str)
-    finished = pyqtSignal()
+    per_result = Signal(int, bool, str)
+    finished = Signal()
 
     def __init__(self, script_path: Path, strategies: list, upstream_host: str, upstream_port: int, username: str, password: str, parent=None):
         super().__init__(parent)

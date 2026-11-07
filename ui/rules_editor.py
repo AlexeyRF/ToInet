@@ -2,14 +2,14 @@ import os
 import sys
 import xml.etree.ElementTree as ET
 
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QTableWidget, QTableWidgetItem, QHeaderView, QComboBox,
     QMessageBox, QLineEdit, QPlainTextEdit, QCheckBox, QWidget,
     QAbstractItemView, QSpinBox
 )
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QColor
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QColor
 
 # Setup paths
 CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -823,8 +823,8 @@ class RulesEditorDialog(QDialog):
 
 
 if __name__ == "__main__":
-    from PyQt5.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication
     app = QApplication.instance() or QApplication(sys.argv)
     editor = RulesEditorDialog()
     editor.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())

@@ -2,11 +2,11 @@ import os
 import sys
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QVBoxLayout, QWidget, 
                              QCheckBox, QPushButton, QMessageBox, QLabel, 
                              QComboBox, QHBoxLayout, QGroupBox, QGridLayout)
-from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QIcon
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QFont, QIcon
 from managers import config_manager
 from managers import system_utils as lang
 

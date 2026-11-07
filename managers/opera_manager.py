@@ -12,9 +12,9 @@ import psutil
 import platform
 import threading
 
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 def _pipe_process_output(proc, prefix="[OperaProxy]"):
     def reader():
@@ -69,9 +69,9 @@ DEFAULT_OPERA_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 10 -server-selec
 
 class OperaProxyManager(QObject):
 
-    status_changed = pyqtSignal(bool)
+    status_changed = Signal(bool)
 
-    error_occurred = pyqtSignal(str)
+    error_occurred = Signal(str)
 
 
 

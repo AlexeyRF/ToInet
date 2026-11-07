@@ -66,13 +66,13 @@ class MockPath:
         return self.path / other
 
 from pathlib import Path
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QFileDialog, 
                              QMessageBox, QGroupBox, QGridLayout, QComboBox,
                              QRadioButton, QButtonGroup, QCheckBox, QProgressDialog, QSpinBox, QScrollArea)
-from PyQt5.QtCore import Qt, QSize, QThread, pyqtSignal
-from PyQt5.QtGui import QFont, QPixmap, QIcon
+from PySide6.QtCore import Qt, QSize, QThread, Signal
+from PySide6.QtGui import QFont, QPixmap, QIcon
 import requests
 from io import BytesIO
 import platform
@@ -133,8 +133,8 @@ class CountryListWidget(QListWidget):
         return codes
 
 class TorUpdaterThread(QThread):
-    progress = pyqtSignal(str)
-    finished = pyqtSignal(bool, str)
+    progress = Signal(str)
+    finished = Signal(bool, str)
 
     def __init__(self, channel="stable", archive_path=None):
         super().__init__()

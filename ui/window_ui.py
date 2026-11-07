@@ -3,13 +3,13 @@ import math
 import os
 import platform
 import subprocess
-from PyQt5.QtWidgets import (
+from PySide6.QtWidgets import (
     QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
     QStackedWidget, QScrollArea, QFrame, QComboBox, QCheckBox, QMessageBox,
     QApplication, QSizePolicy
 )
-from PyQt5.QtCore import Qt, QTimer, QPointF, QRectF, QSize
-from PyQt5.QtGui import QFont, QColor, QPainter, QPen, QBrush, QIcon
+from PySide6.QtCore import Qt, QTimer, QPointF, QRectF, QSize
+from PySide6.QtGui import QFont, QColor, QPainter, QPen, QBrush, QIcon
 
 class PowerButton(QPushButton):
     """
@@ -919,8 +919,8 @@ class MainWindow(QMainWindow):
                                                  m.config.get("tgws_fake_tls", ""))
 
         def show_tgws_tg_menu():
-            from PyQt5.QtWidgets import QMenu
-            from PyQt5.QtGui import QCursor
+            from PySide6.QtWidgets import QMenu
+            from PySide6.QtGui import QCursor
             menu = QMenu(self)
             menu.setStyleSheet("""
                 QMenu {

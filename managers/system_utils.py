@@ -464,7 +464,7 @@ def check_auto_start():
 # --- UTILS ---
 import subprocess
 import webbrowser
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 
 def log(msg):
     print(f"[LOG] {msg}")

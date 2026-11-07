@@ -18,7 +18,7 @@ import base64
 
 import concurrent.futures
 
-from PyQt5.QtCore import pyqtSignal, QObject, QThread
+from PySide6.QtCore import Signal, QObject, QThread
 
 import sys
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -363,9 +363,9 @@ def build_singbox_config(nodes):
 
 class ProxyTester(QThread):
 
-    progress = pyqtSignal(str)
+    progress = Signal(str)
 
-    finished = pyqtSignal(bool, list)
+    finished = Signal(bool, list)
 
 
 
@@ -555,8 +555,8 @@ class ProxyTester(QThread):
 
 
 class EvpnManager(QObject):
-    status_changed = pyqtSignal(str)
-    error_occurred = pyqtSignal(str)
+    status_changed = Signal(str)
+    error_occurred = Signal(str)
 
     def __init__(self):
         super().__init__()

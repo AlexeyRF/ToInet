@@ -20,7 +20,7 @@ import time
 import socket
 from tgws import tg_ws_proxy, config as tgws_config
 import asyncio
-from PyQt5.QtWidgets import QMessageBox
+from PySide6.QtWidgets import QMessageBox
 import sys
 import subprocess
 import os

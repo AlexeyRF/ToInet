@@ -7,7 +7,7 @@ import sys
 import subprocess
 import threading
 import psutil
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SSH_TUNNEL_EXE = os.path.join(CURRENT_DIR, "bin", "ssh_tunnel.exe")
@@ -35,8 +35,8 @@ def _pipe_process_output(proc, prefix="[SSHTunnel]"):
     return t
 
 class SSHTunnelManager(QObject):
-    status_changed = pyqtSignal(bool)
-    error_occurred = pyqtSignal(str)
+    status_changed = Signal(bool)
+    error_occurred = Signal(str)
 
     def __init__(self, config=None):
         super().__init__()

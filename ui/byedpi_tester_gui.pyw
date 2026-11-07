@@ -22,13 +22,13 @@ import struct
 import shutil
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QProgressBar, QSpinBox, QDoubleSpinBox, 
                              QGroupBox, QFileDialog, QMessageBox)
-from PyQt5.QtGui import QIcon, QFont, QColor
-from PyQt5.QtCore import Qt, QThread, pyqtSignal
+from PySide6.QtGui import QIcon, QFont, QColor
+from PySide6.QtCore import Qt, QThread, Signal
 
 # Base Directory Resolution
 if getattr(sys, 'frozen', False):
@@ -698,10 +698,10 @@ QScrollBar::handle:horizontal:hover {
 """
 
 class WorkerThread(QThread):
-    progress_changed = pyqtSignal(int, int, str)
-    strategy_completed = pyqtSignal(str, float, int, int, dict)
-    finished = pyqtSignal(list)
-    error = pyqtSignal(str)
+    progress_changed = Signal(int, int, str)
+    strategy_completed = Signal(str, float, int, int, dict)
+    finished = Signal(list)
+    error = Signal(str)
 
     def __init__(self, byedpi_path, strategies, sites, options):
         super().__init__()

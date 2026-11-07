@@ -3,12 +3,12 @@ from managers import system_utils as lang
 import subprocess
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QPushButton, QTextEdit, 
                              QMessageBox, QStatusBar, QDialog, QDialogButtonBox,
                              QFrame, QSplitter)
-from PyQt5.QtCore import Qt, QSize
-from PyQt5.QtGui import QFont, QIcon, QTextCursor
+from PySide6.QtCore import Qt, QSize
+from PySide6.QtGui import QFont, QIcon, QTextCursor
 
 class ActionDialog(QDialog):
     """Диалог выбора действия при наличии изменений"""

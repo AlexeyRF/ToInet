@@ -9,7 +9,7 @@ import platform
 
 import psutil
 
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtCore import QObject, Signal
 
 import sys
 
@@ -26,8 +26,8 @@ SING_BOX_DIR = os.path.join(BIN_DIR, "sing-box")
 SING_BOX_EXE = os.path.join(SING_BOX_DIR, "sing-box.exe")
 
 class VlessManager(QObject):
-    status_changed = pyqtSignal(bool)
-    error_occurred = pyqtSignal(str)
+    status_changed = Signal(bool)
+    error_occurred = Signal(str)
 
     def __init__(self, config=None):
         super().__init__()

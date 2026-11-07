@@ -4,14 +4,14 @@ from managers.system_utils import AdoptedProcess
 import os
 import subprocess
 import psutil
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QObject, Signal
 
 TESTER_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("small_actions", "tester.py"))
 
 class TesterManager(QObject):
-    status_changed = pyqtSignal(bool)
-    error_occurred = pyqtSignal(str)
+    status_changed = Signal(bool)
+    error_occurred = Signal(str)
 
     def __init__(self, config=None):
         super().__init__()

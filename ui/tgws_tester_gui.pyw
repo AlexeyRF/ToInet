@@ -6,11 +6,11 @@ import os
 import json
 import time
 import subprocess
-from PyQt5.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
+from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QPushButton, QListWidget, QListWidgetItem,
                              QMessageBox, QInputDialog, QDialog, QSpinBox, QDialogButtonBox, QGroupBox)
-from PyQt5.QtGui import QFont
-from PyQt5.QtCore import Qt
+from PySide6.QtGui import QFont
+from PySide6.QtCore import Qt
 
 import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)

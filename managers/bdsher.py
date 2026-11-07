@@ -6,8 +6,8 @@ import os
 import subprocess
 import json
 import psutil
-from PyQt5.QtWidgets import QMessageBox
-from PyQt5.QtCore import QObject, pyqtSignal
+from PySide6.QtWidgets import QMessageBox
+from PySide6.QtCore import QObject, Signal
 
 # Константы
 BYEDPI_EXE = os.path.join(CURRENT_DIR, "byedpi", "ciadpi.exe")
@@ -16,8 +16,8 @@ BYEDPI_EXE = os.path.join(CURRENT_DIR, "byedpi", "ciadpi.exe")
 DEFAULT_BYEDPI_PARAMS = "-p 1780 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru"
 
 class ByeDPIManager(QObject):
-    status_changed = pyqtSignal(bool)  # True - запущен, False - остановлен
-    error_occurred = pyqtSignal(str)   # Ошибка
+    status_changed = Signal(bool)  # True - запущен, False - остановлен
+    error_occurred = Signal(str)   # Ошибка
     def __init__(self, config=None, default_port=1780, config_key="byedpi_params"):
         super().__init__()
         self.process = None
@@ -238,7 +238,7 @@ class ByeDPIManager(QObject):
         self.config = config
     
     def open_settings(self):
-        from PyQt5.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton
+        from PySide6.QtWidgets import QDialog, QVBoxLayout, QHBoxLayout, QLabel, QLineEdit, QCheckBox, QPushButton
         from managers import config_manager
         import os
         import subprocess
@@ -329,7 +329,7 @@ class ByeDPIManager(QObject):
                     main_mod.update_menu()
             except:
                 pass
-            from PyQt5.QtWidgets import QMessageBox
+            from PySide6.QtWidgets import QMessageBox
             QMessageBox.information(None, "Успех", "Настройки ByeDPI сохранены.")
 
     def get_status_text(self):
