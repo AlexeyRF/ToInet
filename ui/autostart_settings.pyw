@@ -153,17 +153,13 @@ class AutostartSettingsWindow(QMainWindow):
         self.cb_tgws.toggled.connect(self.on_tgws_toggled)
         tools_layout.addWidget(self.cb_tgws, 2, 0)
         
-        self.cb_socks = QCheckBox(T("SOCKS Реабилитатор", "SOCKS Reabilitator", "Réhabilitateur SOCKS"))
-        self.cb_socks.setChecked("socks" in self.autostart_tools)
-        tools_layout.addWidget(self.cb_socks, 2, 1)
-        
         self.cb_proxifier = QCheckBox(T("Проксификатор (TUN)", "Proxifier (TUN)", "Proxificateur (TUN)"))
         self.cb_proxifier.setChecked("proxifier" in self.autostart_tools)
-        tools_layout.addWidget(self.cb_proxifier, 3, 0)
+        tools_layout.addWidget(self.cb_proxifier, 2, 1)
         
         self.cb_ext = QCheckBox(T("Доп. программы", "External Programs", "Programmes additionnels"))
         self.cb_ext.setChecked("ext" in self.autostart_tools)
-        tools_layout.addWidget(self.cb_ext, 3, 1)
+        tools_layout.addWidget(self.cb_ext, 3, 0)
         
         main_layout.addWidget(tools_group)
         
@@ -238,7 +234,6 @@ class AutostartSettingsWindow(QMainWindow):
         if self.cb_tor.isChecked(): tools.append("tor")
         if self.cb_opera.isChecked(): tools.append("opera")
         if self.cb_ssh.isChecked(): tools.append("ssh")
-        if self.cb_socks.isChecked(): tools.append("socks")
         if self.cb_tgws.isChecked(): tools.append("tgws")
         if self.cb_proxifier.isChecked(): tools.append("proxifier")
         if self.cb_ext.isChecked(): tools.append("ext")

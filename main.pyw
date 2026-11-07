@@ -27,7 +27,6 @@ from managers import mode_manager
 from managers import evpn_manager
 from managers import ext_manager
 from tgws import manager as tgws_manager
-from small_actions import noisy_manager
 from small_actions import tester_manager
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
@@ -43,7 +42,6 @@ mode_type = config.get("mode_type", "inetcpl")
 # Инициализируем менеджеры
 byedpi_manager = bdsher.get_manager({})
 tor_manager = torchok.get_manager()
-noisy_manager = noisy_manager.get_manager()
 tester_manager = tester_manager.get_manager()
 opera_mgr = opera_manager.get_manager()
 ext_programs_manager = ext_manager.get_manager()
@@ -57,7 +55,6 @@ pip_manager = bdsher.get_pip_manager(config)
 # Применяем конфигурацию к менеджерам
 byedpi_manager.update_config(config)
 tor_manager.update_config(config)
-noisy_manager.update_config(config)
 tester_manager.update_config(config)
 opera_mgr.update_config(config)
 tgws_mgr.update_config(config)
@@ -95,7 +92,6 @@ toggle_vless = service_controller.toggle_vless
 toggle_opera = service_controller.toggle_opera
 toggle_ssh = service_controller.toggle_ssh
 toggle_tgws = service_controller.toggle_tgws
-toggle_noisy = service_controller.toggle_noisy
 toggle_tester = service_controller.toggle_tester
 toggle_proxifier = service_controller.toggle_proxifier
 toggle_inetcpl_tor = service_controller.toggle_inetcpl_tor
@@ -214,9 +210,6 @@ def create_tray_menu():
         if "ssh" in tools:
             ssh_mgr.start()
             
-        if "socks" in tools:
-            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-            
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             tgws_mgr.start()
             
@@ -239,8 +232,6 @@ def create_tray_menu():
         tools = config.get("autostart_tools", ["byedpi", "tor", "opera", "tgws", "ext"])
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             QTimer.singleShot(2000, lambda: tgws_mgr.start() if not tgws_mgr.running else None)
-        if "socks" in tools:
-            subprocess.Popen([sys.executable, "small_actions/socks-reabilitator.pyw", "--silent"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         if "proxifier" in tools and mode_type != "evpn":
             if mode_type == "empty":
                 mode_mgr.start_proxifier()

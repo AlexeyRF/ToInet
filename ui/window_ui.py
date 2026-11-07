@@ -1258,9 +1258,6 @@ class MainWindow(QMainWindow):
         sec_label_tools.setStyleSheet("color: #9d9d9d; margin-top: 8px; background: transparent;")
         c_layout.addWidget(sec_label_tools)
 
-        if getattr(m, 'noisy_manager', None) and m.noisy_manager.is_running():
-            m.noisy_manager.stop()
-
         # Clean Cache & Folder
         utils_widget = QWidget()
         utils_widget.setStyleSheet("background: transparent; border: none;")

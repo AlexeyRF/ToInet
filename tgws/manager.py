@@ -144,22 +144,6 @@ class TGWSManager:
             self.running = True
             self.log("TG WS Proxy запущен")
             
-            # Start reabilitator if configured
-            try:
-                base_dir = CURRENT_DIR
-                config_path = os.path.join(base_dir, "socks_reabilitator_config.json")
-                if os.path.exists(config_path):
-                    with open(config_path, "r", encoding="utf-8") as f:
-                        cfg = json.load(f)
-                    if "host" in cfg and "port" in cfg and "strat" in cfg:
-                        reab_script = os.path.join(base_dir, "small_actions/socks-reabilitator.pyw")
-                        if os.path.exists(reab_script):
-                            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                            subprocess.Popen([sys.executable, reab_script, "--silent"], creationflags=creationflags)
-                            self.log("Socks-Reabilitator запущен в фоне")
-            except Exception as e:
-                self.log(f"Failed to start reabilitator: {e}")
-                
             # Start Gatik (C++) if executable exists
             try:
                 gatik_exe = _find_gatik_exe()
@@ -194,17 +178,6 @@ class TGWSManager:
         self.running = False
         self.log("TG WS Proxy остановлен")
         
-        # Stop reabilitator
-        try:
-            base_dir = CURRENT_DIR
-            reab_script = os.path.join(base_dir, "small_actions/socks-reabilitator.pyw")
-            if os.path.exists(reab_script):
-                creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                subprocess.Popen([sys.executable, reab_script, "--stop"], creationflags=creationflags)
-                self.log("Отправлена команда остановки Socks-Reabilitator")
-        except Exception as e:
-            self.log(f"Failed to stop reabilitator: {e}")
-            
         if hasattr(self, 'gatik_process') and self.gatik_process:
             try:
                 self.gatik_process.terminate()

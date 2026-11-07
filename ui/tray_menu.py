@@ -333,9 +333,6 @@ def _update_menu_impl_unsafe():
         
         # 6. Системные опции
 
-        if getattr(m, 'noisy_manager', None) and m.noisy_manager.is_running():
-            m.noisy_manager.stop()
-
         sys_menu = QMenu(m.T("Системные опции", "System Options"), m.tray_menu)
         sys_menu.addSeparator()
         

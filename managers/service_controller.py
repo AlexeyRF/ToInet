@@ -281,13 +281,6 @@ def toggle_tgws():
     update_proxy_status()
     m.update_menu()
 
-def toggle_noisy():
-    if not m.noisy_manager.is_running():
-        m.noisy_manager.start()
-    else:
-        m.noisy_manager.stop()
-    m.update_menu()
-
 def toggle_tester():
     if not m.tester_manager.is_running():
         m.tester_manager.start()
@@ -593,7 +586,6 @@ def restart_app():
     pip_mgr.stop()
     m.bdsher.clear_pip_proxy()
     
-    m.noisy_manager.stop()
     m.tester_manager.stop()
     m.ext_programs_manager.stop_all()
     m.mode_mgr.stop_tun()
@@ -622,7 +614,6 @@ def exit_app():
     pip_mgr.stop()
     m.bdsher.clear_pip_proxy()
     
-    m.noisy_manager.stop()
     m.tester_manager.stop()
     m.ext_programs_manager.stop_all()
     m.mode_mgr.stop_tun()
