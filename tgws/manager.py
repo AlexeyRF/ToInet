@@ -104,21 +104,7 @@ class TGWSManager:
             tgws_config.proxy_config.cfproxy_user_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_user_domain", ""))
             tgws_config.proxy_config.cfproxy_worker_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_worker_domain", ""))
             
-            tasks = [tg_ws_proxy._run(stop_event=stop_ev)]
-            gatik_exe = os.path.join(CURRENT_DIR, "bin", "gatik.exe")
-            if not os.path.exists(gatik_exe):
-                try:
-                    import importlib.util
-                    dev_gatik = os.path.join(CURRENT_DIR, ".dev", "gatik.py")
-                    if os.path.exists(dev_gatik):
-                        spec = importlib.util.spec_from_file_location("gatik", dev_gatik)
-                        gatik = importlib.util.module_from_spec(spec)
-                        spec.loader.exec_module(gatik)
-                        tasks.append(gatik.main(stop_event=stop_ev))
-                except Exception as e:
-                    self.log(f"Failed to load gatik from .dev for async loop: {e}")
-                
-            await asyncio.gather(*tasks)
+            await tg_ws_proxy._run(stop_event=stop_ev)
 
         try:
             asyncio.run(runner())

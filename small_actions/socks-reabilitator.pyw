@@ -638,6 +638,6 @@ if __name__ == "__main__":
     app.setStyleSheet(DARK_THEME_STYLESHEET)
     window = Socks5Gui()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 

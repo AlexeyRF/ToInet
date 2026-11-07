@@ -204,7 +204,7 @@ class TGWSTesterGUI(QMainWindow):
         QMessageBox.information(self, "Внимание", "Настройки обновлены! Если у вас открыто основное приложение ToInet-MAX, пожалуйста, ПЕРЕЗАПУСТИТЕ TGWS в меню 'Управление компонентами' перед тестированием.\n\nЗатем нажмите OK для выставления оценки.")
         
         dlg = RatingDialog(self, ip_str)
-        if dlg.exec_():
+        if dlg.exec():
             up, down = dlg.get_ratings()
             avg = (up + down) / 2.0
             self.results[ip_str] = (up, down, avg)
@@ -247,6 +247,6 @@ if __name__ == '__main__':
     app = QApplication(sys.argv)
     win = TGWSTesterGUI()
     win.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 

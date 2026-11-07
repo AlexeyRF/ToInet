@@ -641,7 +641,7 @@ class RulesEditorDialog(QDialog):
 
     def on_add_proxy(self):
         dlg = AddProxyDialog(parent=self)
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec() == QDialog.Accepted:
             data = dlg.get_data()
             existing_ids = []
             for p in self.proxies:
@@ -672,7 +672,7 @@ class RulesEditorDialog(QDialog):
         self._sync_rules_from_table()
         dlg = SingleRuleDialog(rule_data={"enabled": True, "apps": "Any", "targets": "Any", "ports": "Any"},
                                proxy_options=self.proxy_options, parent=self)
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec() == QDialog.Accepted:
             new_rule = dlg.get_rule_data()
             # Insert before Default rule if Default is at the bottom
             if self.rules and self.rules[-1].get("name", "").lower() == "default":
@@ -689,7 +689,7 @@ class RulesEditorDialog(QDialog):
         self._sync_rules_from_table()
         rule_data = self.rules[row]
         dlg = SingleRuleDialog(rule_data=rule_data, proxy_options=self.proxy_options, parent=self)
-        if dlg.exec_() == QDialog.Accepted:
+        if dlg.exec() == QDialog.Accepted:
             updated = dlg.get_rule_data()
             self.rules[row] = updated
             self.populate_table()

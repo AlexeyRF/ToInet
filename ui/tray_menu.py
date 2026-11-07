@@ -14,8 +14,15 @@ class MenuUpdater(QObject):
 
 menu_updater = MenuUpdater()
 
+_debounce_timer = None
+
 def _safe_update():
-    QTimer.singleShot(0, _update_menu_impl)
+    global _debounce_timer
+    if _debounce_timer is None:
+        _debounce_timer = QTimer()
+        _debounce_timer.setSingleShot(True)
+        _debounce_timer.timeout.connect(_update_menu_impl)
+    _debounce_timer.start(50)
 
 menu_updater.update_signal.connect(_safe_update, Qt.QueuedConnection)
 
@@ -112,7 +119,6 @@ def _update_menu_impl_unsafe():
     m.tray_menu.clear()
     
     if m.simple_mode:
-        m.log('[Menu] Building simple mode menu')
         all_act = QAction(m.T("Запуск", "Start") if not m.proxy_enabled else m.T("Остановить всё", "Stop All"), m.tray_menu)
         all_act.triggered.connect(m.toggle_all)
         m.tray_menu.addAction(all_act)
@@ -177,7 +183,6 @@ def _update_menu_impl_unsafe():
         restart_act = QAction(m.T("Перезапуск", "Restart", "Redémarrer"), m.tray_menu); restart_act.triggered.connect(m.restart_app); m.tray_menu.addAction(restart_act)
         exit_act = QAction(m.T("Выход", "Exit", "Quitter"), m.tray_menu); exit_act.triggered.connect(m.exit_app); m.tray_menu.addAction(exit_act)
     else:
-        m.log('[Menu] Building advanced mode menu')
         # Продвинутый режим (дублёры простого режима убраны)
 
         # 1. Управление компонентами
@@ -332,7 +337,6 @@ def _update_menu_impl_unsafe():
         if getattr(m, 'noisy_manager', None) and m.noisy_manager.is_running():
             m.noisy_manager.stop()
 
-        m.log('[Menu] Building sys_menu')
         sys_menu = QMenu(m.T("Системные опции", "System Options"), m.tray_menu)
         sys_menu.addSeparator()
         

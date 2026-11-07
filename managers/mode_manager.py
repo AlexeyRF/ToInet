@@ -1667,7 +1667,7 @@ class ModeManager:
             try:
                 from ui.rules_editor import RulesEditorDialog
                 ed = RulesEditorDialog(parent=dialog)
-                ed.exec_()
+                ed.exec()
             except Exception as e:
                 QMessageBox.warning(dialog, "Ошибка", f"Не удалось открыть редактор правил: {e}")
         edit_rules_btn.clicked.connect(open_rules)
@@ -1686,7 +1686,7 @@ class ModeManager:
         
         layout.addLayout(btn_layout)
         
-        if dialog.exec_() == QDialog.Accepted:
+        if dialog.exec() == QDialog.Accepted:
             config["tun_dns_address"] = dns_cb.currentText().strip()
             config["tun_dns_detour"] = "direct" if detour_cb.currentIndex() == 0 else "proxy"
             config["tun_stack"] = stack_cb.currentText()

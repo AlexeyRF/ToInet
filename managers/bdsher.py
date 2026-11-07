@@ -310,7 +310,7 @@ class ByeDPIManager(QObject):
         btn_layout.addWidget(save_btn)
         layout.addLayout(btn_layout)
         
-        if dialog.exec_():
+        if dialog.exec():
             self.config["use_custom_settings"] = not cb_preset.isChecked()
             # Always update the actual config key so we keep custom text if unchecked, OR if checked, we just don't touch the custom key?
             # If checked (use preset), the edit.text() is the preset. If we save it, we lose the custom cache!

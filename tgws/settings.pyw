@@ -205,7 +205,7 @@ class TGWSSettingsDialog(QDialog):
 def main():
     app = QApplication(sys.argv)
     dialog = TGWSSettingsDialog()
-    dialog.exec_()
+    dialog.exec()
 
 if __name__ == "__main__":
     main()

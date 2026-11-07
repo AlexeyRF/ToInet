@@ -344,7 +344,7 @@ def main():
     app = QApplication(sys.argv)
     window = SSHSettingsWindow()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()

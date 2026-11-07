@@ -6,7 +6,7 @@ import subprocess
 from PySide6.QtWidgets import (
     QMainWindow, QPushButton, QVBoxLayout, QHBoxLayout, QWidget, QLabel,
     QStackedWidget, QScrollArea, QFrame, QComboBox, QCheckBox, QMessageBox,
-    QApplication, QSizePolicy
+    QApplication, QSizePolicy, QSystemTrayIcon
 )
 from PySide6.QtCore import Qt, QTimer, QPointF, QRectF, QSize
 from PySide6.QtGui import QFont, QColor, QPainter, QPen, QBrush, QIcon
@@ -940,7 +940,7 @@ class MainWindow(QMainWindow):
             """)
             menu.addAction(T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), add_tgws_socks)
             menu.addAction(T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), add_tgws_mtproto)
-            menu.exec_(QCursor.pos())
+            menu.exec(QCursor.pos())
 
         tgws_tg_btn = make_mini_tg_btn(T("Добавить TGWS в Telegram (SOCKS5 / MTProto)", "Add TGWS to Telegram (SOCKS5 / MTProto)"), show_tgws_tg_menu)
 
@@ -1696,7 +1696,7 @@ class MainWindow(QMainWindow):
         try:
             from ui.rules_editor import RulesEditorDialog
             dialog = RulesEditorDialog(parent=self)
-            dialog.exec_()
+            dialog.exec()
         except Exception as e:
             QMessageBox.warning(self, T("Ошибка", "Error", "Erreur"), f"Не удалось открыть редактор правил: {e}")
 

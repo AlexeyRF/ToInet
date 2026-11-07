@@ -464,7 +464,7 @@ class TorBridgeManager(QMainWindow):
                 
             if self.changes_made:
                 dialog = ActionDialog(self)
-                if dialog.exec_() == QDialog.Accepted:
+                if dialog.exec() == QDialog.Accepted:
                     result = dialog.get_result()
                     if result == "add":
                         self.add_bridges()
@@ -519,7 +519,7 @@ def main():
     
     window = TorBridgeManager()
     window.show()
-    sys.exit(app.exec_())
+    sys.exit(app.exec())
 
 if __name__ == "__main__":
     main()

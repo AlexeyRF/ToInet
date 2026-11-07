@@ -142,6 +142,18 @@ class AppLogWindow(QDialog):
         self.text_edit.moveCursor(QTextCursor.End)
 
     def append_log(self, text):
+        if not text:
+            return
+        import time
+        clean_text = text.strip()
+        now = time.time()
+        if clean_text and hasattr(self, '_last_clean_text') and self._last_clean_text == clean_text:
+            if now - getattr(self, '_last_clean_time', 0) < 0.5:
+                return
+        if clean_text:
+            self._last_clean_text = clean_text
+            self._last_clean_time = now
+
         cat = self._get_category(text)
         if cat:
             self.current_category = cat
@@ -160,10 +172,14 @@ class AppLogWindow(QDialog):
 app_log_window = None
 def setup_logging():
     global app_log_window
+    if app_log_window is not None and isinstance(sys.stdout, OutputLogger):
+        return app_log_window
     app_log_window = AppLogWindow('Логи приложения')
-    sys.stdout = OutputLogger(sys.stdout)
-    sys.stderr = OutputLogger(sys.stderr)
-    sys.stdout.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
-    sys.stderr.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
+    if not isinstance(sys.stdout, OutputLogger):
+        sys.stdout = OutputLogger(sys.stdout)
+        sys.stdout.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
+    if not isinstance(sys.stderr, OutputLogger):
+        sys.stderr = OutputLogger(sys.stderr)
+        sys.stderr.log_signal.connect(app_log_window.append_log, Qt.QueuedConnection)
     print('[LOG] Система логирования инициализирована.')
     return app_log_window
