@@ -26,7 +26,8 @@
 
 ### Как запускать
 
-* **Portable-версия:** запустите `ToInet.exe`.
+* **One-File версия:** запустите `ToInet-MAX-one_file_amd64.exe` (всё включено в один исполняемый файл, установка не требуется).
+* **Portable-версия:** запустите `ToInet.exe` внутри распакованной папки.
 * **Из исходников (Python 3.8+):** просто запустите `launch.bat` или `main.pyw` — все недостающие зависимости установятся автоматически при первом старте.
 
 ### Авторы используемых средств обхода
@@ -61,7 +62,8 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 
 ### How to Run
 
-* **Portable version:** Run `ToInet.exe`.
+* **One-File version:** Run `ToInet-MAX-one_file_amd64.exe` (all-in-one standalone executable, no installation needed).
+* **Portable version:** Run `ToInet.exe` inside the extracted folder.
 * **From source (Python 3.8+):** Simply run `launch.bat` or `main.pyw` — all required dependencies are installed automatically on first launch.
 
 ### Authors of Bypass Tools
@@ -96,7 +98,8 @@ Conçu pour restaurer un accès libre à Internet tout en **préservant au maxim
 
 ### Comment lancer
 
-* **Version portable :** Lancez `ToInet.exe`.
+* **Version One-File :** Lancez `ToInet-MAX-one_file_amd64.exe` (exécutable unique autonome tout-en-un, aucune installation requise).
+* **Version portable :** Lancez `ToInet.exe` dans le dossier extrait.
 * **Depuis les sources (Python 3.8+) :** Lancez simplement `launch.bat` ou `main.pyw` — toutes les dépendances requises s'installent automatiquement au premier démarrage.
 
 ### Auteurs des outils de contournement utilisés

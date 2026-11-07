@@ -15,6 +15,9 @@ try:
         os.path.join(current_dir, "tgws_accel.dll"),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), "tgws_accel.dll")
     ]
+    if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+        candidates.append(os.path.join(sys._MEIPASS, "bin", "tgws_accel.dll"))
+        candidates.append(os.path.join(sys._MEIPASS, "tgws_accel.dll"))
     for cand in candidates:
         if os.path.exists(cand):
             _dll = ctypes.CDLL(cand)

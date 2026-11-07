@@ -1,67 +1,166 @@
-from managers import system_utils as lang
 import sys
 import os
+
 def _ensure_dependencies():
-    import sys, os
     if getattr(sys, 'frozen', False):
         return
-    required = {
-        'PyQt5': 'pyqt5',
-        'psutil': 'psutil',
-        'requests': 'requests',
-        'cryptography': 'cryptography==46.0.5',
-        'win32com': 'pywin32',
-        'pyperclip': 'pyperclip==1.9.0',
-        'socks': 'pysocks',
-        'h2': 'h2',
-        'certifi': 'certifi'
-    }
+
+    required = [
+        ('PyQt5.QtWidgets', 'PyQt5'),
+        ('psutil', 'psutil'),
+        ('requests', 'requests'),
+        ('cryptography', 'cryptography'),
+        ('win32com.client', 'pywin32'),
+        ('pythoncom', 'pywin32'),
+        ('pyperclip', 'pyperclip'),
+        ('socks', 'pysocks'),
+        ('h2', 'h2'),
+        ('certifi', 'certifi'),
+        ('httpx', 'httpx'),
+    ]
+
     missing = []
-    for mod, pkg in required.items():
+    for mod, pkg in required:
         try:
             __import__(mod)
         except ImportError:
-            missing.append(pkg)
-    if missing:
-        print(f"Missing dependencies found: {', '.join(missing)}")
-        print("Starting auto-installation...")
-        import subprocess
+            if pkg not in missing:
+                missing.append(pkg)
+
+    if not missing:
+        return
+
+    print(f"Missing dependencies found: {', '.join(missing)}")
+    print("Starting auto-installation...")
+
+    # Убеждаемся, что pip доступен
+    try:
+        import pip
+    except ImportError:
         try:
-            subprocess.check_call([sys.executable, "-m", "pip", "install"] + missing)
-            print("Successfully installed dependencies! Restarting application...")
-            os.execv(sys.executable, [sys.executable] + sys.argv)
-        except Exception as e:
-            print(f"Failed to install dependencies: {e}")
+            import ensurepip
+            ensurepip.bootstrap()
+        except Exception:
+            pass
+
+    import subprocess
+    is_pythonw = sys.executable.lower().endswith("pythonw.exe")
+    python_exe = sys.executable[:-5] + ".exe" if is_pythonw else sys.executable
+    creationflags = subprocess.CREATE_NEW_CONSOLE if is_pythonw and os.name == 'nt' else 0
+
+    installed = False
+    # 1. Попытка стандартной установки
+    try:
+        cmd = [python_exe, "-m", "pip", "install"] + missing
+        subprocess.check_call(cmd, creationflags=creationflags)
+        installed = True
+    except Exception as e:
+        print(f"Standard install failed ({e}), trying with --user...")
+        # 2. Попытка установки с флагом --user (если нет прав администратора)
+        try:
+            cmd_user = [python_exe, "-m", "pip", "install", "--user"] + missing
+            subprocess.check_call(cmd_user, creationflags=creationflags)
+            installed = True
+        except Exception as e2:
+            err_msg = (
+                f"Не удалось автоматически установить зависимости ToInet-MAX:\n{e2}\n\n"
+                f"Недостающие модули: {', '.join(missing)}\n\n"
+                f"Попробуйте запустить командную строку и выполнить:\n"
+                f"pip install {' '.join(missing)}"
+            )
+            print(err_msg)
+            if os.name == 'nt':
+                try:
+                    import ctypes
+                    ctypes.windll.user32.MessageBoxW(0, err_msg, "ToInet-MAX — Ошибка установки зависимостей", 0x10)
+                except Exception:
+                    pass
             sys.exit(1)
+
+    if installed:
+        print("Successfully installed dependencies! Restarting application...")
+        script = os.path.abspath(sys.argv[0])
+        args = [sys.executable, script] + sys.argv[1:]
+        try:
+            subprocess.Popen(args)
+            sys.exit(0)
+        except Exception:
+            os.execv(sys.executable, args)
+
 _ensure_dependencies()
 
 if getattr(sys, 'frozen', False):
     import runpy
+    import builtins
+    import subprocess
+    import shutil
+
     original_exists = os.path.exists
     original_isfile = os.path.isfile
+    original_isdir = os.path.isdir
+    _orig_open = builtins.open
+    _orig_popen = subprocess.Popen
     exe_dir = os.path.dirname(sys.executable)
+    meipass = getattr(sys, '_MEIPASS', exe_dir)
     
+    def resolve_resource_path(path):
+        if not path or not isinstance(path, (str, bytes, os.PathLike)):
+            return path
+        try:
+            path_str = os.fspath(path) if isinstance(path, os.PathLike) else str(path)
+        except Exception:
+            return path
+        if original_exists(path_str):
+            return path_str
+        norm_p = os.path.normpath(path_str)
+        norm_exe = os.path.normpath(exe_dir)
+        candidates = []
+        if norm_p.lower().startswith(norm_exe.lower()):
+            rel = os.path.relpath(norm_p, norm_exe)
+            candidates.append(os.path.join(meipass, rel))
+        candidates.append(os.path.join(meipass, norm_p))
+        candidates.append(os.path.join(meipass, os.path.basename(path_str)))
+        for cand in candidates:
+            if original_exists(cand):
+                return cand
+        return path_str
+
     def smart_check(path, original_func):
         if original_func(path):
             return True
-        if isinstance(path, str) and path.endswith(('.py', '.pyw')):
-            norm_p = os.path.normpath(path)
-            norm_exe = os.path.normpath(exe_dir)
-            if norm_p.lower().startswith(norm_exe.lower()):
-                rel = os.path.relpath(norm_p, norm_exe)
-                meipass_path = os.path.join(sys._MEIPASS, rel)
-                if original_func(meipass_path):
-                    return True
-            meipass_rel = os.path.join(sys._MEIPASS, norm_p)
-            if original_func(meipass_rel):
-                return True
-            meipass_path = os.path.join(sys._MEIPASS, os.path.basename(path))
-            if original_func(meipass_path):
-                return True
-        return False
+        resolved = resolve_resource_path(path)
+        return original_func(resolved)
 
     os.path.exists = lambda p: smart_check(p, original_exists)
     os.path.isfile = lambda p: smart_check(p, original_isfile)
+    os.path.isdir = lambda p: smart_check(p, original_isdir)
+
+    def smart_open(file, mode='r', *args, **kwargs):
+        if isinstance(file, (str, bytes, os.PathLike)):
+            mode_str = str(mode)
+            if 'r' in mode_str and not any(m in mode_str for m in ('w', 'a', 'x', '+')):
+                resolved = resolve_resource_path(file)
+                if original_exists(resolved):
+                    file = resolved
+        return _orig_open(file, mode, *args, **kwargs)
+
+    builtins.open = smart_open
+
+    def smart_popen(cmd, *pargs, **kwargs):
+        if isinstance(cmd, list) and cmd:
+            new_cmd = list(cmd)
+            if isinstance(new_cmd[0], (str, bytes, os.PathLike)):
+                resolved = resolve_resource_path(new_cmd[0])
+                if original_exists(resolved):
+                    new_cmd[0] = resolved
+            cmd = new_cmd
+        elif isinstance(cmd, (str, bytes, os.PathLike)):
+            resolved = resolve_resource_path(cmd)
+            if original_exists(resolved):
+                cmd = resolved
+        return _orig_popen(cmd, *pargs, **kwargs)
+
+    subprocess.Popen = smart_popen
     # ----------------------------------------------------
 
     if len(sys.argv) >= 2 and sys.argv[1].endswith(('.py', '.pyw')):
@@ -89,6 +188,25 @@ if getattr(sys, 'frozen', False):
     elif len(sys.argv) >= 3 and sys.argv[1] == '-m':
         sys.exit(1)
 
+    # Гарантируем наличие рабочих директорий для режима One-File
+    for d in ("data", "logs", "evpn"):
+        os.makedirs(os.path.join(exe_dir, d), exist_ok=True)
+
+    # Инициализация дефолтных пользовательских файлов, если их ещё нет рядом с exe
+    default_files = [
+        (os.path.join(meipass, "data", "bridges.txt"), os.path.join(exe_dir, "data", "bridges.txt")),
+        (os.path.join(meipass, "data", "google_cidrs.json"), os.path.join(exe_dir, "data", "google_cidrs.json")),
+        (os.path.join(meipass, "evpn", "subs.txt"), os.path.join(exe_dir, "evpn", "subs.txt")),
+        (os.path.join(meipass, "Toinet.ppx"), os.path.join(exe_dir, "Toinet.ppx")),
+    ]
+    for src, dst in default_files:
+        if not original_exists(dst) and original_exists(src):
+            try:
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.copy2(src, dst)
+            except Exception:
+                pass
+
 import time
 import subprocess
 from PyQt5.QtWidgets import QApplication, QSystemTrayIcon, QMenu, QAction, QMessageBox, QDialog, QVBoxLayout, QTextEdit, QPushButton, QWidget, QWidgetAction, QHBoxLayout, QLabel, QCheckBox
@@ -103,6 +221,7 @@ from managers import vless_manager
 from managers import ssh_manager
 from managers import mode_manager
 from managers import system_utils as utils
+from managers import system_utils as lang
 from managers.system_utils import log
 from managers.system_utils import T
 import subprocess

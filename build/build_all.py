@@ -1,13 +1,14 @@
 """
 Скрипт сборки релизов ToInet-MAX.
 
-Поддерживает два режима:
+Поддерживает режимы:
   1. Обычная сборка (из имеющихся в репозитории файлов и бинарников).
   2. Сборка с обновлением (предварительная загрузка свежих версий sing-box, opera-proxy, byedpi, Tor).
 
-Результат сохраняется в директорию releases/:
-  - ToInet-MAX-python_amd64.zip
-  - ToInet-MAX-portable_amd64.zip
+Типы релизов (сохраняются в директорию releases/):
+  - ToInet-MAX-python_amd64.zip     (Python-версия)
+  - ToInet-MAX-portable_amd64.zip   (Portable-версия в папке)
+  - ToInet-MAX-one_file_amd64.exe   (One-File версия: единый exe-файл)
 """
 
 import os
@@ -28,7 +29,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 os.chdir(str(BASE_DIR))
 
 # Файлы и папки, исключаемые из архивов
-EXCLUDE_DIRS = {"__pycache__", ".git", ".dev", ".vscode", ".idea", "pyinstaller_build", "releases"}
+EXCLUDE_DIRS = {"__pycache__", ".git", ".dev", ".vscode", ".idea",
+                "pyinstaller_build", "pyinstaller_build_onefile",
+                "pyinstaller_dist_onefile", "dist", "releases"}
 EXCLUDE_EXTENSIONS = {".pyc", ".pyo", ".log", ".tmp"}
 EXCLUDE_DATA_FILES = {"cached-certs", "cached-descriptors", "cached-descriptors.new",
                       "cached-microdesc-consensus", "cached-microdescs", "cached-microdescs.new",
@@ -333,7 +336,7 @@ def compile_exe():
     # Скрытые импорты
     hidden_imports = [
         "requests", "pythoncom", "win32com", "win32com.client",
-        "psutil", "cryptography", "pyperclip", "socks", "h2", "certifi",
+        "psutil", "cryptography", "pyperclip", "socks", "h2", "certifi", "httpx",
         "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets",
         "managers.system_utils", "managers.config_manager", "managers.bdsher",
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
@@ -423,6 +426,108 @@ def build_portable_zip(compiled_exe_path):
     return output_zip
 
 
+def build_onefile_release():
+    """Сборка One-File версии: единый полностью самодостаточный EXE файл со всеми бинарниками и ресурсами"""
+    os.makedirs("releases", exist_ok=True)
+    exe_name = f"{PROJECT_NAME}-one_file_amd64.exe"
+    output_exe = os.path.join("releases", exe_name)
+    print(f"\n[СБОРКА] Компиляция One-File релиза -> {output_exe}...")
+    
+    workpath = "pyinstaller_build_onefile"
+    distpath = "pyinstaller_dist_onefile"
+    
+    for p in (workpath, distpath):
+        if os.path.exists(p):
+            try:
+                shutil.rmtree(p)
+            except Exception:
+                pass
+
+    cmd = [
+        sys.executable, "-m", "PyInstaller",
+        "--name", f"{PROJECT_NAME}-one_file_amd64",
+        "--onefile",
+        "--windowed",
+        "--icon", "icon.ico",
+        "--workpath", workpath,
+        "--distpath", distpath,
+        "--noconfirm",
+        "--clean",
+    ]
+    
+    # Скрытые импорты
+    hidden_imports = [
+        "requests", "pythoncom", "win32com", "win32com.client",
+        "psutil", "cryptography", "pyperclip", "socks", "h2", "certifi", "httpx",
+        "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets",
+        "managers.system_utils", "managers.config_manager", "managers.bdsher",
+        "managers.torchok", "managers.opera_manager", "managers.vless_manager",
+        "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
+        "managers.ssh_manager",
+        "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
+        "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
+        "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
+        "small_actions.noisy_manager", "small_actions.tester_manager", "small_actions.socks5_layer",
+        "tgws.manager", "tgws.settings"
+    ]
+    for hi in hidden_imports:
+        cmd.extend(["--hidden-import", hi])
+        
+    sep = ";" if os.name == "nt" else ":"
+    
+    # Модули и код
+    dirs_to_add = ["ui", "managers", "small_actions", "server", "evpn", "tgws", "byedpi"]
+    for d in dirs_to_add:
+        if os.path.exists(d):
+            cmd.extend(["--add-data", f"{d}{sep}{d}"])
+            
+    # Внешние бинарники (bin, tor)
+    if os.path.exists("bin"):
+        cmd.extend(["--add-data", f"bin{sep}bin"])
+    if os.path.exists("tor"):
+        cmd.extend(["--add-data", f"tor{sep}tor"])
+        
+    # Данные и базы
+    data_files = [
+        "data/geoip",
+        "data/geoip6",
+        "data/bridges.txt",
+        "data/google_cidrs.json",
+        "data/telegram.png",
+    ]
+    for df in data_files:
+        if os.path.exists(df):
+            cmd.extend(["--add-data", f"{df}{sep}data"])
+            
+    # Подписки evpn
+    if os.path.exists("evpn/subs.txt"):
+        cmd.extend(["--add-data", f"evpn/subs.txt{sep}evpn"])
+        
+    # Корневые ресурсы
+    for rf in ("icon.ico", "Toinet.ppx", "README.md"):
+        if os.path.exists(rf):
+            cmd.extend(["--add-data", f"{rf}{sep}."])
+            
+    cmd.append("main.pyw")
+    
+    subprocess.check_call(cmd)
+    
+    built_exe = os.path.join(distpath, f"{PROJECT_NAME}-one_file_amd64.exe")
+    if not os.path.exists(built_exe):
+        raise FileNotFoundError(f"EXE файл One-File не был создан по пути {built_exe}!")
+        
+    shutil.copy2(built_exe, output_exe)
+    
+    try:
+        shutil.rmtree(distpath)
+    except Exception:
+        pass
+        
+    size_mb = os.path.getsize(output_exe) / (1024 * 1024)
+    print(f"[УСПЕХ] One-File релиз собран: {output_exe} ({size_mb:.1f} МБ)")
+    return output_exe
+
+
 def clean_temp_files():
     """Удаление временных патчей и мусора"""
     for pf in glob.glob("patch*.py"):
@@ -431,6 +536,12 @@ def clean_temp_files():
             print(f"Удален временный файл: {pf}")
         except Exception:
             pass
+    for temp_dir in ("pyinstaller_build_onefile", "pyinstaller_dist_onefile"):
+        if os.path.exists(temp_dir):
+            try:
+                shutil.rmtree(temp_dir)
+            except Exception:
+                pass
     evpn_junk = [
         "evpn/subs_cache.json",
         "evpn/working_nodes.json",
@@ -448,11 +559,12 @@ def clean_temp_files():
                 pass
 
 
-def build_all(update_binaries=False):
+def build_all(update_binaries=False, target="all"):
     """Основной процесс сборки"""
     print("==================================================")
     mode_text = "С ОБНОВЛЕНИЕМ БИНАРНИКОВ" if update_binaries else "ОБЫЧНАЯ СБОРКА"
     print(f"      СБОРКА РЕЛИЗОВ {PROJECT_NAME} ({mode_text})")
+    print(f"      Целевой релиз: {target.upper()}")
     print("==================================================")
     
     clean_temp_files()
@@ -460,25 +572,40 @@ def build_all(update_binaries=False):
     if update_binaries:
         update_all_binaries()
         
-    # 1. Сборка Python версии
-    python_zip = build_python_zip()
+    python_zip = None
+    portable_zip = None
+    onefile_exe = None
     
-    # 2. Компиляция ToInet.exe
-    exe_path = compile_exe()
-    
-    # 3. Сборка Portable версии
-    portable_zip = build_portable_zip(exe_path)
+    if target in ("all", "python"):
+        # 1. Сборка Python версии
+        python_zip = build_python_zip()
+        
+    if target in ("all", "portable"):
+        # 2. Компиляция ToInet.exe для Portable
+        exe_path = compile_exe()
+        # 3. Сборка Portable версии
+        portable_zip = build_portable_zip(exe_path)
+        
+    if target in ("all", "one_file"):
+        # 4. Сборка One-File версии
+        onefile_exe = build_onefile_release()
     
     print("\n==================================================")
     print("               ИТОГИ СБОРКИ:")
     print("==================================================")
-    print(f"1. Python-архив:   {python_zip}")
-    print(f"2. Portable-архив: {portable_zip}")
+    if python_zip:
+        print(f"1. Python-архив:   {python_zip}")
+    if portable_zip:
+        print(f"2. Portable-архив: {portable_zip}")
+    if onefile_exe:
+        print(f"3. One-File файл:  {onefile_exe}")
     print("==================================================")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Сборщик релизов ToInet-MAX")
     parser.add_argument("--update", action="store_true", help="Обновить бинарники (sing-box, opera-proxy, byedpi, Tor) перед сборкой")
+    parser.add_argument("--type", choices=["all", "python", "portable", "one_file"], default="all",
+                        help="Тип релиза для сборки: all (все), python, portable, one_file")
     args = parser.parse_args()
-    build_all(update_binaries=args.update)
+    build_all(update_binaries=args.update, target=args.type)

@@ -115,6 +115,10 @@ class TorManager:
     def _generate_torrc_from_bridges(self):
         """Generates torrc from bridges.txt"""
         bridges_path = os.path.join(CURRENT_DIR, "data", "bridges.txt")
+        if not os.path.exists(bridges_path) and getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            cand = os.path.join(sys._MEIPASS, "data", "bridges.txt")
+            if os.path.exists(cand):
+                bridges_path = cand
         if not os.path.exists(bridges_path):
             log(f"bridges.txt not found at {bridges_path}")
             return False
@@ -123,9 +127,24 @@ class TorManager:
             bridges = [line.strip() for line in f if line.strip() and not line.strip().startswith('#')]
             
         data_dir = os.path.join(CURRENT_DIR, "data")
+        os.makedirs(data_dir, exist_ok=True)
         geoip_path = os.path.join(data_dir, "geoip")
         geoip6_path = os.path.join(data_dir, "geoip6")
         lyrebird_path = os.path.join(CURRENT_DIR, "tor", "pluggable_transports", "lyrebird.exe")
+        
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            if not os.path.exists(geoip_path):
+                cand = os.path.join(sys._MEIPASS, "data", "geoip")
+                if os.path.exists(cand):
+                    geoip_path = cand
+            if not os.path.exists(geoip6_path):
+                cand = os.path.join(sys._MEIPASS, "data", "geoip6")
+                if os.path.exists(cand):
+                    geoip6_path = cand
+            if not os.path.exists(lyrebird_path):
+                cand = os.path.join(sys._MEIPASS, "tor", "pluggable_transports", "lyrebird.exe")
+                if os.path.exists(cand):
+                    lyrebird_path = cand
         
         torrc_lines = [
             f"DataDirectory {data_dir}",
@@ -156,6 +175,10 @@ class TorManager:
     def _update_bridges_in_torrc(self):
         """Updates bridges in existing torrc"""
         bridges_path = os.path.join(CURRENT_DIR, "data", "bridges.txt")
+        if not os.path.exists(bridges_path) and getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            cand = os.path.join(sys._MEIPASS, "data", "bridges.txt")
+            if os.path.exists(cand):
+                bridges_path = cand
         if not os.path.exists(bridges_path) or not os.path.exists(TORRC_FILE):
             return False
             

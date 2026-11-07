@@ -567,11 +567,16 @@ class TorrcConfigurator(QMainWindow):
         except:
             pass
 
-        self.data_dir = os.path.join(self.base_tor_dir, "data")
-        self.geoip_path = os.path.join(self.base_tor_dir, "data", "geoip")
-        self.geoipv6_path = os.path.join(self.base_tor_dir, "data", "geoip6")
+        self.data_dir = os.path.join(self.current_dir, "data")
+        tor_resource_base = self.base_tor_dir
+        if not os.path.exists(os.path.join(tor_resource_base, "data", "geoip")) and getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            tor_resource_base = sys._MEIPASS
+
+        self.geoip_path = os.path.join(tor_resource_base, "data", "geoip")
+        self.geoipv6_path = os.path.join(tor_resource_base, "data", "geoip6")
         self.bridges_path = os.path.join(self.current_dir, "data", "bridges.txt")
-        self.pt_config_path = os.path.join(self.base_tor_dir, "tor", "pluggable_transports", "pt_config.json")
+        self.pt_config_path = os.path.join(tor_resource_base, "tor", "pluggable_transports", "pt_config.json")
+        self.base_tor_dir = tor_resource_base
         
         self.init_ui()
         
