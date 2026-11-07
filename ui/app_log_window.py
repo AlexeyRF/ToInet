@@ -2,6 +2,7 @@ import sys, os
 import re
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QCheckBox
 from PySide6.QtCore import QObject, Signal, Qt
+from PySide6.QtGui import QTextCursor
 from managers.system_utils import T
 
 class OutputLogger(QObject):
@@ -138,7 +139,7 @@ class AppLogWindow(QDialog):
         for cat, text in self.all_logs:
             if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
                 self.text_edit.insertPlainText(text)
-        self.text_edit.moveCursor(self.text_edit.textCursor().End)
+        self.text_edit.moveCursor(QTextCursor.End)
 
     def append_log(self, text):
         cat = self._get_category(text)
@@ -152,9 +153,9 @@ class AppLogWindow(QDialog):
         
         # If the category is checked (or it's "Other"), append to text edit
         if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
-            self.text_edit.moveCursor(self.text_edit.textCursor().End)
+            self.text_edit.moveCursor(QTextCursor.End)
             self.text_edit.insertPlainText(text)
-            self.text_edit.moveCursor(self.text_edit.textCursor().End)
+            self.text_edit.moveCursor(QTextCursor.End)
 
 app_log_window = None
 def setup_logging():
