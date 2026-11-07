@@ -27,7 +27,6 @@ from managers import mode_manager
 from managers import evpn_manager
 from managers import ext_manager
 from tgws import manager as tgws_manager
-from small_actions import tester_manager
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
@@ -42,7 +41,6 @@ mode_type = config.get("mode_type", "inetcpl")
 # Инициализируем менеджеры
 byedpi_manager = bdsher.get_manager({})
 tor_manager = torchok.get_manager()
-tester_manager = tester_manager.get_manager()
 opera_mgr = opera_manager.get_manager()
 ext_programs_manager = ext_manager.get_manager()
 tgws_mgr = tgws_manager.get_manager()
@@ -55,7 +53,6 @@ pip_manager = bdsher.get_pip_manager(config)
 # Применяем конфигурацию к менеджерам
 byedpi_manager.update_config(config)
 tor_manager.update_config(config)
-tester_manager.update_config(config)
 opera_mgr.update_config(config)
 tgws_mgr.update_config(config)
 ssh_mgr.update_config(config)
@@ -92,7 +89,6 @@ toggle_vless = service_controller.toggle_vless
 toggle_opera = service_controller.toggle_opera
 toggle_ssh = service_controller.toggle_ssh
 toggle_tgws = service_controller.toggle_tgws
-toggle_tester = service_controller.toggle_tester
 toggle_proxifier = service_controller.toggle_proxifier
 toggle_inetcpl_tor = service_controller.toggle_inetcpl_tor
 toggle_inetcpl_bd = service_controller.toggle_inetcpl_bd

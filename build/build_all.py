@@ -279,7 +279,7 @@ def build_python_zip():
             add_to_zip(zipf, rf)
             
         # Каталоги с исходным кодом и скриптами
-        code_dirs = ["ui", "managers", "small_actions", "server", "evpn", "tgws", "byedpi"]
+        code_dirs = ["ui", "managers", "server", "evpn", "tgws", "byedpi"]
         for cdir in code_dirs:
             add_to_zip(zipf, cdir)
             
@@ -296,6 +296,7 @@ def build_python_zip():
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/telegram.jpg",
             "data/telegram.png",
             "tor/tor.exe",
             "tor/tor-gencert.exe",
@@ -345,7 +346,6 @@ def compile_exe():
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
         "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
-        "small_actions.tester_manager",
         "tgws.manager", "tgws.settings"
     ]
     for hi in hidden_imports:
@@ -356,7 +356,7 @@ def compile_exe():
         
     # Вшиваем модули в sys._MEIPASS
     sep = ";" if os.name == "nt" else ":"
-    dirs_to_add = ["ui", "managers", "small_actions", "server", "evpn", "tgws", "byedpi"]
+    dirs_to_add = ["ui", "managers", "server", "evpn", "tgws", "byedpi"]
     for d in dirs_to_add:
         if os.path.exists(d):
             cmd.extend(["--add-data", f"{d}{sep}{d}"])
@@ -415,6 +415,7 @@ def build_portable_zip(compiled_exe_path):
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/telegram.jpg",
             "data/telegram.png",
             "evpn/subs.txt",
             "tor/tor.exe",
@@ -470,7 +471,6 @@ def build_onefile_release():
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
         "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
-        "small_actions.tester_manager",
         "tgws.manager", "tgws.settings"
     ]
     for hi in hidden_imports:
@@ -482,7 +482,7 @@ def build_onefile_release():
     sep = ";" if os.name == "nt" else ":"
     
     # Модули и код
-    dirs_to_add = ["ui", "managers", "small_actions", "server", "evpn", "tgws", "byedpi"]
+    dirs_to_add = ["ui", "managers", "server", "evpn", "tgws", "byedpi"]
     for d in dirs_to_add:
         if os.path.exists(d):
             cmd.extend(["--add-data", f"{d}{sep}{d}"])
@@ -499,6 +499,7 @@ def build_onefile_release():
         "data/geoip6",
         "data/bridges.txt",
         "data/google_cidrs.json",
+        "data/telegram.jpg",
         "data/telegram.png",
     ]
     for df in data_files:

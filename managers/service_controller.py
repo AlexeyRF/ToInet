@@ -281,13 +281,6 @@ def toggle_tgws():
     update_proxy_status()
     m.update_menu()
 
-def toggle_tester():
-    if not m.tester_manager.is_running():
-        m.tester_manager.start()
-    else:
-        m.tester_manager.stop()
-    m.update_menu()
-
 def toggle_proxifier():
     if not m.mode_mgr.proxifier_running():
         m.mode_mgr.start_proxifier()
@@ -586,7 +579,6 @@ def restart_app():
     pip_mgr.stop()
     m.bdsher.clear_pip_proxy()
     
-    m.tester_manager.stop()
     m.ext_programs_manager.stop_all()
     m.mode_mgr.stop_tun()
     m.tgws_mgr.stop()
@@ -614,7 +606,6 @@ def exit_app():
     pip_mgr.stop()
     m.bdsher.clear_pip_proxy()
     
-    m.tester_manager.stop()
     m.ext_programs_manager.stop_all()
     m.mode_mgr.stop_tun()
     m.mode_mgr.stop_proxifier()

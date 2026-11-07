@@ -628,9 +628,16 @@ class MainWindow(QMainWindow):
             return b
 
         # Path to Telegram logo icon
-        tg_icon_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ui", "telegram.png")
-        if not os.path.exists(tg_icon_path):
-            tg_icon_path = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", "telegram.png")
+        tg_icon_path = None
+        for candidate in ["telegram.jpg", "telegram.jpeg", "telegram.png"]:
+            p = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "ui", candidate)
+            if os.path.exists(p):
+                tg_icon_path = p
+                break
+            p = os.path.join(getattr(m, 'CURRENT_DIR', os.path.dirname(os.path.dirname(os.path.abspath(__file__)))), "data", candidate)
+            if os.path.exists(p):
+                tg_icon_path = p
+                break
 
         # Helper to create miniature 26x26 Telegram button using attached icon
         def make_mini_tg_btn(tooltip, callback):
