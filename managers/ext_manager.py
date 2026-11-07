@@ -60,15 +60,13 @@ class ExtProgramsManager:
         print("[Ext] Дополнительные программы перезапущены")
 
     def open_config(self):
-        import sys
         CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
         exe_path = os.path.join(CURRENT_DIR, "bin", "programs_settings.exe")
-        script_path = os.path.join(CURRENT_DIR, ".dev", "programs_settings.pyw")
-        creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         if os.path.exists(exe_path):
+            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
             subprocess.Popen([exe_path], creationflags=creationflags)
         else:
-            subprocess.Popen([sys.executable, script_path], creationflags=creationflags)
+            print(f"[Ext] programs_settings.exe не найден: {exe_path}")
 
 _manager = None
 def get_manager():

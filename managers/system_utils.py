@@ -227,28 +227,6 @@ def T(ru_text, en_text, fr_text=None, fr=None):
 import builtins
 builtins.T = T
 
-# --- CPLLER ---
-def set_proxy(port, mode=None):
-    port = str(port)
-    if port == "1785": proxy_server = f"http=127.0.0.1:{port};https=127.0.0.1:{port}"
-    else: proxy_server = f"socks=127.0.0.1:{port}"
-    
-    os.system(f'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 1 /f >nul')
-    os.system(f'reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /t REG_SZ /d "{proxy_server}" /f >nul')
-    refresh_internet_settings()
-
-def disable_proxy():
-    os.system('reg add "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyEnable /t REG_DWORD /d 0 /f >nul')
-    os.system('reg delete "HKCU\\Software\\Microsoft\\Windows\\CurrentVersion\\Internet Settings" /v ProxyServer /f 2>nul')
-    refresh_internet_settings()
-
-def refresh_internet_settings():
-    INTERNET_OPTION_SETTINGS_CHANGED = 39
-    INTERNET_OPTION_REFRESH = 37
-    internet_set_option = ctypes.windll.Wininet.InternetSetOptionW
-    internet_set_option(0, INTERNET_OPTION_SETTINGS_CHANGED, 0, 0)
-    internet_set_option(0, INTERNET_OPTION_REFRESH, 0, 0)
-
 # --- YARLIK ---
 def get_desktop_path():
     try:
@@ -328,13 +306,7 @@ def check_shortcut_exists():
 if __name__ == "__main__":
     if len(sys.argv) > 1:
         cmd = sys.argv[1]
-        if cmd == "cpller":
-            port = sys.argv[2]
-            flag = sys.argv[3]
-            mode = sys.argv[4] if len(sys.argv) > 4 else "classic"
-            if flag == '1': set_proxy(port, mode)
-            else: disable_proxy()
-        elif cmd == "cacher":
+        if cmd == "cacher":
             clean_data_directory()
         elif cmd == "yarlik":
             target = sys.argv[2] if len(sys.argv) > 2 else "main.pyw"

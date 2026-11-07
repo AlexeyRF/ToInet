@@ -24,8 +24,6 @@ import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'f
 
 CPLLER_EXE = os.path.join(CURRENT_DIR, "bin", "cpller.exe")
 
-CPLLER_SCRIPT = os.path.join(CURRENT_DIR, "managers", "system_utils.py")
-
 
 
 class ModeManager:
@@ -57,35 +55,18 @@ class ModeManager:
 
 
     def run_cpller(self, port, action_flag):
+        if not os.path.exists(CPLLER_EXE):
+            self.log(f"cpller.exe не найден: {CPLLER_EXE}")
+            return False
 
-        if os.path.exists(CPLLER_EXE):
-
-            cmd = [CPLLER_EXE, str(port), str(action_flag)]
-
-        else:
-
-            cmd = [sys.executable, CPLLER_SCRIPT, "cpller", str(port), str(action_flag)]
-
-        creationflags = 0
-
-        if os.name == "nt":
-
-            creationflags = subprocess.CREATE_NO_WINDOW
-
-        
-
+        cmd = [CPLLER_EXE, str(port), str(action_flag)]
+        creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         try:
-
             self.log(f"Запуск cpller: {' '.join(cmd)}")
-
             subprocess.Popen(cmd, creationflags=creationflags)
-
             return True
-
         except Exception as e:
-
             self.log(f"Ошибка запуска cpller: {e}")
-
             return False
 
 
@@ -1523,22 +1504,12 @@ class ModeManager:
 
 
     def open_proxifier_config(self):
-
-        import sys, subprocess
-
         exe_path = os.path.join(CURRENT_DIR, "bin", "programs_settings.exe")
-
-        script_path = os.path.join(CURRENT_DIR, ".dev", "programs_settings.pyw")
-
-        creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-
         if os.path.exists(exe_path):
-
+            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
             subprocess.Popen([exe_path], creationflags=creationflags)
-
         else:
-
-            subprocess.Popen([sys.executable, script_path], creationflags=creationflags)
+            self.log(f"programs_settings.exe не найден: {exe_path}")
 
 
 
