@@ -103,8 +103,8 @@ class TGWSSettingsDialog(QDialog):
         # Информация
         info_label = QLabel(
             "TGWS Proxy будет работать на указанном порту.\n"
-            f"SOCKS5: {self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1480)} (без логина/пароля)\n"
-            f"MTProto: Секрет начинается с ee/dd и содержит ваш домен\n\n"
+            f"MTProto: {self.config.get('tgws_host', '127.0.0.1')}:{self.config.get('tgws_port', 1480)}\n"
+            f"Секрет начинается с ee/dd и содержит ваш домен\n\n"
             "Примечание: После сохранения настроек может потребоваться\n"
             "перезапуск TGWS Proxy для применения изменений."
         )

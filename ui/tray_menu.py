@@ -269,7 +269,6 @@ def _update_menu_impl_unsafe():
         # 4. Добавить в Telegram
         tg_menu = QMenu(m.T("Добавить в Telegram", "Telegram Integration", "Intégration Telegram"), m.tray_menu)
         if not lang._is_en or m.config.get("enable_ru_features", False):
-            tg_menu.addAction(m.T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), lambda: m.utils.add_proxy_to_telegram(m.config.get("tgws_port", 1480)))
             tg_menu.addAction(m.T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), lambda: m.utils.add_mtproto_to_telegram(m.config.get("tgws_port", 1480), m.config.get("tgws_secret", "0"*32), m.config.get("tgws_fake_tls", "")))
             tg_menu.addAction(m.T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(m.T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: m.utils.add_proxy_to_telegram(9853))

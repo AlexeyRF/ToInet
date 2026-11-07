@@ -18,7 +18,7 @@
 
 * **ByeDPI:** локальный обход DPI (модификация и фрагментация TCP/HTTP/TLS пакетов) прямо на компьютере без внешних серверов.
 * **Tor:** анонимная маршрутизация трафика с поддержкой мостов и подключаемых транспортов (obfs4, snowflake и др.).
-* **TGWS & Gatik:** высокоскоростное проксирование и динамическая балансировка трафика для Telegram (SOCKS5 и MTProto).
+* **TGWS & Gatik:** высокоскоростное проксирование (MTProto) и динамический SOCKS5-шлюз для Telegram.
 * **Opera Proxy:** быстрый прокси-туннель через инфраструктуру Opera.
 * **EVPN:** поддержка современных протоколов (VLESS Reality, Trojan) на базе sing-box с поддержкой подписок.
 * **SSH SOCKS5 Туннель:** защищенное подключение к собственному VPS на базе C++ и нативного Windows OpenSSH.
@@ -54,7 +54,7 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 
 * **ByeDPI:** Local DPI evasion (TCP/HTTP/TLS packet manipulation and fragmentation) without external servers.
 * **Tor:** Onion routing daemon with built-in bridge configuration and pluggable transports (obfs4, snowflake, etc.).
-* **TGWS & Gatik:** High-performance proxying and dynamic traffic balancing for Telegram (SOCKS5 & MTProto).
+* **TGWS & Gatik:** High-performance proxying (MTProto) and dynamic SOCKS5 gateway for Telegram.
 * **Opera Proxy:** Fast proxy tunnel utilizing Opera's network infrastructure.
 * **EVPN:** Modern anti-censorship protocols (VLESS Reality, Trojan) powered by sing-box with subscription support.
 * **SSH SOCKS5 Tunnel:** Secure dynamic proxy tunnel to your own VPS using native Windows OpenSSH.
@@ -90,7 +90,7 @@ Conçu pour restaurer un accès libre à Internet tout en **préservant au maxim
 
 * **ByeDPI :** Contournement DPI local (fragmentation et modification des paquets TCP/HTTP/TLS) sans serveur tiers.
 * **Tor :** Routage en oignon avec prise en charge des ponts et des transports enfichables (obfs4, snowflake, etc.).
-* **TGWS & Gatik :** Proxy rapide et équilibrage dynamique pour Telegram (SOCKS5 et MTProto).
+* **TGWS & Gatik :** Proxy haute performance (MTProto) et passerelle SOCKS5 dynamique pour Telegram.
 * **Opera Proxy :** Tunnel proxy rapide s'appuyant sur l'infrastructure d'Opera.
 * **EVPN :** Prise en charge des protocoles récents (VLESS Reality, Trojan) via sing-box avec gestion des abonnements.
 * **Tunnel SSH SOCKS5 :** Connexion dynamique sécurisée vers votre propre VPS via OpenSSH natif.

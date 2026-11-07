@@ -909,40 +909,13 @@ class MainWindow(QMainWindow):
         self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
 
         # 6. Telegram WebSocket Proxy (TGWS)
-        def add_tgws_socks():
-            from managers import system_utils
-            system_utils.add_proxy_to_telegram(int(m.config.get("tgws_port", 1480)))
         def add_tgws_mtproto():
             from managers import system_utils
             system_utils.add_mtproto_to_telegram(int(m.config.get("tgws_port", 1480)),
                                                  m.config.get("tgws_secret", "0"*32),
                                                  m.config.get("tgws_fake_tls", ""))
 
-        def show_tgws_tg_menu():
-            from PySide6.QtWidgets import QMenu
-            from PySide6.QtGui import QCursor
-            menu = QMenu(self)
-            menu.setStyleSheet("""
-                QMenu {
-                    background-color: #2b2b2b;
-                    color: #FFFFFF;
-                    border: 1px solid #383838;
-                    border-radius: 6px;
-                    padding: 4px;
-                }
-                QMenu::item {
-                    padding: 5px 16px;
-                    border-radius: 4px;
-                }
-                QMenu::item:selected {
-                    background-color: #005FB8;
-                }
-            """)
-            menu.addAction(T("Добавить TGWS SOCKS5 (1480) в Telegram", "Add TGWS SOCKS5 (1480) to Telegram"), add_tgws_socks)
-            menu.addAction(T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), add_tgws_mtproto)
-            menu.exec(QCursor.pos())
-
-        tgws_tg_btn = make_mini_tg_btn(T("Добавить TGWS в Telegram (SOCKS5 / MTProto)", "Add TGWS to Telegram (SOCKS5 / MTProto)"), show_tgws_tg_menu)
+        tgws_tg_btn = make_mini_tg_btn(T("Добавить TGWS в Telegram (MTProto)", "Add TGWS to Telegram (MTProto)"), add_tgws_mtproto)
 
         def restart_tgws():
             if getattr(m, 'tgws_mgr', None):
