@@ -94,7 +94,7 @@ class AppLogWindow(QDialog):
         self.filter_layout = QHBoxLayout()
         self.categories = {}
         # Pre-populate known categories
-        for pre_cat in ["LOG", "TOR Manager", "ByeDPI", "OperaProxy", "TGWS", "MODE"]:
+        for pre_cat in ["LOG", "TOR Manager", "zDPI", "OperaProxy", "TGWS", "MODE"]:
             self._add_category_checkbox(pre_cat)
         self.layout.addLayout(self.filter_layout)
         

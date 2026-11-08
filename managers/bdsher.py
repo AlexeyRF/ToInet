@@ -10,7 +10,7 @@ from PySide6.QtWidgets import QMessageBox
 from PySide6.QtCore import QObject, Signal
 
 # Константы
-BYEDPI_EXE = os.path.join(CURRENT_DIR, "byedpi", "ciadpi.exe")
+BYEDPI_EXE = os.path.join(CURRENT_DIR, "byedpi", "zdpi.exe") if os.path.exists(os.path.join(CURRENT_DIR, "byedpi", "zdpi.exe")) else os.path.join(CURRENT_DIR, "byedpi", "ciadpi.exe")
 
 # Параметры по умолчанию
 DEFAULT_BYEDPI_PARAMS = "-p 1780 -o1 -o25+s -T3 -At -d1+s -O1 -s29+s -t 5 -An -Ku -a5 -s443+s -d80+s -s80+s -d53+s -s53+s -d443+s --fake -1 --fake-sni max.ru"
@@ -57,7 +57,7 @@ class ByeDPIManager(QObject):
                             if any('byedpi_router.py' in arg for arg in cmdline) and port_str in cmdline:
                                 return proc.info['pid']
                     else:
-                        if 'ciadpi' in name:
+                        if 'ciadpi' in name or 'zdpi' in name:
                             cmdline = proc.cmdline() or []
                             matched = False
                             for i, arg in enumerate(cmdline):
@@ -197,7 +197,7 @@ class ByeDPIManager(QObject):
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
                     name = proc.info.get('name')
-                    if name and 'ciadpi.exe' in name.lower():
+                    if name and ('ciadpi.exe' in name.lower() or 'zdpi.exe' in name.lower()):
                         try:
                             cmdline = proc.cmdline() or []
                         except psutil.AccessDenied:
@@ -245,7 +245,7 @@ class ByeDPIManager(QObject):
         import sys
         
         dialog = QDialog()
-        dialog.setWindowTitle("Настройки ByeDPI")
+        dialog.setWindowTitle("Настройки zDPI")
         dialog.resize(600, 180)
         
         # Dark Theme
@@ -268,7 +268,7 @@ class ByeDPIManager(QObject):
         if not current_params:
             current_params = preset_params
             
-        layout.addWidget(QLabel("Параметры ByeDPI:"))
+        layout.addWidget(QLabel("Параметры zDPI:"))
         
         edit = QLineEdit(preset_params if not use_custom else current_params)
         layout.addWidget(edit)
@@ -297,7 +297,7 @@ class ByeDPIManager(QObject):
         btn_layout = QHBoxLayout()
         
         # Tester Button
-        tester_btn = QPushButton("Запустить Тестер (byedpi_tester_gui.pyw)")
+        tester_btn = QPushButton("Запустить Тестер (zDPI Strategy Tester)")
         def run_tester():
             subprocess.Popen([sys.executable, os.path.join("ui", "byedpi_tester_gui.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         tester_btn.clicked.connect(run_tester)
@@ -330,12 +330,12 @@ class ByeDPIManager(QObject):
             except:
                 pass
             from PySide6.QtWidgets import QMessageBox
-            QMessageBox.information(None, "Успех", "Настройки ByeDPI сохранены.")
+            QMessageBox.information(None, "Успех", "Настройки zDPI сохранены.")
 
     def get_status_text(self):
         if self.running:
-            return f"Остановить BD ({self.default_port})"
-        return f"Ручной запуск BD ({self.default_port})"
+            return f"Остановить zDPI ({self.default_port})"
+        return f"Ручной запуск zDPI ({self.default_port})"
     
     @staticmethod
     def check_exists():

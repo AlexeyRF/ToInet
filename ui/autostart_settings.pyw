@@ -132,7 +132,7 @@ class AutostartSettingsWindow(QMainWindow):
         tools_layout.setHorizontalSpacing(15)
         tools_layout.setVerticalSpacing(6)
         
-        self.cb_byedpi = QCheckBox(T("ByeDPI (Обход DPI)", "ByeDPI (DPI Bypass)", "ByeDPI (Contournement DPI)"))
+        self.cb_byedpi = QCheckBox(T("zDPI (Обход DPI)", "zDPI (DPI Bypass)", "zDPI (Contournement DPI)"))
         self.cb_byedpi.setChecked("byedpi" in self.autostart_tools)
         tools_layout.addWidget(self.cb_byedpi, 0, 0)
         

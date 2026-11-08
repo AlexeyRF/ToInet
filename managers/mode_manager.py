@@ -695,6 +695,8 @@ class ModeManager:
 
                 "sing-box.exe",
 
+                "zdpi.exe",
+
                 "ciadpi.exe",
 
                 "tor.exe",

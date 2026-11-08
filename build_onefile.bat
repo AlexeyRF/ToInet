@@ -12,5 +12,5 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 echo.
-echo [ГОТОВО] Сборка One-File успешно завершена! Файл в папке releases/
+echo [ГОТОВО] Сборка One-File успешно завершена! Файл в папке build\releases\
 pause

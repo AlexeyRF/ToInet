@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ========================================================
-echo Building C++ utilities (cpller, gatik, ssh_tunnel, programs_settings, tgws_accel)
+echo Building C++ utilities (cpller, gatik, ssh_tunnel, programs_settings, tgws_accel, zdpi)
 echo ========================================================
 
 set "VS_VCVARS="
@@ -46,4 +46,8 @@ if not "%VS_VCVARS%"=="" (
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0programs_settings.cpp" -o "%~dp0..\bin\programs_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
     g++ -O2 -std=c++17 -mavx2 -shared "%~dp0tgws_accel.cpp" -o "%~dp0..\bin\tgws_accel.dll"
     echo Done!
+)
+
+if exist "%~dp0zdpi\build.bat" (
+    call "%~dp0zdpi\build.bat"
 )

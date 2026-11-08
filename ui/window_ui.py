@@ -738,16 +738,12 @@ class MainWindow(QMainWindow):
         prov_header.setStyleSheet("color: #8e8e8e; margin-top: 4px; background: transparent;")
         c_layout.addWidget(prov_header)
 
-        # 1. ByeDPI
+        # 1. zDPI
         bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
         self.bd_select_btn = bd_select_btn
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
-        def add_bd_tg():
-            from managers import system_utils
-            system_utils.add_proxy_to_telegram(1780)
-        bd_tg_btn = make_mini_tg_btn(T("Добавить ByeDPI в Telegram (1780)", "Add ByeDPI to Telegram (1780)"), add_bd_tg)
 
         def restart_bd():
             if getattr(m, 'byedpi_manager', None):
@@ -760,14 +756,13 @@ class MainWindow(QMainWindow):
         self.bd_toggle_btn = make_mini_btn("▶", T("Запустить", "Start", "Demarrer"), lambda: (m.toggle_byedpi(), self.update_ui_state()))
 
         c_layout.addWidget(create_provider_card(
-            "ByeDPI",
+            "zDPI",
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
             [bd_select_btn, bd_test_btn],
             self.bd_restart_btn,
-            self.bd_toggle_btn,
-            mini_tg_btn=bd_tg_btn
+            self.bd_toggle_btn
         ))
 
         # 2. Tor
@@ -1132,8 +1127,8 @@ class MainWindow(QMainWindow):
                              creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         ast_gui_btn = make_action_btn(T("Настроить службы", "Configure Services"), open_ast_gui)
         c_layout.addWidget(CardRow(T("Выбор служб для автозапуска", "Autostart Services Selection"),
-                                   T("Выбор конкретных модулей (ByeDPI, Tor, SSH, Opera, Proxifier) при старте.",
-                                     "Select individual services to boot on program startup."),
+                                   T("Выбор конкретных модулей (zDPI, Tor, SSH, Opera, Proxifier) при старте.",
+                                     "Select individual services (zDPI, Tor, SSH, Opera, Proxifier) to boot on program startup."),
                                    ast_gui_btn))
 
         # Group 3: Pip (PyPI) Proxying (Single compact card with provider selection)
@@ -1169,7 +1164,7 @@ class MainWindow(QMainWindow):
         ssh_port_val = str(m.config.get("ssh_socks_port", 1770))
         pip_options = [
             ("none", T("Нет (Отключено)", "None (Disabled)", "Aucun (Désactivé)")),
-            ("byedpi", "ByeDPI (1781)"),
+            ("byedpi", "zDPI (1781)"),
             ("tor", "Tor (9853)"),
             ("opera", "Opera Proxy (1785)"),
             ("ssh", f"SSH ({ssh_port_val})"),
@@ -1362,7 +1357,7 @@ class MainWindow(QMainWindow):
         self.inetcpl_gw_combo.setCursor(Qt.PointingHandCursor)
         inetcpl_gw_options = [
             ("none", T("Без шлюза (Отключено)", "No gateway (Disabled)", "Sans passerelle (Désactivé)")),
-            ("byedpi", "ByeDPI (1780)"),
+            ("byedpi", "zDPI (1780)"),
             ("tor", "Tor (9853)"),
             ("opera", "Opera Proxy (1785)"),
             ("ssh", f"SSH ({ssh_port_val})"),

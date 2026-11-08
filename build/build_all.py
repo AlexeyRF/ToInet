@@ -5,7 +5,7 @@
   1. Обычная сборка (из имеющихся в репозитории файлов и бинарников).
   2. Сборка с обновлением (предварительная загрузка свежих версий sing-box, opera-proxy, byedpi, Tor).
 
-Типы релизов (сохраняются в директорию releases/):
+Типы релизов (сохраняются в директорию build/releases/):
   - ToInet-MAX-python_amd64.zip     (Python-версия)
   - ToInet-MAX-portable_amd64.zip   (Portable-версия в папке)
   - ToInet-MAX-one_file_amd64.exe   (One-File версия: единый exe-файл)
@@ -26,12 +26,22 @@ from pathlib import Path
 
 PROJECT_NAME = "ToInet-MAX"
 BASE_DIR = Path(__file__).resolve().parent.parent
+BUILD_DIR = Path(__file__).resolve().parent
+
+RELEASES_DIR = BUILD_DIR / "releases"
+WORK_DIR = BUILD_DIR / "work"
+WORK_ONEFILE_DIR = BUILD_DIR / "work_onefile"
+DIST_DIR = BUILD_DIR / "dist"
+DIST_ONEFILE_DIR = BUILD_DIR / "dist_onefile"
+TEMP_DIR = BUILD_DIR / "temp"
+
 os.chdir(str(BASE_DIR))
 
 # Файлы и папки, исключаемые из архивов
 EXCLUDE_DIRS = {"__pycache__", ".git", ".dev", ".vscode", ".idea",
+                "build", "dist", "releases",
                 "pyinstaller_build", "pyinstaller_build_onefile",
-                "pyinstaller_dist_onefile", "dist", "releases"}
+                "pyinstaller_dist_onefile"}
 EXCLUDE_EXTENSIONS = {".pyc", ".pyo", ".log", ".tmp"}
 EXCLUDE_DATA_FILES = {"cached-certs", "cached-descriptors", "cached-descriptors.new",
                       "cached-microdesc-consensus", "cached-microdescs", "cached-microdescs.new",
@@ -69,8 +79,9 @@ def update_singbox():
             print("  [!] Не найден подходящий ассет sing-box windows-amd64.")
             return
 
-        temp_zip = "singbox_temp.zip"
-        download_file(target_asset['browser_download_url'], temp_zip)
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        temp_zip = TEMP_DIR / "singbox_temp.zip"
+        download_file(target_asset['browser_download_url'], str(temp_zip))
         
         target_dir = Path("bin/sing-box")
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -139,8 +150,9 @@ def update_byedpi():
             print("  [!] Не найден ByeDPI x86_64-w64.zip в релизах.")
             return
 
-        temp_zip = "byedpi_temp.zip"
-        download_file(target_url, temp_zip)
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        temp_zip = TEMP_DIR / "byedpi_temp.zip"
+        download_file(target_url, str(temp_zip))
         
         target_dir = Path("byedpi")
         target_dir.mkdir(parents=True, exist_ok=True)
@@ -179,10 +191,11 @@ def update_tor():
         stable_links = [l for l in links if "a" not in l.split('/')[-2]]
         download_url = stable_links[0] if stable_links else links[0]
         
-        temp_tar = "tor_temp.tar.gz"
-        download_file(download_url, temp_tar)
+        TEMP_DIR.mkdir(parents=True, exist_ok=True)
+        temp_tar = TEMP_DIR / "tor_temp.tar.gz"
+        download_file(download_url, str(temp_tar))
         
-        temp_ext = Path("tor_temp_ext")
+        temp_ext = TEMP_DIR / "tor_temp_ext"
         if temp_ext.exists():
             shutil.rmtree(temp_ext)
         temp_ext.mkdir(parents=True, exist_ok=True)
@@ -268,11 +281,11 @@ def add_to_zip(zipf, rel_path, arc_prefix=PROJECT_NAME):
 
 def build_python_zip():
     """Сборка Python-версии архива"""
-    os.makedirs("releases", exist_ok=True)
-    output_zip = os.path.join("releases", f"{PROJECT_NAME}-python_amd64.zip")
+    RELEASES_DIR.mkdir(parents=True, exist_ok=True)
+    output_zip = RELEASES_DIR / f"{PROJECT_NAME}-python_amd64.zip"
     print(f"\n[СБОРКА] Формирование Python-релиза -> {output_zip}...")
     
-    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    with zipfile.ZipFile(str(output_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
         # Корневые файлы
         root_files = ["main.pyw", "icon.ico", "launch.bat", "README.md", "Toinet.ppx"]
         for rf in root_files:
@@ -307,18 +320,23 @@ def build_python_zip():
             
     size_mb = os.path.getsize(output_zip) / (1024 * 1024)
     print(f"[УСПЕХ] Python-релиз собран: {output_zip} ({size_mb:.1f} МБ)")
-    return output_zip
+    return str(output_zip)
 
 
 def compile_exe():
     """Компиляция ToInet.exe через PyInstaller со всеми вшитыми модулями"""
     print("\n[СБОРКА] Компиляция ToInet.exe через PyInstaller...")
-    workpath = "pyinstaller_build"
-    distpath = "dist"
+    workpath = WORK_DIR
+    distpath = DIST_DIR
     
-    if os.path.exists(workpath):
+    if workpath.exists():
         try:
             shutil.rmtree(workpath)
+        except Exception:
+            pass
+    if distpath.exists():
+        try:
+            shutil.rmtree(distpath)
         except Exception:
             pass
 
@@ -327,9 +345,11 @@ def compile_exe():
         "--name", "ToInet",
         "--onefile",
         "--windowed",
-        "--icon", "icon.ico",
-        "--workpath", workpath,
-        "--distpath", distpath,
+        "--icon", str((BASE_DIR / "icon.ico").resolve()),
+        "--workpath", str(workpath),
+        "--distpath", str(distpath),
+        "--specpath", str(BUILD_DIR),
+        "--paths", str(BASE_DIR),
         "--noconfirm",
         "--clean",
     ]
@@ -358,35 +378,37 @@ def compile_exe():
     sep = ";" if os.name == "nt" else ":"
     dirs_to_add = ["ui", "managers", "server", "evpn", "tgws", "byedpi"]
     for d in dirs_to_add:
-        if os.path.exists(d):
-            cmd.extend(["--add-data", f"{d}{sep}{d}"])
+        src_path = (BASE_DIR / d).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}{d}"])
             
     for rf in ("icon.ico", "Toinet.ppx"):
-        if os.path.exists(rf):
-            cmd.extend(["--add-data", f"{rf}{sep}."])
+        src_path = (BASE_DIR / rf).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}."])
             
-    cmd.append("main.pyw")
+    cmd.append(str((BASE_DIR / "main.pyw").resolve()))
     
     subprocess.check_call(cmd)
     
-    exe_path = os.path.join(distpath, "ToInet.exe")
-    if not os.path.exists(exe_path):
+    exe_path = distpath / "ToInet.exe"
+    if not exe_path.exists():
         raise FileNotFoundError(f"EXE файл не был создан по пути {exe_path}!")
         
     exe_size_mb = os.path.getsize(exe_path) / (1024 * 1024)
     print(f"  -> Исполняемый файл создан: {exe_path} ({exe_size_mb:.1f} МБ)")
-    return exe_path
+    return str(exe_path)
 
 
 def build_portable_zip(compiled_exe_path):
     """Сборка Portable-версии архива"""
-    os.makedirs("releases", exist_ok=True)
-    output_zip = os.path.join("releases", f"{PROJECT_NAME}-portable_amd64.zip")
+    RELEASES_DIR.mkdir(parents=True, exist_ok=True)
+    output_zip = RELEASES_DIR / f"{PROJECT_NAME}-portable_amd64.zip"
     print(f"\n[СБОРКА] Формирование Portable-релиза -> {output_zip}...")
     
-    with zipfile.ZipFile(output_zip, 'w', zipfile.ZIP_DEFLATED) as zipf:
+    with zipfile.ZipFile(str(output_zip), 'w', zipfile.ZIP_DEFLATED) as zipf:
         # Сам скомпилированный бинарник
-        zipf.write(compiled_exe_path, os.path.join(PROJECT_NAME, "ToInet.exe"))
+        zipf.write(str(compiled_exe_path), os.path.join(PROJECT_NAME, "ToInet.exe"))
         
         # Корневые файлы для Portable
         for rf in ["icon.ico", "README.md", "Toinet.ppx"]:
@@ -396,10 +418,12 @@ def build_portable_zip(compiled_exe_path):
         portable_bat_content = "@echo off\r\ncd /d \"%~dp0\"\r\nstart \"\" ToInet.exe\r\n"
         zipf.writestr(f"{PROJECT_NAME}/launch.bat", portable_bat_content)
         
-        # Стратегии и списки сайтов ByeDPI
+        # Стратегии и списки сайтов zDPI
         for bf in glob.glob("byedpi/*.txt"):
             add_to_zip(zipf, bf)
         add_to_zip(zipf, "byedpi/ciadpi.exe")
+        add_to_zip(zipf, "byedpi/zdpi.exe")
+        add_to_zip(zipf, "byedpi/zdpi_ml_optimizer.py")
         add_to_zip(zipf, "byedpi/byedpi_router.py")
         
         # Ресурсы sing-box, Tor, Opera, базы
@@ -427,21 +451,21 @@ def build_portable_zip(compiled_exe_path):
             
     size_mb = os.path.getsize(output_zip) / (1024 * 1024)
     print(f"[УСПЕХ] Portable-релиз собран: {output_zip} ({size_mb:.1f} МБ)")
-    return output_zip
+    return str(output_zip)
 
 
 def build_onefile_release():
     """Сборка One-File версии: единый полностью самодостаточный EXE файл со всеми бинарниками и ресурсами"""
-    os.makedirs("releases", exist_ok=True)
+    RELEASES_DIR.mkdir(parents=True, exist_ok=True)
     exe_name = f"{PROJECT_NAME}-one_file_amd64.exe"
-    output_exe = os.path.join("releases", exe_name)
+    output_exe = RELEASES_DIR / exe_name
     print(f"\n[СБОРКА] Компиляция One-File релиза -> {output_exe}...")
     
-    workpath = "pyinstaller_build_onefile"
-    distpath = "pyinstaller_dist_onefile"
+    workpath = WORK_ONEFILE_DIR
+    distpath = DIST_ONEFILE_DIR
     
     for p in (workpath, distpath):
-        if os.path.exists(p):
+        if p.exists():
             try:
                 shutil.rmtree(p)
             except Exception:
@@ -452,9 +476,11 @@ def build_onefile_release():
         "--name", f"{PROJECT_NAME}-one_file_amd64",
         "--onefile",
         "--windowed",
-        "--icon", "icon.ico",
-        "--workpath", workpath,
-        "--distpath", distpath,
+        "--icon", str((BASE_DIR / "icon.ico").resolve()),
+        "--workpath", str(workpath),
+        "--distpath", str(distpath),
+        "--specpath", str(BUILD_DIR),
+        "--paths", str(BASE_DIR),
         "--noconfirm",
         "--clean",
     ]
@@ -484,14 +510,15 @@ def build_onefile_release():
     # Модули и код
     dirs_to_add = ["ui", "managers", "server", "evpn", "tgws", "byedpi"]
     for d in dirs_to_add:
-        if os.path.exists(d):
-            cmd.extend(["--add-data", f"{d}{sep}{d}"])
+        src_path = (BASE_DIR / d).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}{d}"])
             
     # Внешние бинарники (bin, tor)
-    if os.path.exists("bin"):
-        cmd.extend(["--add-data", f"bin{sep}bin"])
-    if os.path.exists("tor"):
-        cmd.extend(["--add-data", f"tor{sep}tor"])
+    for bdir in ("bin", "tor"):
+        src_path = (BASE_DIR / bdir).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}{bdir}"])
         
     # Данные и базы
     data_files = [
@@ -503,24 +530,27 @@ def build_onefile_release():
         "data/telegram.png",
     ]
     for df in data_files:
-        if os.path.exists(df):
-            cmd.extend(["--add-data", f"{df}{sep}data"])
+        src_path = (BASE_DIR / df).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}data"])
             
     # Подписки evpn
-    if os.path.exists("evpn/subs.txt"):
-        cmd.extend(["--add-data", f"evpn/subs.txt{sep}evpn"])
+    subs_path = (BASE_DIR / "evpn/subs.txt").resolve()
+    if subs_path.exists():
+        cmd.extend(["--add-data", f"{subs_path}{sep}evpn"])
         
     # Корневые ресурсы
     for rf in ("icon.ico", "Toinet.ppx", "README.md"):
-        if os.path.exists(rf):
-            cmd.extend(["--add-data", f"{rf}{sep}."])
+        src_path = (BASE_DIR / rf).resolve()
+        if src_path.exists():
+            cmd.extend(["--add-data", f"{src_path}{sep}."])
             
-    cmd.append("main.pyw")
+    cmd.append(str((BASE_DIR / "main.pyw").resolve()))
     
     subprocess.check_call(cmd)
     
-    built_exe = os.path.join(distpath, f"{PROJECT_NAME}-one_file_amd64.exe")
-    if not os.path.exists(built_exe):
+    built_exe = distpath / f"{PROJECT_NAME}-one_file_amd64.exe"
+    if not built_exe.exists():
         raise FileNotFoundError(f"EXE файл One-File не был создан по пути {built_exe}!")
         
     shutil.copy2(built_exe, output_exe)
@@ -532,7 +562,7 @@ def build_onefile_release():
         
     size_mb = os.path.getsize(output_exe) / (1024 * 1024)
     print(f"[УСПЕХ] One-File релиз собран: {output_exe} ({size_mb:.1f} МБ)")
-    return output_exe
+    return str(output_exe)
 
 
 def clean_temp_files():
@@ -543,10 +573,27 @@ def clean_temp_files():
             print(f"Удален временный файл: {pf}")
         except Exception:
             pass
-    for temp_dir in ("pyinstaller_build_onefile", "pyinstaller_dist_onefile"):
-        if os.path.exists(temp_dir):
+    # Очистка устаревших папок сборки в корне, если они остались
+    for legacy_dir in ("pyinstaller_build", "pyinstaller_build_onefile", "pyinstaller_dist_onefile", "dist", "releases"):
+        p = BASE_DIR / legacy_dir
+        if p.exists():
             try:
-                shutil.rmtree(temp_dir)
+                shutil.rmtree(p)
+            except Exception:
+                pass
+    for spec_file in ("ToInet-MAX-one_file_amd64.spec", "ToInet.spec"):
+        p = BASE_DIR / spec_file
+        if p.exists():
+            try:
+                os.remove(p)
+            except Exception:
+                pass
+    # Очистка временных папок сборки внутри build
+    for build_sub in ("work", "work_onefile", "dist_onefile", "temp"):
+        p = BUILD_DIR / build_sub
+        if p.exists():
+            try:
+                shutil.rmtree(p)
             except Exception:
                 pass
     evpn_junk = [

@@ -12,9 +12,10 @@ pyinstaller_build/
 pyinstaller_build_onefile/
 pyinstaller_dist_onefile/
 *.spec
-!ToInet.spec
 releases/
 .dev/
+*.o
+*.obj
 
 # Executables and Binaries
 *.exe

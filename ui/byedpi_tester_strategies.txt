@@ -1,3 +1,20 @@
+# --- zDPI & Zapret2 Core Strategies (пресеты и стратегии Zapret2) ---
+--dpi-desync=fake,split2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,split2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=kyber --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,disorder2 --dpi-desync-split-pos=1 --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,split2 --dpi-desync-split-pos=sniext --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld --dpi-desync-fake-tls=kyber --dpi-desync-ttl=4 --quic-drop
+--dpi-desync=fakedsplit --dpi-desync-split-pos=midsld --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,tlsrec --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=tlsrec --dpi-desync-split-pos=midsld --quic-drop
+--dpi-desync=fake,disorder2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=2 --quic-drop
+--dpi-desync=fake,split2 --dpi-desync-split-pos=sni --dpi-desync-fake-tls=rutracker --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,multisplit --dpi-desync-split-pos=1,sniext,midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop
+--dpi-desync=fake,disorder --dpi-desync-split-pos=sniext --dpi-desync-fake-tls=kyber --dpi-desync-ttl=3 --quic-drop
+-s midsld -f midsld -r midsld -t 3 --quic-drop
+-s sniext -f 1 -r sniext -t 4 --quic-drop
+-d midsld -f 1 -t 3 --quic-drop
+# --- ByeDPI Legacy Strategies ---
 # Список стратегий ByeDPI для тестирования
 # Вы можете добавлять или удалять стратегии вручную
 

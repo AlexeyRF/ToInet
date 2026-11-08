@@ -130,7 +130,7 @@ def _update_menu_impl_unsafe():
                 m.tray_menu.addAction(tor_cpl)
             
             if m.byedpi_manager.is_running() or m.mode_mgr.inetcpl_bd_active:
-                bd_cpl = QAction(m.T("Подключиться к BD", "Connect to BD") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от BD", "Disconnect from BD"), m.tray_menu)
+                bd_cpl = QAction(m.T("Подключиться к zDPI", "Connect to zDPI") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от zDPI", "Disconnect from zDPI"), m.tray_menu)
                 bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
                 m.tray_menu.addAction(bd_cpl)
             
@@ -191,7 +191,7 @@ def _update_menu_impl_unsafe():
         tor_wa = create_service_action(control_menu, "TOR", m.tor_manager.is_running(), m.toggle_tor, m.tor_manager.restart, is_tor=True)
         control_menu.addAction(tor_wa)
         
-        bd_wa = create_service_action(control_menu, "ByeDPI", m.byedpi_manager.is_running(), m.toggle_byedpi, lambda: (m.byedpi_manager.stop(), time.sleep(1), m.byedpi_manager.start()))
+        bd_wa = create_service_action(control_menu, "zDPI", m.byedpi_manager.is_running(), m.toggle_byedpi, lambda: (m.byedpi_manager.stop(), time.sleep(1), m.byedpi_manager.start()))
         control_menu.addAction(bd_wa)
         
         # def vless_restart_handler():
@@ -250,7 +250,7 @@ def _update_menu_impl_unsafe():
         settings_menu = QMenu(m.T("Настройки компонентов", "Component Settings", "Paramètres des composants"), m.tray_menu)
         settings_menu.addAction(m.T("Настройки TOR", "TOR Settings", "Paramètres TOR"), m.tor_manager.open_settings)
         
-        settings_menu.addAction(m.T("Настройки BD", "BD Settings", "Paramètres ByeDPI"), m.byedpi_manager.open_settings)
+        settings_menu.addAction(m.T("Настройки zDPI", "zDPI Settings", "Paramètres zDPI"), m.byedpi_manager.open_settings)
         settings_menu.addAction(m.T("Настройки SSH Туннеля", "SSH Tunnel Settings", "Paramètres du tunnel SSH"), m.ssh_mgr.open_settings)
         # settings_menu.addAction(m.T("Настройки VLESS", "VLESS Settings"), lambda: m.utils.run_script("evpn/vless_settings.pyw"))
         # settings_menu.addAction(m.T("Настройки Opera Proxy", "Opera Proxy Settings"), m.opera_mgr.open_settings)
@@ -272,7 +272,6 @@ def _update_menu_impl_unsafe():
             tg_menu.addAction(m.T("Добавить TGWS MTProto (1480) в Telegram", "Add TGWS MTProto (1480) to Telegram"), lambda: m.utils.add_mtproto_to_telegram(m.config.get("tgws_port", 1480), m.config.get("tgws_secret", "0"*32), m.config.get("tgws_fake_tls", "")))
             tg_menu.addAction(m.T("Добавить Шлюз Gatik (1777) в Telegram", "Add Smart Router (1777) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1777))
         tg_menu.addAction(m.T("Добавить TOR (9853) в Telegram", "Add TOR (9853) to Telegram"), lambda: m.utils.add_proxy_to_telegram(9853))
-        tg_menu.addAction(m.T("Добавить BD (1780) в Telegram", "Add BD (1780) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1780))
         ssh_port_val = int(m.config.get("ssh_socks_port", 1770))
         tg_menu.addAction(m.T(f"Добавить SSH ({ssh_port_val}) в Telegram", f"Add SSH ({ssh_port_val}) to Telegram"), lambda: m.utils.add_proxy_to_telegram(int(m.config.get("ssh_socks_port", 1770))))
         # tg_menu.addAction(m.T("Добавить VLESS (1790) в Telegram", "Add VLESS (1790) to Telegram"), lambda: m.utils.add_proxy_to_telegram(1790))
@@ -287,7 +286,7 @@ def _update_menu_impl_unsafe():
         pip_enabled_act.setCheckable(True)
         pip_enabled_act.setChecked(m.config.get("byedpi_pip_enabled", False))
         
-        pip_use_tor_act = QAction(m.T("Использовать TOR вместо ByeDPI", "Use TOR Instead of ByeDPI"), pip_menu)
+        pip_use_tor_act = QAction(m.T("Использовать TOR вместо zDPI", "Use TOR Instead of zDPI"), pip_menu)
         pip_use_tor_act.setCheckable(True)
         pip_use_tor_act.setChecked(m.config.get("byedpi_pip_use_tor", False))
         pip_use_tor_act.setEnabled(m.config.get("byedpi_pip_enabled", False))
@@ -329,7 +328,7 @@ def _update_menu_impl_unsafe():
         
         pip_menu.addAction(pip_enabled_act)
         pip_menu.addAction(pip_use_tor_act)
-        pip_menu.addAction(m.T("Настройки ByeDPI для pip", "ByeDPI Settings for pip"), lambda: m.bdsher.get_pip_manager(m.config).open_settings())
+        pip_menu.addAction(m.T("Настройки zDPI для pip", "zDPI Settings for pip"), lambda: m.bdsher.get_pip_manager(m.config).open_settings())
         
         # 6. Системные опции
 

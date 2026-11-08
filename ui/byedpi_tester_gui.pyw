@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
                              QHBoxLayout, QLabel, QLineEdit, QPushButton, 
                              QListWidget, QListWidgetItem, QTableWidget, QTableWidgetItem, 
                              QHeaderView, QProgressBar, QSpinBox, QDoubleSpinBox, 
-                             QGroupBox, QFileDialog, QMessageBox)
+                             QGroupBox, QFileDialog, QMessageBox, QTabWidget)
 from PySide6.QtGui import QIcon, QFont, QColor
 from PySide6.QtCore import Qt, QThread, Signal
 
@@ -35,6 +35,16 @@ if getattr(sys, 'frozen', False):
     SCRIPT_DIR = os.path.dirname(sys.executable)
 else:
     SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# Import ML Optimizer
+try:
+    from ui.zdpi_ml_optimizer import ZDPIMLOptimizer, HAS_SKLEARN
+except ImportError:
+    try:
+        from zdpi_ml_optimizer import ZDPIMLOptimizer, HAS_SKLEARN
+    except ImportError:
+        ZDPIMLOptimizer = None
+        HAS_SKLEARN = False
 
 # Optional ToInet-MAX integration fallbacks
 try:
@@ -58,19 +68,24 @@ except ImportError:
 # Smart binary locator
 def find_ciadpi_executable():
     candidates = [
+        os.path.join(SCRIPT_DIR, "zdpi.exe"),
         os.path.join(SCRIPT_DIR, "ciadpi.exe"),
+        os.path.join(SCRIPT_DIR, "byedpi", "zdpi.exe"),
         os.path.join(SCRIPT_DIR, "byedpi", "ciadpi.exe"),
+        os.path.join(os.path.dirname(SCRIPT_DIR), "byedpi", "zdpi.exe"),
         os.path.join(os.path.dirname(SCRIPT_DIR), "byedpi", "ciadpi.exe"),
+        os.path.join(os.path.dirname(SCRIPT_DIR), "zdpi.exe"),
+        r"C:\Program Files\zdpi\zdpi.exe",
         r"C:\Program Files\byedpi\ciadpi.exe",
         r"C:\Program Files (x86)\byedpi\ciadpi.exe",
     ]
-    which_bin = shutil.which("ciadpi.exe") or shutil.which("ciadpi")
+    which_bin = shutil.which("zdpi.exe") or shutil.which("ciadpi.exe") or shutil.which("ciadpi")
     if which_bin:
         candidates.insert(0, which_bin)
     for c in candidates:
         if os.path.isfile(c):
             return os.path.normpath(c)
-    return os.path.join(SCRIPT_DIR, "ciadpi.exe")
+    return os.path.join(SCRIPT_DIR, "zdpi.exe")
 
 BYEDPI_EXE_DEFAULT = find_ciadpi_executable()
 
@@ -138,8 +153,23 @@ GENERAL_SITES = [
 
 DEFAULT_SITES = GENERAL_SITES + YOUTUBE_SITES + GOOGLEVIDEO_SITES
 
-# --- Embedded Curated Strategies (Cleaned of Linux-only -S/-Y, 100% verified for Windows ciadpi) ---
+# --- Embedded Curated Strategies (zDPI / Zapret2 & ByeDPI) ---
 DEFAULT_STRATEGIES = [
+    '--dpi-desync=fake,split2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,split2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=kyber --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,disorder2 --dpi-desync-split-pos=1 --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,split2 --dpi-desync-split-pos=sniext --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,multisplit --dpi-desync-split-pos=1,midsld --dpi-desync-fake-tls=kyber --dpi-desync-ttl=4 --quic-drop',
+    '--dpi-desync=fakedsplit --dpi-desync-split-pos=midsld --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,tlsrec --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=tlsrec --dpi-desync-split-pos=midsld --quic-drop',
+    '--dpi-desync=fake,disorder2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=2 --quic-drop',
+    '--dpi-desync=fake,split2 --dpi-desync-split-pos=sni --dpi-desync-fake-tls=rutracker --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,multisplit --dpi-desync-split-pos=1,sniext,midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop',
+    '--dpi-desync=fake,disorder --dpi-desync-split-pos=sniext --dpi-desync-fake-tls=kyber --dpi-desync-ttl=3 --quic-drop',
+    '-s midsld -f midsld -r midsld -t 3 --quic-drop',
+    '-s sniext -f 1 -r sniext -t 4 --quic-drop',
+    '-d midsld -f 1 -t 3 --quic-drop',
     '-f-200 -Qr -s3:5+sm -a1 -As -d1 -s4+sm -s8+s -f-300 -d6+s -a1 -At,r,s -o2 -f-30 -As -r5 -Mh -r6+s -f-250 -s2:7+s -s3:6+sm -a1 -At,r,s -s3:5+sm -s6+s -s7:9+s -q30+sm -a1',
     '-d1 -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -r1+s -a1 -As -d1 -d3+s -s6+s -d9+s -s12+s -d15+s -s20+s -d25+s -s30+s -d35+s -a1',
     '-q2 -s2 -s3+s -r3 -s4 -r4 -s5+s -r5+s -s6 -s7+s -r8 -s9+s -Qr -Mh,d,r -a1 -At,r -s2+s -r2 -d2 -s3 -r3 -r4 -s4 -d5+s -r5 -d6 -s7+s -d7 -a1',
@@ -495,12 +525,13 @@ def ensure_port_available(ip, port):
         s = socket.create_connection((ip, port), timeout=0.2)
         s.close()
         if os.name == 'nt':
-            subprocess.run(
-                ["taskkill", "/F", "/IM", "ciadpi.exe"],
-                stdout=subprocess.DEVNULL,
-                stderr=subprocess.DEVNULL,
-                creationflags=subprocess.CREATE_NO_WINDOW
-            )
+            for proc_name in ["zdpi.exe", "ciadpi.exe"]:
+                subprocess.run(
+                    ["taskkill", "/F", "/IM", proc_name],
+                    stdout=subprocess.DEVNULL,
+                    stderr=subprocess.DEVNULL,
+                    creationflags=subprocess.CREATE_NO_WINDOW
+                )
             time.sleep(0.3)
     except (socket.error, OSError):
         pass
@@ -610,6 +641,33 @@ QPushButton#copy_btn:disabled {
     background-color: #222222;
     color: #666666;
     border-color: #2a2a2a;
+}
+QTabWidget::pane {
+    border: 1px solid #2d2d2d;
+    border-radius: 6px;
+    background-color: #222222;
+    padding: 6px;
+}
+QTabBar::tab {
+    background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-bottom: none;
+    border-top-left-radius: 4px;
+    border-top-right-radius: 4px;
+    padding: 6px 14px;
+    color: #a0a0a0;
+    font-weight: bold;
+    margin-right: 4px;
+}
+QTabBar::tab:selected {
+    background-color: #222222;
+    border-color: #2d2d2d;
+    border-bottom: 2px solid #5a8a60;
+    color: #ffffff;
+}
+QTabBar::tab:hover:!selected {
+    background-color: #333333;
+    color: #e0e0e0;
 }
 QListWidget {
     background-color: #222222;
@@ -870,6 +928,8 @@ class ByeDPITesterGUI(QMainWindow):
         super().__init__()
         self.worker = None
         self.results_data = []
+        self.ai_generated_strategies = []
+        self.ml_optimizer = ZDPIMLOptimizer() if ZDPIMLOptimizer else None
         self.load_domains()
         self.load_strategies()
         self.load_priority_sites()
@@ -963,8 +1023,8 @@ class ByeDPITesterGUI(QMainWindow):
             print(f"Ошибка сохранения приоритетных сайтов: {e}")
 
     def init_ui(self):
-        self.setWindowTitle(T("Тестер стратегий ByeByeDPI (Автономный)", "ByeByeDPI Strategies Tester (Standalone)"))
-        self.setFixedSize(1040, 720)
+        self.setWindowTitle(T("Тестер стратегий zDPI (Автономный)", "zDPI Strategies Tester (Standalone)"))
+        self.setFixedSize(1080, 730)
         self.setStyleSheet(DARK_STYLESHEET)
         
         main_widget = QWidget()
@@ -973,7 +1033,7 @@ class ByeDPITesterGUI(QMainWindow):
         main_layout.setSpacing(10)
         
         header_layout = QHBoxLayout()
-        title_lbl = QLabel("Тестер стратегий ByeByeDPI")
+        title_lbl = QLabel("Тестер стратегий zDPI")
         title_lbl.setObjectName("title_lbl")
         header_layout.addWidget(title_lbl)
         main_layout.addLayout(header_layout)
@@ -996,12 +1056,12 @@ class ByeDPITesterGUI(QMainWindow):
         
         path_layout = QHBoxLayout()
         self.path_edit = QLineEdit(BYEDPI_EXE_DEFAULT)
-        self.path_edit.setToolTip("Путь к исполняемому файлу ciadpi.exe")
+        self.path_edit.setToolTip("Путь к исполняемому файлу zdpi.exe")
         self.browse_btn = QPushButton("Обзор")
         self.browse_btn.clicked.connect(self.browse_executable)
         path_layout.addWidget(self.path_edit)
         path_layout.addWidget(self.browse_btn)
-        settings_layout.addWidget(QLabel("Путь к ciadpi.exe:"))
+        settings_layout.addWidget(QLabel("Путь к zdpi.exe:"))
         settings_layout.addLayout(path_layout)
         
         sni_port_layout = QHBoxLayout()
@@ -1129,11 +1189,15 @@ class ByeDPITesterGUI(QMainWindow):
         self.status_desc.setObjectName("status_desc_lbl")
         right_layout.addWidget(self.status_desc)
         
-        results_container = QWidget()
-        results_vlayout = QVBoxLayout()
-        results_vlayout.setContentsMargins(0, 0, 0, 0)
-        results_vlayout.setSpacing(10)
+        # Tabs: Testing Results & AI/ML Optimizer
+        self.right_tabs = QTabWidget()
         
+        # --- TAB 1: TESTING RESULTS ---
+        tab_testing = QWidget()
+        tab_test_layout = QVBoxLayout()
+        tab_test_layout.setContentsMargins(0, 5, 0, 0)
+        tab_test_layout.setSpacing(8)
+
         table_group = QGroupBox("Таблица результатов (сортировка по клику на заголовок)")
         table_layout = QVBoxLayout()
         table_layout.setContentsMargins(5, 5, 5, 5)
@@ -1153,8 +1217,8 @@ class ByeDPITesterGUI(QMainWindow):
         
         table_layout.addWidget(self.results_table)
         table_group.setLayout(table_layout)
-        table_group.setFixedHeight(300)
-        results_vlayout.addWidget(table_group)
+        table_group.setFixedHeight(270)
+        tab_test_layout.addWidget(table_group)
         
         detail_group = QGroupBox("Подробный лог доменов для выбранной стратегии")
         detail_layout = QVBoxLayout()
@@ -1164,15 +1228,11 @@ class ByeDPITesterGUI(QMainWindow):
         self.detail_list.setSelectionMode(QListWidget.NoSelection)
         detail_layout.addWidget(self.detail_list)
         detail_group.setLayout(detail_layout)
-        detail_group.setFixedHeight(180)
-        results_vlayout.addWidget(detail_group)
+        detail_group.setFixedHeight(150)
+        tab_test_layout.addWidget(detail_group)
         
-        results_container.setLayout(results_vlayout)
-        right_layout.addWidget(results_container)
-        
-        # Bottom Action Buttons
         actions_layout = QHBoxLayout()
-        self.apply_btn = QPushButton("Применить как основную стратегию ByeDPI")
+        self.apply_btn = QPushButton("Применить как основную стратегию zDPI")
         self.apply_btn.setObjectName("apply_btn")
         self.apply_btn.setEnabled(False)
         self.apply_btn.clicked.connect(self.apply_selected_strategy)
@@ -1181,10 +1241,79 @@ class ByeDPITesterGUI(QMainWindow):
         self.copy_btn.setObjectName("copy_btn")
         self.copy_btn.setEnabled(False)
         self.copy_btn.clicked.connect(self.copy_selected_command)
+
+        self.ai_quick_btn = QPushButton("🧠 Подобрать через ИИ")
+        self.ai_quick_btn.clicked.connect(lambda: (self.right_tabs.setCurrentIndex(1), self.on_generate_ai_clicked()))
         
         actions_layout.addWidget(self.apply_btn, stretch=3)
         actions_layout.addWidget(self.copy_btn, stretch=1)
-        right_layout.addLayout(actions_layout)
+        actions_layout.addWidget(self.ai_quick_btn, stretch=1)
+        tab_test_layout.addLayout(actions_layout)
+
+        tab_testing.setLayout(tab_test_layout)
+        self.right_tabs.addTab(tab_testing, "📊 Результаты тестов")
+
+        # --- TAB 2: AI / ML OPTIMIZER ---
+        tab_ml = QWidget()
+        tab_ml_layout = QVBoxLayout()
+        tab_ml_layout.setContentsMargins(0, 5, 0, 0)
+        tab_ml_layout.setSpacing(8)
+
+        ml_status_group = QGroupBox("Статус модели машинного обучения (AI Strategy Engine)")
+        ml_status_layout = QVBoxLayout()
+        
+        self.ml_status_lbl = QLabel("ИИ готов к обучению. Выполните тестирование или нажмите 'Сгенерировать'.")
+        self.ml_factors_lbl = QLabel("Факторы успеха будут рассчитаны после накопления данных тестов.")
+        self.ml_factors_lbl.setStyleSheet("color: #a8c3a8; font-style: italic;")
+        
+        ml_btn_row = QHBoxLayout()
+        self.ml_train_btn = QPushButton("🔄 Переобучить модель ИИ")
+        self.ml_train_btn.clicked.connect(self.on_retrain_ml_clicked)
+        self.ml_generate_btn = QPushButton("🧠 Сгенерировать стратегии с ИИ")
+        self.ml_generate_btn.setStyleSheet("background-color: #2b3d39; border-color: #3e5850;")
+        self.ml_generate_btn.clicked.connect(self.on_generate_ai_clicked)
+        ml_btn_row.addWidget(self.ml_train_btn)
+        ml_btn_row.addWidget(self.ml_generate_btn)
+
+        ml_status_layout.addWidget(self.ml_status_lbl)
+        ml_status_layout.addWidget(self.ml_factors_lbl)
+        ml_status_layout.addLayout(ml_btn_row)
+        ml_status_group.setLayout(ml_status_layout)
+        tab_ml_layout.addWidget(ml_status_group)
+
+        ai_table_group = QGroupBox("Стратегии, синтезированные искусственным интеллектом")
+        ai_table_layout = QVBoxLayout()
+        ai_table_layout.setContentsMargins(5, 5, 5, 5)
+
+        self.ai_table = QTableWidget(0, 4)
+        self.ai_table.setHorizontalHeaderLabels(["#", "Прогноз успеха", "Стратегия", "Обоснование ИИ"])
+        self.ai_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeToContents)
+        self.ai_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeToContents)
+        self.ai_table.horizontalHeader().setSectionResizeMode(2, QHeaderView.Stretch)
+        self.ai_table.horizontalHeader().setSectionResizeMode(3, QHeaderView.ResizeToContents)
+        self.ai_table.setSelectionBehavior(QTableWidget.SelectRows)
+        self.ai_table.setSelectionMode(QTableWidget.SingleSelection)
+        self.ai_table.setEditTriggers(QTableWidget.NoEditTriggers)
+
+        ai_table_layout.addWidget(self.ai_table)
+        ai_table_group.setLayout(ai_table_layout)
+        tab_ml_layout.addWidget(ai_table_group, stretch=3)
+
+        ai_actions_layout = QHBoxLayout()
+        self.ai_add_queue_btn = QPushButton("➕ Добавить сгенерированные в очередь тестов")
+        self.ai_add_queue_btn.clicked.connect(self.on_add_ai_to_queue_clicked)
+        self.ai_apply_btn = QPushButton("💾 Применить выбранную ИИ-стратегию")
+        self.ai_apply_btn.setObjectName("apply_btn")
+        self.ai_apply_btn.clicked.connect(self.on_apply_ai_selected_clicked)
+
+        ai_actions_layout.addWidget(self.ai_add_queue_btn, stretch=2)
+        ai_actions_layout.addWidget(self.ai_apply_btn, stretch=3)
+        tab_ml_layout.addLayout(ai_actions_layout)
+
+        tab_ml.setLayout(tab_ml_layout)
+        self.right_tabs.addTab(tab_ml, "🧠 ИИ-Оптимизатор")
+
+        right_layout.addWidget(self.right_tabs)
         
         right_widget.setLayout(right_layout)
         panels_layout.addWidget(right_widget)
@@ -1197,17 +1326,19 @@ class ByeDPITesterGUI(QMainWindow):
         self.setCentralWidget(main_widget)
         
         if not os.path.exists(self.path_edit.text()):
-            self.status_desc.setText("Внимание: Файл ciadpi.exe не найден автоматически. Пожалуйста, укажите путь кнопкой 'Обзор'.")
+            self.status_desc.setText("Внимание: Файл zdpi.exe (или ciadpi.exe) не найден автоматически. Пожалуйста, укажите путь кнопкой 'Обзор'.")
             self.path_edit.setStyleSheet("border: 1.5px solid #e74c3c;")
+
+        self.update_ml_tab_state()
 
     def browse_executable(self):
         file_path, _ = QFileDialog.getOpenFileName(
-            self, "Выберите исполняемый файл ByeDPI", "", "Executables (*.exe);;All Files (*)"
+            self, "Выберите исполняемый файл zDPI", "", "Executables (*.exe);;All Files (*)"
         )
         if file_path:
             self.path_edit.setText(os.path.normpath(file_path))
             self.path_edit.setStyleSheet("")
-            self.status_desc.setText("Путь к ByeDPI обновлен.")
+            self.status_desc.setText("Путь к zDPI обновлен.")
 
     def refresh_domains_list(self):
         self.domains_list.blockSignals(True)
@@ -1355,7 +1486,7 @@ class ByeDPITesterGUI(QMainWindow):
     def start_testing(self):
         byedpi_path = self.path_edit.text().strip()
         if not os.path.exists(byedpi_path):
-            QMessageBox.critical(self, T("Ошибка", "Error"), "Исполняемый файл ciadpi.exe не найден по указанному пути:\n%s\n\nПожалуйста, нажмите 'Обзор' и укажите ciadpi.exe." % byedpi_path)
+            QMessageBox.critical(self, T("Ошибка", "Error"), "Исполняемый файл zdpi.exe не найден по указанному пути:\n%s\n\nПожалуйста, нажмите 'Обзор' и укажите zdpi.exe." % byedpi_path)
             return
 
         if not self.domains:
@@ -1497,6 +1628,12 @@ class ByeDPITesterGUI(QMainWindow):
         self.results_data.append((strategy, success_rate, success_count, total, details))
         self.results_table.scrollToBottom()
 
+        if self.ml_optimizer:
+            try:
+                self.ml_optimizer.add_result(strategy, success_rate, pri_pct, success_count, total, details)
+            except Exception as e:
+                print(f"[zDPI ML] Log error: {e}")
+
     def refresh_results_table(self):
         self.results_table.setRowCount(0)
         for idx, (strategy, success_rate, success_count, total, details) in enumerate(self.results_data):
@@ -1624,7 +1761,169 @@ class ByeDPITesterGUI(QMainWindow):
             self.apply_btn.setEnabled(False)
             self.copy_btn.setEnabled(False)
 
+        if self.ml_optimizer:
+            try:
+                self.ml_optimizer.train_model()
+                self.update_ml_tab_state()
+            except Exception as e:
+                print(f"[zDPI ML] Train error: {e}")
+
         QMessageBox.information(self, "Проверка завершена", "Тестирование всех стратегий успешно завершено!")
+
+    def update_ml_tab_state(self):
+        if not self.ml_optimizer:
+            self.ml_status_lbl.setText("Модуль машинного обучения недоступен.")
+            return
+
+        cnt = len(self.ml_optimizer.history)
+        if cnt == 0:
+            self.ml_status_lbl.setText("В истории ML пока нет данных. Запустите тестирование, чтобы обучить модель.")
+            self.ml_factors_lbl.setText("ИИ автоматически проанализирует зависимости после завершения тестов.")
+        else:
+            self.ml_status_lbl.setText(f"Обучено на {cnt} стратегиях в базе опыта. ИИ готов к генерации.")
+            if self.ml_optimizer.top_features:
+                f_desc = []
+                names_map = {
+                    "split_pos_midsld": "midsld маркер",
+                    "has_quic_drop": "QUIC-Drop (блокировка HTTP/3)",
+                    "fake_tmpl_kyber": "Kyber Fake",
+                    "fake_tmpl_google": "Google Fake",
+                    "fake_ttl": "Оптимальный TTL",
+                    "has_tlsrec": "TLS Record split",
+                    "split_pos_sniext": "sniext маркер",
+                    "has_fake": "Поддельные пакеты (Fake)",
+                    "has_disorder": "Disorder перестановка"
+                }
+                for f_name, imp in self.ml_optimizer.top_features:
+                    ru_name = names_map.get(f_name, f_name)
+                    f_desc.append(f"{ru_name} ({imp*100:.1f}%)")
+                self.ml_factors_lbl.setText("Ключевые факторы успеха по оценке ИИ: " + ", ".join(f_desc))
+            else:
+                self.ml_factors_lbl.setText("Накапливаются данные для выявления корреляций параметров...")
+
+    def on_retrain_ml_clicked(self):
+        if not self.ml_optimizer:
+            QMessageBox.warning(self, "Ошибка", "Модуль ML не инициализирован.")
+            return
+        if len(self.ml_optimizer.history) < 2:
+            QMessageBox.information(self, "Мало данных", "Для обучения модели необходимо протестировать хотя бы 2-3 стратегии.")
+            return
+        ok = self.ml_optimizer.train_model()
+        self.update_ml_tab_state()
+        if ok:
+            QMessageBox.information(self, "Успех", f"Модель ИИ успешно обучена на {len(self.ml_optimizer.history)} тестах!")
+        else:
+            QMessageBox.warning(self, "Ошибка", "Не удалось обучить модель.")
+
+    def on_generate_ai_clicked(self):
+        if not self.ml_optimizer:
+            QMessageBox.warning(self, "Ошибка", "Модуль ML недоступен.")
+            return
+        self.ai_generated_strategies = self.ml_optimizer.generate_ai_strategies(15, self.strategies)
+        self.ai_table.setRowCount(0)
+        for idx, item in enumerate(self.ai_generated_strategies):
+            row = self.ai_table.rowCount()
+            self.ai_table.insertRow(row)
+            
+            i_idx = QTableWidgetItem(str(row + 1))
+            i_idx.setTextAlignment(Qt.AlignCenter)
+            self.ai_table.setItem(row, 0, i_idx)
+            
+            score = item["predicted_score"]
+            i_score = QTableWidgetItem(f"{score:.1f}%")
+            i_score.setTextAlignment(Qt.AlignCenter)
+            if score >= 80.0:
+                i_score.setForeground(QColor("#a8c3a8"))
+            elif score >= 50.0:
+                i_score.setForeground(QColor("#c3b5a8"))
+            else:
+                i_score.setForeground(QColor("#c3a8a8"))
+            self.ai_table.setItem(row, 1, i_score)
+            
+            i_strat = QTableWidgetItem(item["strategy"])
+            self.ai_table.setItem(row, 2, i_strat)
+            
+            i_reason = QTableWidgetItem(item.get("reason", ""))
+            i_reason.setForeground(QColor("#a0c0a0"))
+            self.ai_table.setItem(row, 3, i_reason)
+            
+        if self.ai_generated_strategies:
+            self.ai_table.selectRow(0)
+            self.status_desc.setText(f"ИИ сгенерировал {len(self.ai_generated_strategies)} оптимизированных стратегий.")
+        else:
+            self.status_desc.setText("ИИ не нашел новых стратегий. Запустите тесты для расширения опыта.")
+
+    def on_add_ai_to_queue_clicked(self):
+        if not self.ai_generated_strategies:
+            QMessageBox.information(self, "Нет стратегий", "Сначала нажмите 'Сгенерировать стратегии с ИИ'.")
+            return
+        added = 0
+        for item in self.ai_generated_strategies:
+            strat = item["strategy"]
+            if strat not in self.strategies:
+                self.strategies.append(strat)
+                added += 1
+        self.save_strategies()
+        self.status_desc.setText(f"Добавлено {added} ИИ-стратегий в очередь тестирования (всего: {len(self.strategies)}).")
+        QMessageBox.information(self, "Добавлено", f"Успешно добавлено {added} новых стратегий от ИИ в список тестирования!\nТеперь вы можете запустить проверку.")
+        self.right_tabs.setCurrentIndex(0)
+
+    def on_apply_ai_selected_clicked(self):
+        selected = self.ai_table.selectedRanges()
+        if not selected:
+            QMessageBox.warning(self, "Выберите стратегию", "Пожалуйста, выберите строку в таблице сгенерированных стратегий.")
+            return
+        row = selected[0].topRow()
+        if row >= len(self.ai_generated_strategies):
+            return
+        strat = self.ai_generated_strategies[row]["strategy"]
+        
+        sni = self.sni_edit.text().strip()
+        final_params = strat.replace("{sni}", sni)
+        if not any(arg in final_params.split() for arg in ['-p', '--port']) and not any(arg.startswith('-p') and len(arg) > 2 and arg[2].isdigit() for arg in final_params.split()):
+            final_params = "-p 1780 " + final_params
+            
+        exe_path = self.path_edit.text().strip()
+        full_cmd = f'"{exe_path}" {final_params}'
+        QApplication.clipboard().setText(full_cmd)
+        
+        saved = False
+        try:
+            config = None
+            if config_manager:
+                config = config_manager.load_config()
+            else:
+                for c_path in [
+                    os.path.join(SCRIPT_DIR, "data", "config.json"),
+                    os.path.join(SCRIPT_DIR, "config.json"),
+                    os.path.join(os.path.dirname(SCRIPT_DIR), "data", "config.json"),
+                    os.path.join(os.path.dirname(SCRIPT_DIR), "config.json")
+                ]:
+                    if os.path.exists(c_path):
+                        with open(c_path, 'r', encoding='utf-8') as f:
+                            config = json.load(f)
+                            break
+            if config is not None:
+                config["use_custom_settings"] = True
+                config["byedpi_params"] = final_params
+                if config_manager:
+                    config_manager.save_config(config)
+                saved = True
+                try:
+                    from managers import bdsher
+                    mgr = bdsher.get_manager(config)
+                    mgr.update_config(config)
+                except Exception:
+                    pass
+        except Exception as e:
+            print(f"Config save error: {e}")
+            
+        msg = f"ИИ-стратегия успешно применена!\n\nПараметры:\n{final_params}\n\n"
+        if saved:
+            msg += "Параметры сохранены в конфигурацию ToInet-MAX."
+        else:
+            msg += "Команда запуска скопирована в буфер обмена."
+        QMessageBox.information(self, "ИИ-стратегия применена", msg)
 
     def on_testing_error(self, err_msg):
         QMessageBox.critical(self, T("Ошибка", "Error"), "Произошла ошибка при тестировании:\n%s" % err_msg)
@@ -1776,7 +2075,7 @@ class ByeDPITesterGUI(QMainWindow):
         if saved_to_project:
             msg += "Также параметры сохранены в конфигурационный файл ToInet-MAX."
         else:
-            msg += "Вы можете вставить эту команду в командную строку или ярлык запуска ciadpi."
+            msg += "Вы можете вставить эту команду в командную строку или ярлык запуска zdpi."
             
         QMessageBox.information(self, "Стратегия применена", msg)
 

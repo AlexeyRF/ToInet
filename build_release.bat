@@ -12,5 +12,5 @@ if %ERRORLEVEL% NEQ 0 (
     exit /b %ERRORLEVEL%
 )
 echo.
-echo [ГОТОВО] Сборка успешно завершена! Файлы и архивы в папке releases/
+echo [ГОТОВО] Сборка успешно завершена! Файлы и архивы в папке build\releases\
 pause

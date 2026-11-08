@@ -45,8 +45,7 @@
 
 ## English
 
-**ToInet-MAX** is an all-in-one anti-censorship launcher and network routing manager for Windows.  
-An [Android version](https://github.com/AlexeyRF/ToInet-Mobile) is also available.
+**ToInet-MAX** is an all-in-one anti-censorship launcher and network routing manager for Windows.
 
 Engineered for open Internet access while **maximizing bandwidth savings on your personal VPS**: data-heavy traffic (video streaming, media, web) is unblocked locally or via public gateways, reserving your private VPS tunnel only for essential needs.
 
@@ -81,8 +80,7 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 
 ## Français
 
-**ToInet-MAX** est un gestionnaire universel d'outils de contournement de la censure et de routage réseau pour Windows.  
-Une [version Android](https://github.com/AlexeyRF/ToInet-Mobile) est également disponible.
+**ToInet-MAX** est un gestionnaire universel d'outils de contournement de la censure et de routage réseau pour Windows.
 
 Conçu pour restaurer un accès libre à Internet tout en **préservant au maximum le quota de bande passante de votre propre VPS** : les contenus volumineux (vidéos, streaming, web) sont débloqués localement ou via des passerelles publiques, tandis que le tunnel vers votre serveur privé n'est sollicité qu'en cas de nécessité.
 
