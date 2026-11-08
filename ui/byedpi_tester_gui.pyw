@@ -873,10 +873,29 @@ class WorkerThread(QThread):
                         sys.executable, "-m", "pip", "download",
                         "--proxy", f"socks5://127.0.0.1:{p_port}",
                         "--no-cache-dir",
+                        "--disable-pip-version-check",
+                        "--no-input",
+                        "--retries", "1",
                         "--dest", temp_dir,
                         "pytz",
                         "--only-binary=:all:"
                     ]
+                    
+                    # Detect support for --use-deprecated=legacy-certs (fixes Python 3.14+ / pip 24.2+ SOCKS proxy bug)
+                    if not hasattr(self, "_pip_supports_legacy_certs"):
+                        try:
+                            chk = subprocess.run(
+                                [sys.executable, "-m", "pip", "--use-deprecated=legacy-certs", "--version"],
+                                stdout=subprocess.DEVNULL,
+                                stderr=subprocess.DEVNULL,
+                                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+                            )
+                            self._pip_supports_legacy_certs = (chk.returncode == 0)
+                        except Exception:
+                            self._pip_supports_legacy_certs = False
+                    
+                    if getattr(self, "_pip_supports_legacy_certs", False):
+                        cmd.insert(4, "--use-deprecated=legacy-certs")
                     
                     result = subprocess.run(
                         cmd,
@@ -891,9 +910,14 @@ class WorkerThread(QThread):
                         pip_msg = "Успешное скачивание pytz через pip!"
                     else:
                         err_str = result.stderr.decode('utf-8', errors='ignore').strip()
-                        if len(err_str) > 100:
-                            err_str = err_str[:100] + "..."
-                        pip_msg = f"Ошибка pip: {err_str}"
+                        meaningful_lines = [
+                            l.strip() for l in err_str.splitlines()
+                            if l.strip() and not l.strip().startswith("WARNING:") and not l.strip().startswith("Traceback") and not l.strip().startswith("File ")
+                        ]
+                        summary_err = meaningful_lines[-1] if meaningful_lines else err_str
+                        if len(summary_err) > 120:
+                            summary_err = summary_err[:120] + "..."
+                        pip_msg = f"Ошибка pip: {summary_err}"
                 except subprocess.TimeoutExpired:
                     pip_msg = "Таймаут скачивания через pip (15 сек)"
                 except Exception as e:

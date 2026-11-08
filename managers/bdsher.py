@@ -364,6 +364,8 @@ def set_pip_proxy(proxy_url):
     if "global" not in config:
         config["global"] = {}
     config["global"]["proxy"] = proxy_url
+    if "socks" in str(proxy_url).lower():
+        config["global"]["use-deprecated"] = "legacy-certs"
     
     try:
         with open(pip_ini, "w", encoding="utf-8") as f:
@@ -404,8 +406,11 @@ def clear_pip_proxy():
     config = configparser.ConfigParser()
     try:
         config.read(pip_ini, encoding="utf-8")
-        if "global" in config and "proxy" in config["global"]:
-            del config["global"]["proxy"]
+        if "global" in config:
+            if "proxy" in config["global"]:
+                del config["global"]["proxy"]
+            if config["global"].get("use-deprecated") == "legacy-certs":
+                del config["global"]["use-deprecated"]
             if not config["global"]:
                 config.remove_section("global")
             with open(pip_ini, "w", encoding="utf-8") as f:
