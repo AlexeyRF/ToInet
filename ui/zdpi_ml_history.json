@@ -1,12 +1,12 @@
 [
   {
     "strategy": "--dpi-desync=fake,split2 --dpi-desync-split-pos=midsld --dpi-desync-fake-tls=google --dpi-desync-ttl=3 --quic-drop",
-    "overall_pct": 7.894736842105263,
+    "overall_pct": 10.526315789473683,
     "priority_pct": 8.0,
-    "score": 7.968421052631578,
-    "success_count": 3,
+    "score": 8.757894736842104,
+    "success_count": 4,
     "total_sites": 38,
-    "timestamp": 1794134176.8921733,
+    "timestamp": 1794136057.5304868,
     "features": [
       1.0,
       3.0,
