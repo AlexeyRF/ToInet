@@ -22,7 +22,7 @@ extern Stats g_stats;
 
 // Re-encryption bridge between client socket and upstream RawWebSocket
 void bridge_ws_reencrypt(SOCKET client_sock,
-                         bool is_fake_tls,
+                         std::shared_ptr<FakeTlsStream> tls_stream,
                          RawWebSocket& ws,
                          CryptoCtx& ctx,
                          MsgSplitter* splitter,
@@ -30,7 +30,7 @@ void bridge_ws_reencrypt(SOCKET client_sock,
 
 // Re-encryption bridge between client socket and remote TCP socket (used for Tor/TCP fallback)
 void bridge_tcp_reencrypt(SOCKET client_sock,
-                          bool is_fake_tls,
+                          std::shared_ptr<FakeTlsStream> tls_stream,
                           SOCKET remote_sock,
                           CryptoCtx& ctx,
                           const std::string& label);

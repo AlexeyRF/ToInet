@@ -14,7 +14,7 @@ FallbackManager::FallbackManager(const ProxyConfig& cfg) : config(cfg) {
 }
 
 bool FallbackManager::execute_fallback(SOCKET client_sock,
-                                      bool is_fake_tls,
+                                      std::shared_ptr<FakeTlsStream> tls_stream,
                                       const std::vector<uint8_t>& relay_init,
                                       int dc, bool is_test_dc, bool is_media,
                                       CryptoCtx& ctx, MsgSplitter* splitter,
@@ -24,28 +24,28 @@ bool FallbackManager::execute_fallback(SOCKET client_sock,
 
     // 1. Cloudflare Worker fallback
     if (!config.cfproxy_worker_domains.empty() && !fallback_dst.empty()) {
-        if (try_cf_worker(client_sock, is_fake_tls, relay_init, dc, is_media, fallback_dst, ctx, splitter, label)) {
+        if (try_cf_worker(client_sock, tls_stream, relay_init, dc, is_media, fallback_dst, ctx, splitter, label)) {
             return true;
         }
     }
 
     // 2. Cloudflare Proxy fallback
     if (config.fallback_cfproxy && !is_test_dc) {
-        if (try_cf_proxy(client_sock, is_fake_tls, relay_init, dc, is_media, ctx, splitter, label)) {
+        if (try_cf_proxy(client_sock, tls_stream, relay_init, dc, is_media, ctx, splitter, label)) {
             return true;
         }
     }
 
     // 3. Tor SOCKS5 fallback
     if (!fallback_dst.empty()) {
-        if (try_tor_socks5(client_sock, is_fake_tls, relay_init, dc, fallback_dst, 443, ctx, label)) {
+        if (try_tor_socks5(client_sock, tls_stream, relay_init, dc, fallback_dst, 443, ctx, label)) {
             return true;
         }
     }
 
     // 4. Direct TCP fallback
     if (!fallback_dst.empty()) {
-        if (try_direct_tcp(client_sock, is_fake_tls, relay_init, dc, fallback_dst, 443, ctx, label)) {
+        if (try_direct_tcp(client_sock, tls_stream, relay_init, dc, fallback_dst, 443, ctx, label)) {
             return true;
         }
     }
@@ -53,7 +53,7 @@ bool FallbackManager::execute_fallback(SOCKET client_sock,
     return false;
 }
 
-bool FallbackManager::try_cf_worker(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+bool FallbackManager::try_cf_worker(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                                     int dc, bool is_media, const std::string& dst, CryptoCtx& ctx, MsgSplitter* splitter,
                                     const std::string& label) {
     for (const auto& worker : config.cfproxy_worker_domains) {
@@ -67,7 +67,7 @@ bool FallbackManager::try_cf_worker(SOCKET client_sock, bool is_fake_tls, const 
                 std::cout << "[" << label << "] Connected via CF worker: " << worker << std::endl;
             }
             if (ws.send(relay_init.data(), relay_init.size())) {
-                bridge_ws_reencrypt(client_sock, is_fake_tls, ws, ctx, splitter, label);
+                bridge_ws_reencrypt(client_sock, tls_stream, ws, ctx, splitter, label);
                 return true;
             }
         }
@@ -75,7 +75,7 @@ bool FallbackManager::try_cf_worker(SOCKET client_sock, bool is_fake_tls, const 
     return false;
 }
 
-bool FallbackManager::try_cf_proxy(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+bool FallbackManager::try_cf_proxy(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                                    int dc, bool is_media, CryptoCtx& ctx, MsgSplitter* splitter,
                                    const std::string& label) {
     int port = config.disable_secure ? 80 : 443;
@@ -90,7 +90,7 @@ bool FallbackManager::try_cf_proxy(SOCKET client_sock, bool is_fake_tls, const s
                 std::cout << "[" << label << "] Connected via CF proxy: " << domain << std::endl;
             }
             if (ws.send(relay_init.data(), relay_init.size())) {
-                bridge_ws_reencrypt(client_sock, is_fake_tls, ws, ctx, splitter, label);
+                bridge_ws_reencrypt(client_sock, tls_stream, ws, ctx, nullptr, label);
                 return true;
             }
         }
@@ -98,7 +98,7 @@ bool FallbackManager::try_cf_proxy(SOCKET client_sock, bool is_fake_tls, const s
     return false;
 }
 
-bool FallbackManager::try_tor_socks5(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+bool FallbackManager::try_tor_socks5(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                                      int dc, const std::string& dst, int port, CryptoCtx& ctx,
                                      const std::string& label) {
     SOCKET s = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
@@ -164,12 +164,12 @@ bool FallbackManager::try_tor_socks5(SOCKET client_sock, bool is_fake_tls, const
         return false;
     }
 
-    bridge_tcp_reencrypt(client_sock, is_fake_tls, s, ctx, label);
+    bridge_tcp_reencrypt(client_sock, tls_stream, s, ctx, label);
     closesocket(s);
     return true;
 }
 
-bool FallbackManager::try_direct_tcp(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+bool FallbackManager::try_direct_tcp(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                                      int dc, const std::string& dst, int port, CryptoCtx& ctx,
                                      const std::string& label) {
     addrinfo hints{};
@@ -207,7 +207,7 @@ bool FallbackManager::try_direct_tcp(SOCKET client_sock, bool is_fake_tls, const
         return false;
     }
 
-    bridge_tcp_reencrypt(client_sock, is_fake_tls, s, ctx, label);
+    bridge_tcp_reencrypt(client_sock, tls_stream, s, ctx, label);
     closesocket(s);
     return true;
 }

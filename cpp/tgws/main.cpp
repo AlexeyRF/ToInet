@@ -56,7 +56,7 @@ static void handle_client(SOCKET client_sock,
     DWORD timeout_ms = 10000;
     setsockopt(client_sock, SOL_SOCKET, SO_RCVTIMEO, reinterpret_cast<const char*>(&timeout_ms), sizeof(timeout_ms));
 
-    bool is_fake_tls = false;
+    std::shared_ptr<FakeTlsStream> tls_stream = nullptr;
     uint8_t handshake[64];
     size_t handshake_len = 0;
 
@@ -72,10 +72,15 @@ static void handle_client(SOCKET client_sock,
     if (!cfg.fake_tls_domain.empty() && first_byte == TLS_RECORD_HANDSHAKE) {
         // Read remaining TLS record header (4 bytes: version, length)
         uint8_t hdr_rest[4];
-        if (::recv(client_sock, reinterpret_cast<char*>(hdr_rest), 4, 0) != 4) {
-            closesocket(client_sock);
-            g_stats.connections_active--;
-            return;
+        size_t h_hdr = 0;
+        while (h_hdr < 4) {
+            int n = ::recv(client_sock, reinterpret_cast<char*>(hdr_rest) + h_hdr, static_cast<int>(4 - h_hdr), 0);
+            if (n <= 0) {
+                closesocket(client_sock);
+                g_stats.connections_active--;
+                return;
+            }
+            h_hdr += n;
         }
 
         uint16_t record_len = (static_cast<uint16_t>(hdr_rest[2]) << 8) | hdr_rest[3];
@@ -113,9 +118,8 @@ static void handle_client(SOCKET client_sock,
         auto server_hello = build_server_hello(secret_bytes, tls_res.client_random.data(), tls_res.session_id.data());
         ::send(client_sock, reinterpret_cast<const char*>(server_hello.data()), static_cast<int>(server_hello.size()), 0);
 
-        is_fake_tls = true;
-        FakeTlsStream tls_stream(client_sock);
-        if (!tls_stream.recv_exact(handshake, 64)) {
+        tls_stream = std::make_shared<FakeTlsStream>(client_sock);
+        if (!tls_stream->recv_exact(handshake, 64)) {
             closesocket(client_sock);
             g_stats.connections_active--;
             return;
@@ -184,45 +188,22 @@ static void handle_client(SOCKET client_sock,
             std::cout << "[" << label << "] WS Pool hit for DC" << dc << std::endl;
         }
         if (ws->send(relay_init.data(), relay_init.size())) {
-            bridge_ws_reencrypt(client_sock, is_fake_tls, *ws, crypto_ctx, &splitter, label);
+            bridge_ws_reencrypt(client_sock, tls_stream, *ws, crypto_ctx, &splitter, label);
             closesocket(client_sock);
             g_stats.connections_active--;
             return;
         }
     }
 
-    // Direct WS connect
-    std::string target_ip;
-    auto it = cfg.dc_redirects.find(dc);
-    if (it != cfg.dc_redirects.end() && !it->second.empty()) {
-        target_ip = it->second;
-    } else {
-        target_ip = get_default_dc_ip(dc, is_test_dc);
-    }
-
-    std::string domain = get_ws_domain(dc, client_hs.is_media);
-    std::string path = is_test_dc ? "/apiws_test" : "/apiws";
-
-    RawWebSocket direct_ws;
-    if (direct_ws.connect(target_ip, 443, domain, path, domain, true, 8)) {
-        if (cfg.verbose) {
-            std::cout << "[" << label << "] Direct WS connected to DC" << dc << " (" << target_ip << ")" << std::endl;
-        }
-        if (direct_ws.send(relay_init.data(), relay_init.size())) {
-            bridge_ws_reencrypt(client_sock, is_fake_tls, direct_ws, crypto_ctx, &splitter, label);
-            closesocket(client_sock);
-            g_stats.connections_active--;
-            return;
-        }
-    }
-
-    // Fallbacks
+    // Direct connect or Fallbacks:
+    // If pool missed or direct connects are blocked by ISP, go straight to fallback manager
+    // (Cloudflare Worker -> Cloudflare Proxy -> Tor -> Direct TCP) without stalling
     g_stats.pool_misses++;
     if (cfg.verbose) {
-        std::cout << "[" << label << "] Direct WS unavailable -> trying fallbacks..." << std::endl;
+        std::cout << "[" << label << "] Pool miss -> trying fallbacks..." << std::endl;
     }
 
-    fallback_mgr.execute_fallback(client_sock, is_fake_tls, relay_init, dc, is_test_dc, client_hs.is_media,
+    fallback_mgr.execute_fallback(client_sock, tls_stream, relay_init, dc, is_test_dc, client_hs.is_media,
                                   crypto_ctx, &splitter, client_hs.proto_tag, label);
 
     closesocket(client_sock);

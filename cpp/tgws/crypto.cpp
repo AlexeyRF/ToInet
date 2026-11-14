@@ -204,6 +204,28 @@ Aes256Ctr::~Aes256Ctr() {
     }
 }
 
+Aes256Ctr::Aes256Ctr(Aes256Ctr&& other) noexcept
+    : key_handle(other.key_handle),
+      keystream_pos(other.keystream_pos) {
+    std::memcpy(counter, other.counter, sizeof(counter));
+    std::memcpy(keystream, other.keystream, sizeof(keystream));
+    other.key_handle = nullptr;
+}
+
+Aes256Ctr& Aes256Ctr::operator=(Aes256Ctr&& other) noexcept {
+    if (this != &other) {
+        if (key_handle) {
+            BCryptDestroyKey(static_cast<BCRYPT_KEY_HANDLE>(key_handle));
+        }
+        key_handle = other.key_handle;
+        keystream_pos = other.keystream_pos;
+        std::memcpy(counter, other.counter, sizeof(counter));
+        std::memcpy(keystream, other.keystream, sizeof(keystream));
+        other.key_handle = nullptr;
+    }
+    return *this;
+}
+
 void Aes256Ctr::init(const uint8_t key[32], const uint8_t iv[16]) {
     if (key_handle) {
         BCryptDestroyKey(static_cast<BCRYPT_KEY_HANDLE>(key_handle));
@@ -213,13 +235,8 @@ void Aes256Ctr::init(const uint8_t key[32], const uint8_t iv[16]) {
     BCRYPT_ALG_HANDLE alg = get_aes_ecb_alg();
     if (!alg) return;
 
-    DWORD obj_len = 0;
-    DWORD data_len = 0;
-    BCryptGetProperty(alg, BCRYPT_OBJECT_LENGTH, reinterpret_cast<PUCHAR>(&obj_len), sizeof(obj_len), &data_len, 0);
-    key_object.resize(obj_len);
-
     BCRYPT_KEY_HANDLE kh = nullptr;
-    if (BCryptGenerateSymmetricKey(alg, &kh, key_object.data(), static_cast<ULONG>(key_object.size()),
+    if (BCryptGenerateSymmetricKey(alg, &kh, nullptr, 0,
                                    const_cast<PUCHAR>(key), 32, 0) >= 0) {
         key_handle = kh;
     }
@@ -281,28 +298,11 @@ void Aes256Ctr::process_inplace(uint8_t* data, size_t len) {
 }
 
 void Aes256Ctr::skip(size_t bytes) {
-    // Fast skip: adjust keystream_pos and counter
-    while (bytes > 0 && keystream_pos < 16) {
-        ++keystream_pos;
-        --bytes;
-    }
-    size_t full_blocks = bytes / 16;
-    if (full_blocks > 0) {
-        // Increment 128-bit counter by full_blocks
-        uint64_t add = full_blocks;
-        uint64_t* c = reinterpret_cast<uint64_t*>(counter);
-        // Note counter is big-endian
-        uint64_t lsw = _byteswap_uint64(c[1]);
-        uint64_t sum = lsw + add;
-        if (sum < lsw) {
-            c[0] = _byteswap_uint64(_byteswap_uint64(c[0]) + 1);
-        }
-        c[1] = _byteswap_uint64(sum);
-        bytes %= 16;
-    }
-    if (bytes > 0) {
-        encrypt_counter(keystream);
-        keystream_pos = bytes;
+    uint8_t dummy[64];
+    while (bytes > 0) {
+        size_t chunk = (std::min)(bytes, sizeof(dummy));
+        process(dummy, dummy, chunk);
+        bytes -= chunk;
     }
 }
 

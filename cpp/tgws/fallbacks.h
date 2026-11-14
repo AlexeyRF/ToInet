@@ -2,10 +2,12 @@
 
 #include "protocol.h"
 #include "websocket.h"
+#include "fake_tls.h"
 #include "config.h"
 #include <winsock2.h>
 #include <string>
 #include <vector>
+#include <memory>
 
 namespace tgws {
 
@@ -15,7 +17,7 @@ public:
 
     // Attempts fallbacks in order (CF Worker -> CF Proxy -> Tor SOCKS5 -> Direct TCP)
     bool execute_fallback(SOCKET client_sock,
-                          bool is_fake_tls,
+                          std::shared_ptr<FakeTlsStream> tls_stream,
                           const std::vector<uint8_t>& relay_init,
                           int dc, bool is_test_dc, bool is_media,
                           CryptoCtx& ctx, MsgSplitter* splitter,
@@ -26,16 +28,16 @@ private:
     const ProxyConfig& config;
     std::vector<std::string> cf_domains;
 
-    bool try_cf_worker(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+    bool try_cf_worker(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                        int dc, bool is_media, const std::string& dst, CryptoCtx& ctx, MsgSplitter* splitter, const std::string& label);
 
-    bool try_cf_proxy(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+    bool try_cf_proxy(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                       int dc, bool is_media, CryptoCtx& ctx, MsgSplitter* splitter, const std::string& label);
 
-    bool try_tor_socks5(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+    bool try_tor_socks5(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                         int dc, const std::string& dst, int port, CryptoCtx& ctx, const std::string& label);
 
-    bool try_direct_tcp(SOCKET client_sock, bool is_fake_tls, const std::vector<uint8_t>& relay_init,
+    bool try_direct_tcp(SOCKET client_sock, std::shared_ptr<FakeTlsStream> tls_stream, const std::vector<uint8_t>& relay_init,
                         int dc, const std::string& dst, int port, CryptoCtx& ctx, const std::string& label);
 };
 

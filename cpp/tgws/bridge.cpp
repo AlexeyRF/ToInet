@@ -18,13 +18,12 @@ static bool send_all_socket(SOCKET s, const uint8_t* buf, size_t len) {
 }
 
 void bridge_ws_reencrypt(SOCKET client_sock,
-                         bool is_fake_tls,
+                         std::shared_ptr<FakeTlsStream> tls_stream,
                          RawWebSocket& ws,
                          CryptoCtx& ctx,
                          MsgSplitter* splitter,
                          const std::string& label) {
     std::atomic<bool> closed(false);
-    FakeTlsStream fake_tls(client_sock);
 
     // Thread 1: Client -> WS
     std::thread t_up([&]() {
@@ -33,8 +32,8 @@ void bridge_ws_reencrypt(SOCKET client_sock,
 
         while (!closed && ws.is_open()) {
             int n = 0;
-            if (is_fake_tls) {
-                n = fake_tls.recv(in_buf.data(), in_buf.size());
+            if (tls_stream) {
+                n = tls_stream->recv(in_buf.data(), in_buf.size());
             } else {
                 n = ::recv(client_sock, reinterpret_cast<char*>(in_buf.data()), static_cast<int>(in_buf.size()), 0);
             }
@@ -94,8 +93,8 @@ void bridge_ws_reencrypt(SOCKET client_sock,
             ctx.clt_enc.process(plain.data(), payload.data(), n);
 
             bool ok = false;
-            if (is_fake_tls) {
-                ok = fake_tls.send_all(payload.data(), n);
+            if (tls_stream) {
+                ok = tls_stream->send_all(payload.data(), n);
             } else {
                 ok = send_all_socket(client_sock, payload.data(), n);
             }
@@ -111,12 +110,11 @@ void bridge_ws_reencrypt(SOCKET client_sock,
 }
 
 void bridge_tcp_reencrypt(SOCKET client_sock,
-                          bool is_fake_tls,
+                          std::shared_ptr<FakeTlsStream> tls_stream,
                           SOCKET remote_sock,
                           CryptoCtx& ctx,
                           const std::string& label) {
     std::atomic<bool> closed(false);
-    FakeTlsStream fake_tls(client_sock);
 
     std::thread t_up([&]() {
         std::vector<uint8_t> in_buf(65536);
@@ -124,8 +122,8 @@ void bridge_tcp_reencrypt(SOCKET client_sock,
 
         while (!closed) {
             int n = 0;
-            if (is_fake_tls) {
-                n = fake_tls.recv(in_buf.data(), in_buf.size());
+            if (tls_stream) {
+                n = tls_stream->recv(in_buf.data(), in_buf.size());
             } else {
                 n = ::recv(client_sock, reinterpret_cast<char*>(in_buf.data()), static_cast<int>(in_buf.size()), 0);
             }
@@ -155,8 +153,8 @@ void bridge_tcp_reencrypt(SOCKET client_sock,
             ctx.clt_enc.process(plain_buf.data(), in_buf.data(), n);
 
             bool ok = false;
-            if (is_fake_tls) {
-                ok = fake_tls.send_all(in_buf.data(), n);
+            if (tls_stream) {
+                ok = tls_stream->send_all(in_buf.data(), n);
             } else {
                 ok = send_all_socket(client_sock, in_buf.data(), n);
             }

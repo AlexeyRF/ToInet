@@ -50,6 +50,11 @@ public:
     Aes256Ctr(const uint8_t key[32], const uint8_t iv[16]);
     ~Aes256Ctr();
 
+    Aes256Ctr(Aes256Ctr&& other) noexcept;
+    Aes256Ctr& operator=(Aes256Ctr&& other) noexcept;
+    Aes256Ctr(const Aes256Ctr&) = delete;
+    Aes256Ctr& operator=(const Aes256Ctr&) = delete;
+
     void init(const uint8_t key[32], const uint8_t iv[16]);
     void process(const uint8_t* in, uint8_t* out, size_t len);
     void process_inplace(uint8_t* data, size_t len);
@@ -57,7 +62,6 @@ public:
 
 private:
     void* key_handle;
-    std::vector<uint8_t> key_object;
     uint8_t counter[16];
     uint8_t keystream[16];
     size_t keystream_pos;
