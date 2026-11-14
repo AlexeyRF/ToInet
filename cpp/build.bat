@@ -29,10 +29,18 @@ if not "%VS_VCVARS%"=="" (
     )
     echo Compiling programs_settings.exe...
     cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE "%~dp0programs_settings.cpp" /Fe:"%~dp0..\bin\programs_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
+    echo Compiling tgws_settings.exe...
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE "%~dp0tgws_settings.cpp" /Fe:"%~dp0..\bin\tgws_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
+    echo Compiling tgws.exe...
+    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 "%~dp0tgws\*.cpp" /Fe:"%~dp0..\bin\tgws.new.exe" /link ws2_32.lib secur32.lib crypt32.lib bcrypt.lib
+    if exist "%~dp0..\bin\tgws.new.exe" (
+        move /y "%~dp0..\bin\tgws.exe" "%~dp0..\bin\tgws.old" >nul 2>&1
+        move /y "%~dp0..\bin\tgws.new.exe" "%~dp0..\bin\tgws.exe" >nul 2>&1
+    )
     echo Compiling tgws_accel.dll...
     cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /LD "%~dp0tgws_accel.cpp" /Fe:"%~dp0..\bin\tgws_accel.dll" /link /DLL
-    del /q "%~dp0*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
-    del /q "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_accel.obj" 2>nul
+    del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
+    del /q "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "tgws_accel.obj" *.obj 2>nul
     echo Done!
 ) else (
     echo MSVC vcvars64.bat not found. Trying g++...
@@ -44,6 +52,12 @@ if not "%VS_VCVARS%"=="" (
         move /y "%~dp0..\bin\ssh_tunnel.new.exe" "%~dp0..\bin\ssh_tunnel.exe" >nul 2>&1
     )
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0programs_settings.cpp" -o "%~dp0..\bin\programs_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
+    g++ -O2 -std=c++17 -municode -mwindows "%~dp0tgws_settings.cpp" -o "%~dp0..\bin\tgws_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
+    g++ -O2 -std=c++17 -mavx2 "%~dp0tgws\*.cpp" -o "%~dp0..\bin\tgws.new.exe" -lws2_32 -lsecur32 -lcrypt32 -lbcrypt
+    if exist "%~dp0..\bin\tgws.new.exe" (
+        move /y "%~dp0..\bin\tgws.exe" "%~dp0..\bin\tgws.old" >nul 2>&1
+        move /y "%~dp0..\bin\tgws.new.exe" "%~dp0..\bin\tgws.exe" >nul 2>&1
+    )
     g++ -O2 -std=c++17 -mavx2 -shared "%~dp0tgws_accel.cpp" -o "%~dp0..\bin\tgws_accel.dll"
     echo Done!
 )
