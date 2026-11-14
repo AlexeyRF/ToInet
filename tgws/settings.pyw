@@ -203,6 +203,18 @@ class TGWSSettingsDialog(QDialog):
         self.accept()
 
 def main():
+    import subprocess
+    candidates = [
+        os.path.join(CURRENT_DIR, "bin", "tgws_settings.exe"),
+        os.path.join(PARENT_DIR, "bin", "tgws_settings.exe"),
+        os.path.join(os.path.dirname(CURRENT_DIR), "bin", "tgws_settings.exe"),
+    ]
+    for exe in candidates:
+        if os.path.exists(exe):
+            creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
+            subprocess.Popen([exe], creationflags=creationflags)
+            return
+
     app = QApplication(sys.argv)
     dialog = TGWSSettingsDialog()
     dialog.exec()
