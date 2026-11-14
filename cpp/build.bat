@@ -38,7 +38,11 @@ if not "%VS_VCVARS%"=="" (
         move /y "%~dp0..\bin\tgws.new.exe" "%~dp0..\bin\tgws.exe" >nul 2>&1
     )
     echo Compiling tgws_accel.dll...
-    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /LD "%~dp0tgws_accel.cpp" /Fe:"%~dp0..\bin\tgws_accel.dll" /link /DLL
+    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /LD "%~dp0tgws_accel.cpp" /Fe:"%~dp0..\bin\tgws_accel.new.dll" /link /DLL
+    if exist "%~dp0..\bin\tgws_accel.new.dll" (
+        move /y "%~dp0..\bin\tgws_accel.dll" "%~dp0..\bin\tgws_accel.old" >nul 2>&1
+        move /y "%~dp0..\bin\tgws_accel.new.dll" "%~dp0..\bin\tgws_accel.dll" >nul 2>&1
+    )
     del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
     del /q "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "tgws_accel.obj" *.obj 2>nul
     echo Done!
@@ -58,7 +62,11 @@ if not "%VS_VCVARS%"=="" (
         move /y "%~dp0..\bin\tgws.exe" "%~dp0..\bin\tgws.old" >nul 2>&1
         move /y "%~dp0..\bin\tgws.new.exe" "%~dp0..\bin\tgws.exe" >nul 2>&1
     )
-    g++ -O2 -std=c++17 -mavx2 -shared "%~dp0tgws_accel.cpp" -o "%~dp0..\bin\tgws_accel.dll"
+    g++ -O2 -std=c++17 -mavx2 -shared "%~dp0tgws_accel.cpp" -o "%~dp0..\bin\tgws_accel.new.dll"
+    if exist "%~dp0..\bin\tgws_accel.new.dll" (
+        move /y "%~dp0..\bin\tgws_accel.dll" "%~dp0..\bin\tgws_accel.old" >nul 2>&1
+        move /y "%~dp0..\bin\tgws_accel.new.dll" "%~dp0..\bin\tgws_accel.dll" >nul 2>&1
+    )
     echo Done!
 )
 
