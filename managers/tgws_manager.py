@@ -1,4 +1,9 @@
-import sys, os
+import sys
+import os
+import time
+import socket
+import subprocess
+
 if getattr(sys, 'frozen', False):
     CURRENT_DIR = os.path.dirname(sys.executable)
 else:
@@ -7,7 +12,6 @@ else:
 def _find_gatik_exe():
     candidates = [
         os.path.join(CURRENT_DIR, 'bin', 'gatik.exe'),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'bin', 'gatik.exe'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bin', 'gatik.exe'),
         os.path.join(os.path.dirname(sys.executable), 'bin', 'gatik.exe'),
     ]
@@ -19,7 +23,6 @@ def _find_gatik_exe():
 def _find_tgws_exe():
     candidates = [
         os.path.join(CURRENT_DIR, 'bin', 'tgws.exe'),
-        os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'bin', 'tgws.exe'),
         os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'bin', 'tgws.exe'),
         os.path.join(os.path.dirname(sys.executable), 'bin', 'tgws.exe'),
     ]
@@ -27,25 +30,15 @@ def _find_tgws_exe():
         if os.path.exists(c):
             return os.path.abspath(c)
     return None
-import threading
-import time
-import socket
-from tgws import tg_ws_proxy, config as tgws_config
-import asyncio
-from PySide6.QtWidgets import QMessageBox
-import sys
-import subprocess
-import os
-import json
 
 class TGWSManager:
     def __init__(self):
         self._running = False
-        self.thread = None
-        self.stop_event = None
         self.config = {}
         self.gatik_process = None
         self.tgws_process = None
+        self._gatik_last_check = 0
+        self._gatik_is_running_cached = False
 
     @property
     def running(self):
@@ -56,21 +49,17 @@ class TGWSManager:
             else:
                 self.tgws_process = None
                 self._running = False
-        if self._running:
-            if self.thread and not self.thread.is_alive():
-                self._running = False
-            return self._running
         try:
-            port = self.config.get("tgws_port", 1480)
+            port = int(self.config.get("tgws_port", 1480))
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.settimeout(0.5)
             res = sock.connect_ex(('127.0.0.1', port))
             sock.close()
             if res == 0:
                 return True
-        except:
+        except Exception:
             pass
-        return False
+        return self._running
 
     @running.setter
     def running(self, val):
@@ -85,63 +74,23 @@ class TGWSManager:
     def update_config(self, config):
         self.config = config
 
-    def _run_thread(self):
-        async def runner():
-            stop_ev = asyncio.Event()
-            self.stop_event = (asyncio.get_running_loop(), stop_ev)
-            
-            port = self.config.get("tgws_port", 1480)
-            host = self.config.get("tgws_host", "127.0.0.1")
-            dc_ip_list = self.config.get("tgws_dc_ip", ["2:149.154.167.220", "4:149.154.167.220"])
-            
-            dc_opt = tgws_config.parse_dc_ip_list(dc_ip_list)
-            
-            tgws_config.proxy_config.port = port
-            tgws_config.proxy_config.host = host
-            tgws_config.proxy_config.dc_redirects = dc_opt
-            
-            secret = self.config.get("tgws_secret")
-            if secret:
-                try:
-                    tgws_config.proxy_config.secret = secret
-                except: pass
-                
-            fake_tls = self.config.get("tgws_fake_tls", "")
-            tgws_config.proxy_config.fake_tls_domain = fake_tls
-            tgws_config.proxy_config.fronting_sni = self.config.get("tgws_fronting_sni", "")
-            tgws_config.proxy_config.fallback_cfproxy = self.config.get("tgws_fallback_cfproxy", True)
-            tgws_config.proxy_config.cfproxy_h2_media = self.config.get("tgws_cfproxy_h2_media", True)
-            tgws_config.proxy_config.cfproxy_user_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_user_domain", ""))
-            tgws_config.proxy_config.cfproxy_worker_domains = tgws_config.coerce_domain_list(self.config.get("tgws_cfproxy_worker_domain", ""))
-            
-            await tg_ws_proxy._run(stop_event=stop_ev)
-
-        try:
-            asyncio.run(runner())
-        except Exception as exc:
-            import traceback
-            self.log(f"TG WS Proxy thread crashed: {exc}")
-            traceback.print_exc()
-            if "10048" in str(exc) or "Address already in use" in str(exc):
-                port = self.config.get("tgws_port", 1480)
-                self.log(f"Порт {port} уже используется другим приложением.")
-        finally:
-            self.stop_event = None
-
     def start(self):
         if self.running:
             return True
-        
-        port = self.config.get("tgws_port", 1480)
-        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        result = sock.connect_ex(('127.0.0.1', port))
-        sock.close()
-        
-        if result == 0:
-            self.log(f"Порт {port} уже занят, возможно TGWS уже запущен. Используем существующий процесс.")
-            self.running = True
-            return True
-        
+
+        port = int(self.config.get("tgws_port", 1480))
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(0.5)
+            result = sock.connect_ex(('127.0.0.1', port))
+            sock.close()
+            if result == 0:
+                self.log(f"Порт {port} уже занят, возможно TGWS уже запущен. Используем существующий процесс.")
+                self.running = True
+                return True
+        except Exception:
+            pass
+
         creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
         tgws_exe = _find_tgws_exe()
         if tgws_exe and os.path.exists(tgws_exe):
@@ -151,7 +100,7 @@ class TGWSManager:
                 if self.is_running():
                     self.running = True
                     self.log(f"TGWS Proxy (C++) запущен: {tgws_exe}")
-                    
+
                     # Start Gatik (C++) if executable exists
                     try:
                         gatik_exe = _find_gatik_exe()
@@ -160,34 +109,16 @@ class TGWSManager:
                             self.log(f"Шлюз Gatik (C++) запущен: {gatik_exe}")
                     except Exception as e:
                         self.log(f"Failed to start gatik.exe: {e}")
-                        
+
                     return True
+                else:
+                    self.log(f"TGWS process exited immediately after launch.")
             except Exception as e:
-                self.log(f"Failed to start C++ tgws.exe ({e}), falling back to Python thread...")
-        
-        self.thread = threading.Thread(target=self._run_thread, daemon=True, name="tgws-proxy")
-        self.thread.start()
-        
-        time.sleep(3)
-        
-        if self.thread.is_alive():
-            self.running = True
-            self.log("TG WS Proxy запущен (Python)")
-            
-            # Start Gatik (C++) if executable exists
-            try:
-                gatik_exe = _find_gatik_exe()
-                if gatik_exe and os.path.exists(gatik_exe):
-                    creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-                    self.gatik_process = subprocess.Popen([gatik_exe], cwd=CURRENT_DIR, creationflags=creationflags)
-                    self.log(f"Шлюз Gatik (C++) запущен: {gatik_exe}")
-            except Exception as e:
-                self.log(f"Failed to start gatik.exe: {e}")
-                
-            return True
+                self.log(f"Failed to start C++ tgws.exe: {e}")
         else:
-            self.log("Ошибка: поток TG WS Proxy не запустился")
-            return False
+            self.log(f"Ошибка: tgws.exe не найден (искали в {CURRENT_DIR}\\bin)")
+
+        return False
 
     def stop(self):
         if hasattr(self, 'tgws_process') and self.tgws_process:
@@ -213,24 +144,8 @@ class TGWSManager:
         except Exception:
             pass
 
-        if self.stop_event:
-            loop, stop_ev = self.stop_event
-            loop.call_soon_threadsafe(stop_ev.set)
-            if self.thread:
-                self.thread.join(timeout=3)
-        
-        # Stop CF proxy domain refresh loop
-        try:
-            from .config import stop_cfproxy_domain_refresh
-            stop_cfproxy_domain_refresh()
-        except Exception:
-            pass
+        self._running = False
 
-        self.thread = None
-        self.stop_event = None
-        self.running = False
-        self.log("TG WS Proxy остановлен")
-        
         if hasattr(self, 'gatik_process') and self.gatik_process:
             try:
                 self.gatik_process.terminate()
@@ -242,6 +157,7 @@ class TGWSManager:
                     pass
             self.gatik_process = None
             self.log("Шлюз Gatik (C++) остановлен")
+
         try:
             import psutil
             for proc in psutil.process_iter(['name']):
@@ -320,9 +236,3 @@ _manager = TGWSManager()
 
 def get_manager():
     return _manager
-
-
-
-
-
-

@@ -739,8 +739,6 @@ class MainWindow(QMainWindow):
         c_layout.addWidget(prov_header)
 
         # 1. zDPI
-        bd_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("byedpi"), is_primary=True)
-        self.bd_select_btn = bd_select_btn
         def open_bd_tester():
             subprocess.Popen([sys.executable, "ui/byedpi_tester_gui.pyw"])
         bd_test_btn = make_prov_btn(T("Тестер стратегий", "Strategy Tester"), open_bd_tester)
@@ -760,14 +758,12 @@ class MainWindow(QMainWindow):
             "Порт 1780",
             T("Локальный обход блокировок DPI (YouTube, Discord и веб-сайты) без нагрузки на сервер.",
               "Local DPI packet bypass (YouTube, Discord, streaming) without remote server load."),
-            [bd_select_btn, bd_test_btn],
+            [bd_test_btn],
             self.bd_restart_btn,
             self.bd_toggle_btn
         ))
 
         # 2. Tor
-        tor_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("tor"), is_primary=True)
-        self.tor_select_btn = tor_select_btn
         def open_tor_bridges():
             subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
@@ -800,15 +796,13 @@ class MainWindow(QMainWindow):
             "Порт 9853 / HTTP 9854",
             T("Анонимная многоузловая луковая сеть. Поддержка мостов obfs4, snowflake, webtunnel.",
               "Anonymous multi-hop onion routing network with obfs4, snowflake, and webtunnel bridge support."),
-            [tor_select_btn, tor_bridges_btn, tor_torrc_btn],
+            [tor_bridges_btn, tor_torrc_btn],
             self.tor_restart_btn,
             self.tor_toggle_btn,
             mini_tg_btn=tor_tg_btn
         ))
 
         # 3. Opera Proxy
-        opera_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("opera"), is_primary=True)
-        self.opera_select_btn = opera_select_btn
         opera_cfg_btn = make_prov_btn(T("Настройки operaproxy", "Opera Proxy Settings", "Paramètres Opera Proxy"), 
                                      lambda: getattr(m, 'opera_mgr', None) and m.opera_mgr.open_settings())
 
@@ -827,14 +821,12 @@ class MainWindow(QMainWindow):
             "Порт 1785",
             T("Высокоскоростной туннель через европейские, американские и азиатские серверы Opera.",
               "High-speed proxy tunnel through European, American, and Asian Opera infrastructure."),
-            [opera_select_btn, opera_cfg_btn],
+            [opera_cfg_btn],
             self.opera_restart_btn,
             self.opera_toggle_btn
         ))
 
         # 4. SVPN / SSH Tunnel
-        ssh_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("ssh"), is_primary=True)
-        self.ssh_select_btn = ssh_select_btn
         ssh_cfg_btn = make_prov_btn(T("Настройки сервера VPS", "VPS Credentials"), lambda: getattr(m, 'ssh_mgr', None) and m.ssh_mgr.open_settings())
         ssh_p_str = str(m.config.get("ssh_socks_port", 1770))
         def add_ssh_tg():
@@ -856,15 +848,13 @@ class MainWindow(QMainWindow):
             f"Порт {ssh_p_str}",
             T("Высокоскоростной C++ SOCKS5 туннель к вашему личному VPS с безопасным хранением учетных данных.",
               "High-speed C++ SOCKS5 tunnel to your personal VPS with secure password management."),
-            [ssh_select_btn, ssh_cfg_btn],
+            [ssh_cfg_btn],
             self.ssh_restart_btn,
             self.ssh_toggle_btn,
             mini_tg_btn=ssh_tg_btn
         ))
 
         # 5. VLESS / EVPN (hidden when mode is not evpn)
-        vless_select_btn = make_prov_btn(T("Выбрать шлюзом", "Select Gateway"), lambda: self.select_gateway("vless"), is_primary=True)
-        self.vless_select_btn = vless_select_btn
         vless_cfg_btn = make_prov_btn(T("Настройки VLESS", "VLESS Settings"), lambda: getattr(m, 'vless_mgr', None) and m.vless_mgr.open_settings())
 
         def restart_vless():
@@ -901,14 +891,14 @@ class MainWindow(QMainWindow):
             "Порт 1790",
             T("Ядро Sing-box: VLESS Reality, ShadowTLS, Trojan и динамическая ротация серверов.",
               "Sing-box core with VLESS Reality, ShadowTLS, Trojan, and subscription server rotation."),
-            [vless_select_btn, vless_cfg_btn, vless_bl_btn],
+            [vless_cfg_btn, vless_bl_btn],
             self.vless_restart_btn,
             self.vless_toggle_btn
         )
         c_layout.addWidget(self.vless_card)
 
-        # Store all gateway select buttons for mode-dependent visibility (hidden in empty mode)
-        self.gateway_buttons = [bd_select_btn, tor_select_btn, opera_select_btn, ssh_select_btn, vless_select_btn]
+        # Gateway select buttons removed - rule-based inetcpl routing is unified
+        self.gateway_buttons = []
 
         # 6. Telegram WebSocket Proxy (TGWS)
         def add_tgws_mtproto():
@@ -928,10 +918,10 @@ class MainWindow(QMainWindow):
 
         def open_tgws_settings():
             if hasattr(m, 'utils') and hasattr(m.utils, 'run_script'):
-                m.utils.run_script("tgws/settings.pyw")
+                m.utils.run_script("ui/tgws_settings.pyw")
             else:
                 from managers import system_utils
-                system_utils.run_script("tgws/settings.pyw")
+                system_utils.run_script("ui/tgws_settings.pyw")
         tgws_cfg_btn = make_prov_btn(T("Настройки TGWS", "TGWS Settings", "Paramètres TGWS"), open_tgws_settings)
 
         self.tgws_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_tgws)
@@ -1351,47 +1341,42 @@ class MainWindow(QMainWindow):
                                      "Minimize application window to system tray background mode."),
                                    to_tray_btn))
 
-        # Default inetcpl Gateway selection
-        self.inetcpl_gw_combo = QComboBox()
-        self.inetcpl_gw_combo.setStyleSheet(combo_style)
-        self.inetcpl_gw_combo.setCursor(Qt.PointingHandCursor)
-        inetcpl_gw_options = [
-            ("none", T("Без шлюза (Отключено)", "No gateway (Disabled)", "Sans passerelle (Désactivé)")),
-            ("byedpi", "zDPI (1780)"),
-            ("tor", "Tor (9853)"),
-            ("opera", "Opera Proxy (1785)"),
-            ("ssh", f"SSH ({ssh_port_val})"),
-            ("vless", "VLESS (1790)")
-        ]
-        self.inetcpl_gw_combo.blockSignals(True)
-        for val, label in inetcpl_gw_options:
-            self.inetcpl_gw_combo.addItem(label, val)
-        cur_default_gw = m.config.get("inetcpl_default_gateway", "none")
-        for idx, (val, _) in enumerate(inetcpl_gw_options):
-            if val == cur_default_gw:
-                self.inetcpl_gw_combo.setCurrentIndex(idx)
-                break
-        self.inetcpl_gw_combo.blockSignals(False)
+        # Inetcpl SOCKS Output Port setting
+        from PySide6.QtWidgets import QSpinBox
+        self.inetcpl_port_spin = QSpinBox()
+        self.inetcpl_port_spin.setRange(1024, 65535)
+        self.inetcpl_port_spin.setValue(int(m.config.get("inetcpl_socks_port", 2080)))
+        self.inetcpl_port_spin.setStyleSheet("""
+            QSpinBox {
+                background-color: #2d2d2d;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 6px;
+                padding: 4px 10px;
+                font-size: 11px;
+                font-weight: bold;
+            }
+            QSpinBox:hover {
+                background-color: #383838;
+                border-color: #484848;
+            }
+        """)
+        self.inetcpl_port_spin.setCursor(Qt.PointingHandCursor)
+        def on_inetcpl_port_change(val):
+            m.config["inetcpl_socks_port"] = val
+            m.config_manager.save_config(m.config)
+            if getattr(m, 'mode_type', '') == "inetcpl" and getattr(m, 'proxy_enabled', False):
+                if hasattr(m.mode_mgr, 'restart_inetcpl_proxy'):
+                    m.mode_mgr.restart_inetcpl_proxy(val)
+            self.update_ui_state()
 
-        def on_inetcpl_gw_change(idx):
-            selected_gw = self.inetcpl_gw_combo.itemData(idx)
-            if selected_gw:
-                m.config["inetcpl_default_gateway"] = selected_gw
-                m.config_manager.save_config(m.config)
-                if getattr(m, 'mode_type', '') == "inetcpl" and getattr(m, 'proxy_enabled', False):
-                    if hasattr(m, 'activate_inetcpl_gateway'):
-                        m.activate_inetcpl_gateway(selected_gw)
-                    else:
-                        m.connect_default_inetcpl_gateway()
-                self.update_ui_state()
-
-        self.inetcpl_gw_combo.currentIndexChanged.connect(on_inetcpl_gw_change)
+        self.inetcpl_port_spin.valueChanged.connect(on_inetcpl_port_change)
 
         c_layout.addWidget(CardRow(
-            T("Шлюз по умолчанию (inetcpl)", "Default inetcpl Gateway"),
-            T("Шлюз для автоподключения системного прокси Windows при переключении на режим inetcpl и автозапуске.",
-              "Gateway automatically connected for Windows system proxy when entering inetcpl mode or on autostart."),
-            self.inetcpl_gw_combo
+            T("Порт SOCKS выхода inetcpl", "inetcpl SOCKS Output Port"),
+            T("Локальный порт системного прокси Windows (inetcpl.cpl) с маршрутизацией по правилам (по умолчанию: 2080).",
+              "Local Windows system proxy port (inetcpl.cpl) with rule-based routing (default: 2080)."),
+            self.inetcpl_port_spin
         ))
 
         # Language selection (from tray menu)
@@ -1497,14 +1482,10 @@ class MainWindow(QMainWindow):
             elif gw_id == "opera": m.toggle_singbox_tun_opera()
             elif gw_id == "ssh": m.toggle_singbox_tun_ssh()
         elif cur_mode == "inetcpl":
-            if hasattr(m, 'activate_inetcpl_gateway'):
+            if hasattr(m, 'toggle_inetcpl_rules'):
+                m.toggle_inetcpl_rules()
+            elif hasattr(m, 'activate_inetcpl_gateway'):
                 m.activate_inetcpl_gateway(gw_id)
-            else:
-                if gw_id == "tor": m.toggle_inetcpl_tor()
-                elif gw_id == "byedpi": m.toggle_inetcpl_bd()
-                elif gw_id == "opera": m.toggle_inetcpl_opera()
-                elif gw_id == "vless": m.toggle_inetcpl_vless()
-                elif gw_id == "ssh": m.toggle_inetcpl_ssh()
 
         self.update_ui_state()
 
@@ -1780,17 +1761,8 @@ class MainWindow(QMainWindow):
         if hasattr(self, 'evpn_ban_btn'):
             self.evpn_ban_btn.setVisible(cur_mode == "evpn" and bool(evpn_active))
 
-        # Hide 'Выбрать шлюзом' buttons outside inetcpl mode
-        is_inetcpl = (cur_mode == "inetcpl")
-        for g_btn in getattr(self, 'gateway_buttons', []):
-            g_btn.setVisible(is_inetcpl)
-
-        if is_inetcpl and getattr(m, 'mode_mgr', None):
-            self._update_gateway_btn(getattr(self, 'bd_select_btn', None), getattr(m.mode_mgr, 'inetcpl_bd_active', False))
-            self._update_gateway_btn(getattr(self, 'tor_select_btn', None), getattr(m.mode_mgr, 'inetcpl_tor_active', False))
-            self._update_gateway_btn(getattr(self, 'opera_select_btn', None), getattr(m.mode_mgr, 'inetcpl_opera_active', False))
-            self._update_gateway_btn(getattr(self, 'ssh_select_btn', None), getattr(m.mode_mgr, 'inetcpl_ssh_active', False))
-            self._update_gateway_btn(getattr(self, 'vless_select_btn', None), getattr(m.mode_mgr, 'inetcpl_vless_active', False))
+        # Gateway select buttons removed in favor of single unified rule-based proxy
+        pass
 
         if getattr(self, '_last_styled_mode', None) != cur_mode:
             self._last_styled_mode = cur_mode
@@ -1801,7 +1773,7 @@ class MainWindow(QMainWindow):
                     "Ports locaux. Les paramètres réseau de Windows restent inchangés (configuration manuelle)."
                 ),
                 "inetcpl": T(
-                    "Системный прокси Windows (браузеры Chrome, Edge, Yandex и др. работают через прокси).",
+                    "Системный прокси Windows с автофильтрацией по правилам (YouTube/Discord через zDPI, Telegram через Tor и др.).",
                     "System proxy for Windows (browsers Chrome, Edge, etc. route through proxy).",
                     "Proxy système Windows (Chrome, Edge, etc. passent par le proxy)."
                 ),

@@ -1,24 +1,18 @@
-﻿import sys
+import sys
 import os
 
-# Добавляем родительскую директорию в sys.path
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 PARENT_DIR = os.path.dirname(CURRENT_DIR)
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
-from managers import system_utils as lang
-import json
 import socket
 from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel, 
                              QLineEdit, QPushButton, QTextEdit, QCheckBox, 
                              QMessageBox, QApplication)
 from PySide6.QtCore import Qt
 
-from tgws import config as tgws_config
-
 from managers.system_utils import T
-
 from managers import config_manager
 
 class TGWSSettingsDialog(QDialog):
@@ -98,8 +92,6 @@ class TGWSSettingsDialog(QDialog):
         self.cf_worker_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_worker_domain", ""))
         layout.addWidget(self.cf_worker_domain_edit)
         
-
-        
         # Информация
         info_label = QLabel(
             "TGWS Proxy будет работать на указанном порту.\n"
@@ -110,33 +102,6 @@ class TGWSSettingsDialog(QDialog):
         )
         info_label.setStyleSheet("color: #888; font-size: 10pt;")
         layout.addWidget(info_label)
-        
-        # Кнопки
-        
-        # Кнопка для теста стратегий временно закомментирована, так как пока нет необходимости
-        # self.tester_btn = QPushButton("Тест стратегий TGWS")
-        # def run_tester():
-        #     import subprocess, sys, os
-        #     subprocess.Popen([sys.executable, "ui/tgws_tester_gui.pyw"], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
-        # self.tester_btn.clicked.connect(run_tester)
-        # layout.addWidget(self.tester_btn)
-
-        # CF Proxy options
-        self.cfproxy_cb = QCheckBox("Включить Cloudflare Proxy (запасной канал)")
-        self.cfproxy_cb.setChecked(self.config.get("tgws_fallback_cfproxy", True))
-        layout.addWidget(self.cfproxy_cb)
-        
-        self.h2_cb = QCheckBox("Включить мультиплексирование медиа (HTTP/2)")
-        self.h2_cb.setChecked(self.config.get("tgws_cfproxy_h2_media", True))
-        layout.addWidget(self.h2_cb)
-        
-        layout.addWidget(QLabel("Свои домены CF Proxy (через запятую):"))
-        self.cf_user_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_user_domain", ""))
-        layout.addWidget(self.cf_user_domain_edit)
-        
-        layout.addWidget(QLabel("Свои домены CF Worker (через запятую):"))
-        self.cf_worker_domain_edit = QLineEdit(self.config.get("tgws_cfproxy_worker_domain", ""))
-        layout.addWidget(self.cf_worker_domain_edit)
 
         btn_layout = QHBoxLayout()
         self.save_btn = QPushButton(T("Сохранить", "Save"))
@@ -173,11 +138,16 @@ class TGWSSettingsDialog(QDialog):
         
         # Проверка DC маппингов
         lines = [l.strip() for l in self.dc_text.toPlainText().strip().splitlines() if l.strip()]
-        try:
-            tgws_config.parse_dc_ip_list(lines)
-        except ValueError as e:
-            QMessageBox.critical(self, T("Ошибка", "Error"), str(e))
-            return
+        for line in lines:
+            parts = line.split(":")
+            if len(parts) != 2 or not parts[0].isdigit():
+                QMessageBox.critical(self, T("Ошибка", "Error"), f"Неверный формат строки '{line}'. Ожидается DC:IP (например 2:149.154.167.220)")
+                return
+            try:
+                socket.inet_aton(parts[1])
+            except OSError:
+                QMessageBox.critical(self, T("Ошибка", "Error"), f"Некорректный IP-адрес '{parts[1]}' в строке '{line}'")
+                return
             
         secret = self.secret_edit.text().strip()
         if len(secret) != 32 or not all(c in '0123456789abcdefABCDEF' for c in secret):
@@ -205,9 +175,9 @@ class TGWSSettingsDialog(QDialog):
 def main():
     import subprocess
     candidates = [
-        os.path.join(CURRENT_DIR, "bin", "tgws_settings.exe"),
+        os.path.join(CURRENT_DIR, "..", "bin", "tgws_settings.exe"),
         os.path.join(PARENT_DIR, "bin", "tgws_settings.exe"),
-        os.path.join(os.path.dirname(CURRENT_DIR), "bin", "tgws_settings.exe"),
+        os.path.join(CURRENT_DIR, "bin", "tgws_settings.exe"),
     ]
     for exe in candidates:
         if os.path.exists(exe):
@@ -221,6 +191,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-
-

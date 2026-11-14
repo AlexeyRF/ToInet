@@ -124,25 +124,13 @@ def _update_menu_impl_unsafe():
         m.tray_menu.addAction(all_act)
         
         if m.mode_type == "inetcpl":
-            if m.tor_manager.is_running() or m.mode_mgr.inetcpl_tor_active:
-                tor_cpl = QAction(m.T("Подключиться к TOR", "Connect to TOR") if not m.mode_mgr.inetcpl_tor_active else m.T("Отключиться от TOR", "Disconnect from TOR"), m.tray_menu)
-                tor_cpl.triggered.connect(m.toggle_inetcpl_tor)
-                m.tray_menu.addAction(tor_cpl)
-            
-            if m.byedpi_manager.is_running() or m.mode_mgr.inetcpl_bd_active:
-                bd_cpl = QAction(m.T("Подключиться к zDPI", "Connect to zDPI") if not m.mode_mgr.inetcpl_bd_active else m.T("Отключиться от zDPI", "Disconnect from zDPI"), m.tray_menu)
-                bd_cpl.triggered.connect(m.toggle_inetcpl_bd)
-                m.tray_menu.addAction(bd_cpl)
-            
-            if m.opera_mgr.is_running() or m.mode_mgr.inetcpl_opera_active:
-                opera_cpl = QAction(m.T("Подключиться к Opera", "Connect to Opera") if not m.mode_mgr.inetcpl_opera_active else m.T("Отключиться от Opera", "Disconnect from Opera"), m.tray_menu)
-                opera_cpl.triggered.connect(m.toggle_inetcpl_opera)
-                m.tray_menu.addAction(opera_cpl)
-
-            if m.ssh_mgr.is_running() or getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-                ssh_cpl = QAction(m.T("Подключиться к SSH", "Connect to SSH") if not getattr(m.mode_mgr, 'inetcpl_ssh_active', False) else m.T("Отключиться от SSH", "Disconnect from SSH"), m.tray_menu)
-                ssh_cpl.triggered.connect(m.toggle_inetcpl_ssh)
-                m.tray_menu.addAction(ssh_cpl)            
+            cpl_active = m.mode_mgr.is_inetcpl_active()
+            cpl_act = QAction(
+                m.T("Отключить inetcpl (по правилам)", "Disconnect inetcpl (by rules)") if cpl_active else m.T("Подключить inetcpl (по правилам)", "Connect inetcpl (by rules)"),
+                m.tray_menu
+            )
+            cpl_act.triggered.connect(m.toggle_inetcpl_rules)
+            m.tray_menu.addAction(cpl_act)            
 
         elif m.mode_type == "tun":
             tun_act = QAction(m.T("Отключить TUN (по правилам)", "Disconnect TUN (by rules)") if m.mode_mgr.tun_running() else m.T("Подключить TUN (по правилам)", "Connect TUN (by rules)"), m.tray_menu)
@@ -259,7 +247,7 @@ def _update_menu_impl_unsafe():
 
         
         if not lang._is_en or m.config.get("enable_ru_features", False):
-            settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: m.utils.run_script("tgws/settings.pyw"))
+            settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: m.utils.run_script("ui/tgws_settings.pyw"))
             
         settings_menu.addAction(m.T("Настройки TUN", "TUN Settings", "Paramètres TUN"), m.mode_mgr.open_advanced_tun_config)
         settings_menu.addAction(m.T("Пути программ", "Program Paths", "Chemins des programmes"), m.mode_mgr.open_proxifier_config)

@@ -18,33 +18,37 @@ if exist "C:\Program Files (x86)\Microsoft Visual Studio\18\BuildTools\VC\Auxili
 if not "%VS_VCVARS%"=="" (
     call "%VS_VCVARS%"
     echo Compiling cpller.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /DUNICODE /D_UNICODE "%~dp0cpller.cpp" /Fe:"%~dp0..\bin\cpller.exe" /link wininet.lib advapi32.lib
+    cl.exe /nologo /O2 /EHsc /W3 /DUNICODE /D_UNICODE /Fo:"%~dp0cpller.obj" "%~dp0cpller.cpp" /Fe:"%~dp0..\bin\cpller.exe" /link wininet.lib advapi32.lib
     echo Compiling gatik.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 "%~dp0gatik.cpp" /Fe:"%~dp0..\bin\gatik.exe" /link ws2_32.lib
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /Fo:"%~dp0gatik.obj" "%~dp0gatik.cpp" /Fe:"%~dp0..\bin\gatik.new.exe" /link ws2_32.lib
+    if exist "%~dp0..\bin\gatik.new.exe" (
+        move /y "%~dp0..\bin\gatik.exe" "%~dp0..\bin\gatik.old" >nul 2>&1
+        move /y "%~dp0..\bin\gatik.new.exe" "%~dp0..\bin\gatik.exe" >nul 2>&1
+    )
     echo Compiling ssh_tunnel.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 "%~dp0ssh_tunnel.cpp" /Fe:"%~dp0..\bin\ssh_tunnel.new.exe" /link ws2_32.lib advapi32.lib
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /Fo:"%~dp0ssh_tunnel.obj" "%~dp0ssh_tunnel.cpp" /Fe:"%~dp0..\bin\ssh_tunnel.new.exe" /link ws2_32.lib advapi32.lib
     if exist "%~dp0..\bin\ssh_tunnel.new.exe" (
         move /y "%~dp0..\bin\ssh_tunnel.exe" "%~dp0..\bin\ssh_tunnel.old" >nul 2>&1
         move /y "%~dp0..\bin\ssh_tunnel.new.exe" "%~dp0..\bin\ssh_tunnel.exe" >nul 2>&1
     )
     echo Compiling programs_settings.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE "%~dp0programs_settings.cpp" /Fe:"%~dp0..\bin\programs_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0programs_settings.obj" "%~dp0programs_settings.cpp" /Fe:"%~dp0..\bin\programs_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
     echo Compiling tgws_settings.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE "%~dp0tgws_settings.cpp" /Fe:"%~dp0..\bin\tgws_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0tgws_settings.obj" "%~dp0tgws_settings.cpp" /Fe:"%~dp0..\bin\tgws_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
     echo Compiling tgws.exe...
-    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 "%~dp0tgws\*.cpp" /Fe:"%~dp0..\bin\tgws.new.exe" /link ws2_32.lib secur32.lib crypt32.lib bcrypt.lib
+    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /Fo:"%~dp0tgws/" "%~dp0tgws\*.cpp" /Fe:"%~dp0..\bin\tgws.new.exe" /link ws2_32.lib secur32.lib crypt32.lib bcrypt.lib
     if exist "%~dp0..\bin\tgws.new.exe" (
         move /y "%~dp0..\bin\tgws.exe" "%~dp0..\bin\tgws.old" >nul 2>&1
         move /y "%~dp0..\bin\tgws.new.exe" "%~dp0..\bin\tgws.exe" >nul 2>&1
     )
     echo Compiling tgws_accel.dll...
-    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /LD "%~dp0tgws_accel.cpp" /Fe:"%~dp0..\bin\tgws_accel.new.dll" /link /DLL
+    cl.exe /nologo /O2 /arch:AVX2 /EHsc /W3 /std:c++17 /LD /Fo:"%~dp0tgws_accel.obj" "%~dp0tgws_accel.cpp" /Fe:"%~dp0..\bin\tgws_accel.new.dll" /link /DLL
     if exist "%~dp0..\bin\tgws_accel.new.dll" (
         move /y "%~dp0..\bin\tgws_accel.dll" "%~dp0..\bin\tgws_accel.old" >nul 2>&1
         move /y "%~dp0..\bin\tgws_accel.new.dll" "%~dp0..\bin\tgws_accel.dll" >nul 2>&1
     )
     del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
-    del /q "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "tgws_accel.obj" *.obj 2>nul
+    del /q "%~dp0..\*.obj" "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "tgws_accel.obj" *.obj 2>nul
     echo Done!
 ) else (
     echo MSVC vcvars64.bat not found. Trying g++...

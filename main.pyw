@@ -26,7 +26,7 @@ from managers import ssh_manager
 from managers import mode_manager
 from managers import evpn_manager
 from managers import ext_manager
-from tgws import manager as tgws_manager
+from managers import tgws_manager
 
 CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
 ICON_TITLE = "ToInet-MAX"
@@ -78,6 +78,7 @@ _update_menu_impl_unsafe = tray_menu_mod._update_menu_impl_unsafe
 import managers.service_controller as service_controller
 service_controller.init(sys.modules[__name__])
 
+toggle_inetcpl_rules = service_controller.toggle_inetcpl_rules
 activate_inetcpl_gateway = service_controller.activate_inetcpl_gateway
 connect_default_inetcpl_gateway = service_controller.connect_default_inetcpl_gateway
 _start_background_providers = service_controller._start_background_providers
