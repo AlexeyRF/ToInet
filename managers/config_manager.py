@@ -1,7 +1,9 @@
 import os
 import json
 
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys, os
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 CONFIG_FILE = os.path.join(CURRENT_DIR, "data", "config.json")
 
 DEFAULT_CONFIG = {
@@ -18,6 +20,7 @@ DEFAULT_CONFIG = {
     "tgws_fake_tls": "vk.com",
     "tgws_verbose": False,
     "mode_type": "inetcpl",
+    "inetcpl_socks_port": 2080,
     "auto_start": False,
     "auto_connect_last_mode": False,
     "tor_show_window": False,
@@ -58,5 +61,6 @@ def load_config():
     return DEFAULT_CONFIG.copy()
 
 def save_config(config):
+    os.makedirs(os.path.dirname(CONFIG_FILE), exist_ok=True)
     with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
         json.dump(config, f, ensure_ascii=False, indent=2)

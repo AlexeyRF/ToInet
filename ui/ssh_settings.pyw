@@ -12,7 +12,7 @@ from managers import system_utils as lang
 from managers import config_manager
 from managers import ssh_manager
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CURRENT_DIR = lang.get_base_dir()
 
 def T(ru_text, en_text, fr_text=None, fr=None):
     if hasattr(lang, 'T'):

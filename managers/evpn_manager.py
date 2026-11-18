@@ -21,7 +21,8 @@ import concurrent.futures
 from PySide6.QtCore import Signal, QObject, QThread
 
 import sys
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 
 def get_evpn_dir():
     d = os.path.join(CURRENT_DIR, "evpn")

@@ -28,7 +28,7 @@ from managers import evpn_manager
 from managers import ext_manager
 from managers import tgws_manager
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = utils.get_base_dir()
 ICON_TITLE = "ToInet-MAX"
 CACHER_SCRIPT = os.path.join(CURRENT_DIR, "managers", "system_utils.py")
 

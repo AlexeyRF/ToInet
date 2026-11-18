@@ -11,7 +11,7 @@ from PySide6.QtGui import QFont, QIcon
 from managers import system_utils as lang
 from managers import config_manager
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+CURRENT_DIR = lang.get_base_dir()
 DEFAULT_PARAMS = "-bind-address 127.0.0.1:1785 -verbosity 20 -country EU -server-selection random -proxy socks5://127.0.0.1:1787"
 
 def T(ru_text, en_text, fr_text=None, fr=None):

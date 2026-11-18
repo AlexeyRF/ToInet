@@ -7,6 +7,7 @@ build/*
 !build/*.py
 !build/*.bat
 !build/*.spec
+!build/*.marker
 dist/
 pyinstaller_build/
 pyinstaller_build_onefile/

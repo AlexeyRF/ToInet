@@ -8,7 +8,8 @@ import psutil
 from PySide6.QtWidgets import QMessageBox
 
 # Пути к файлам
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+import sys, os
+CURRENT_DIR = lang.get_base_dir()
 TORRC_FILE = os.path.join(CURRENT_DIR, "data", "torrc")
 MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "maestro.pyw"))
 AUTO_MAESTRO_SCRIPT = os.path.join(CURRENT_DIR, os.path.join("ui", "auto_maestro.pyw"))

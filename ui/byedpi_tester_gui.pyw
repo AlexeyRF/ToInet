@@ -31,10 +31,17 @@ from PySide6.QtGui import QIcon, QFont, QColor
 from PySide6.QtCore import Qt, QThread, Signal
 
 # Base Directory Resolution
-if getattr(sys, 'frozen', False):
-    SCRIPT_DIR = os.path.dirname(sys.executable)
-else:
-    SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent not in sys.path:
+    sys.path.insert(0, _parent)
+try:
+    from managers.system_utils import get_base_dir
+    SCRIPT_DIR = get_base_dir()
+except Exception:
+    if getattr(sys, 'frozen', False):
+        SCRIPT_DIR = os.path.dirname(sys.executable)
+    else:
+        SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
 # Import ML Optimizer
 try:

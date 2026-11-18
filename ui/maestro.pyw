@@ -3,10 +3,15 @@ from managers import system_utils as lang
 import os
 import sys
 import json
+import argparse
+import signal as sys_signal
+import threading
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+_parent_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 
 class UpdateInfoFile:
     def __init__(self, mode):
@@ -81,6 +86,535 @@ import tarfile
 import re
 import time
 import subprocess
+
+PROJECT_FOLDER = Path(CURRENT_DIR)
+CONFIG_FILE = PROJECT_FOLDER / "data" / "tor_config.json"
+UPDATE_INFO_FILE = PROJECT_FOLDER / "update_info.json"
+TOR_LATEST_DIR = PROJECT_FOLDER / "tor_latest"
+BACKUP_DIR = PROJECT_FOLDER / "backup"
+DEFAULT_PROXY_PORT = 9050
+UPDATE_PROXY_PORT = 9750
+
+LOG_LEVELS = {
+    'notice': '[notice]',
+    'warn': '[warn]',
+    'err': '[err]'
+}
+
+def get_default_bridges():
+    return [
+        "webtunnel [2001:db8:3ce4:c7c7:1316:3072:b8e9:b915]:443 07E8A7DFCA7B76DD0E2F1E8C6C74D9910AAF279E url=https://shenvalleygamers.com/7HxRIWqsmkPOemUcLFTGuPaW ver=0.0.3",
+        "webtunnel [2001:db8:915d:6373:6498:cec4:859d:4409]:443 0141998B7435FDFCE175410D5309C8EF2379EA68 url=https://homu.io/1zRuET5Xz19MUA4IwqbgUrcP ver=0.0.2",
+        "webtunnel [2001:db8:12b1:a936:2095:ea48:63c4:2ffb]:443 5E5A525225F61595EB860044FB3E630C1A77DAEE url=https://secretinsociety.com/FuL5N2y4Tan9Wv4Xbsl2T4Ld ver=0.0.4",
+        "webtunnel [2001:db8:aaf2:3e7d:b135:6398:bee7:c8e5]:443 C85C16134DF18A4B7FA0A0053C6F877E0450FB7B url=https://bridge.limoneneis.de/jABABR3DTBOgO9gCvY1dZjgu ver=0.0.4",
+        "webtunnel [2001:db8:cf6:ce7:c7fc:5a42:72d5:8c8b]:443 D0A1F802127A925F47A7C9713F17A9E1D1292E54 url=https://cdn-131.airstrip1.net/4c5d6e7f8g9h0i1j2k3l4m5n ver=0.0.2",
+        "webtunnel [2001:db8:50c6:f177:293a:6612:f682:feb0]:443 6736F1245C77FBDCE4252F5711DE3137A7C10125 url=https://www.itssohotrightnow.com/0bc106e5688f206329e24a350b084c43 ver=0.0.4",
+        "webtunnel [2001:db8:1ecc:edad:a642:10d8:adc1:c886]:443 C2176476CDD39DFAB550BBC94E1DF3980398E5FC url=https://mstdn.plus/Lohguu6eequaethu ver=0.0.2"
+    ]
+
+def get_system_info():
+    os_name = platform.system().lower()
+    arch = platform.machine().lower()
+    
+    if "windows" in os_name:
+        os_name = "windows"
+    elif "linux" in os_name:
+        os_name = "linux"
+    elif "darwin" in os_name:
+        os_name = "macos"
+    
+    if arch in ["x86_64", "amd64"]:
+        arch = "x86_64"
+    elif arch in ["i386", "i686"]:
+        arch = "i686"
+    elif arch in ["aarch64", "arm64"]:
+        arch = "aarch64"
+        
+    return os_name, arch
+
+def get_paths(base_dir=None):
+    if base_dir is None:
+        base_dir = CURRENT_DIR
+    base_path = Path(base_dir)
+    ext = ".exe" if sys.platform == "win32" else ""
+    
+    possible_tor_exes = [
+        base_path / "tor" / f"tor{ext}",
+        base_path / "backup" / "tor" / f"tor{ext}",
+        base_path / f"tor{ext}",
+        Path(CURRENT_DIR) / "tor" / f"tor{ext}"
+    ]
+    
+    tor_exe = None
+    for p in possible_tor_exes:
+        if p.exists():
+            tor_exe = p
+            break
+    
+    if not tor_exe:
+        tor_exe = base_path / "tor" / f"tor{ext}"
+
+    tor_dir = tor_exe.parent
+    lyrebird_exe = tor_dir / "pluggable_transports" / f"lyrebird{ext}"
+    if not lyrebird_exe.exists() and (Path(CURRENT_DIR) / "tor" / "pluggable_transports" / f"lyrebird{ext}").exists():
+        lyrebird_exe = Path(CURRENT_DIR) / "tor" / "pluggable_transports" / f"lyrebird{ext}"
+
+    data_dir = base_path / "data"
+    if not data_dir.exists() and (Path(CURRENT_DIR) / "data").exists():
+        data_dir = Path(CURRENT_DIR) / "data"
+    
+    return {
+        'tor_exe': tor_exe,
+        'lyrebird_exe': lyrebird_exe,
+        'data_dir': data_dir,
+        'geoip': data_dir / "geoip",
+        'geoip6': data_dir / "geoip6",
+        'torrc': data_dir / "torrc"
+    }
+
+def load_config(config_name=None):
+    candidates = [
+        Path(CURRENT_DIR) / "data" / "tor_config.json",
+        Path(CURRENT_DIR) / "tor_config.json"
+    ]
+    cfg_file = None
+    for c in candidates:
+        if c.exists():
+            cfg_file = c
+            break
+    if not cfg_file:
+        return {}
+    
+    try:
+        with open(cfg_file, 'r', encoding='utf-8') as f:
+            configs = json.load(f)
+    except Exception as e:
+        print(f"Error loading config: {e}")
+        return {}
+    
+    if config_name:
+        return configs.get(config_name, {})
+    
+    if 'default' in configs:
+        return configs['default']
+    return configs
+
+load_tor_config = load_config
+
+def save_config(config_name, config_data):
+    cfg_file = Path(CURRENT_DIR) / "data" / "tor_config.json"
+    cfg_file.parent.mkdir(parents=True, exist_ok=True)
+    configs = {}
+    if cfg_file.exists():
+        try:
+            with open(cfg_file, 'r', encoding='utf-8') as f:
+                configs = json.load(f)
+        except Exception:
+            pass
+    elif (Path(CURRENT_DIR) / "tor_config.json").exists():
+        try:
+            with open(Path(CURRENT_DIR) / "tor_config.json", 'r', encoding='utf-8') as f:
+                configs = json.load(f)
+        except Exception:
+            pass
+    
+    configs[config_name] = config_data
+    with open(cfg_file, 'w', encoding='utf-8') as f:
+        json.dump(configs, f, indent=2, ensure_ascii=False)
+
+save_tor_config = save_config
+
+def parse_download_url(html_content, os_name, arch, channel):
+    links = re.findall(r'href="(https://[^"]+tor-expert-bundle-[^"]+\.tar\.gz)"', html_content)
+    target_pattern = f"tor-expert-bundle-{os_name}-{arch}"
+    filtered_links = [l for l in links if target_pattern in l]
+    
+    if not filtered_links:
+        return None
+        
+    if channel == "alpha":
+        result = [l for l in filtered_links if "a" in l.split('/')[-2]]
+    else:
+        result = [l for l in filtered_links if "a" not in l.split('/')[-2]]
+        
+    return result[0] if result else filtered_links[0]
+
+def download_file(url, session):
+    local_filename = Path(CURRENT_DIR) / url.split('/')[-1]
+    print(f"Downloading {url}...")
+    with session.get(url, stream=True) as r:
+        r.raise_for_status()
+        with open(local_filename, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=8192):
+                f.write(chunk)
+    return local_filename
+
+def generate_torrc_config(config, paths=None):
+    if paths is None:
+        paths = get_paths()
+        
+    exit_nodes = ""
+    if config.get('countries'):
+        exit_nodes = ",".join([f"{{{country}}}" for country in config['countries']])
+    
+    data_dir = paths['data_dir']
+    if not data_dir.exists():
+        data_dir.mkdir(parents=True, exist_ok=True)
+
+    port = config.get('port', DEFAULT_PROXY_PORT)
+    torrc_content = f"""DataDirectory {data_dir}
+GeoIPFile {paths['geoip']}
+GeoIPv6File {paths['geoip6']}
+SocksPort 0.0.0.0:{port}
+ControlPort 9851
+HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1
+"""
+    if exit_nodes:
+        torrc_content += f"ExitNodes {exit_nodes}\n"
+    
+    torrc_content += f"""UseBridges 1
+ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec {paths['lyrebird_exe']}
+AvoidDiskWrites 1
+HardwareAccel 1
+ClientOnly 1
+AutomapHostsOnResolve 1
+SafeLogging 1
+"""
+    bridges = config.get('bridges') or get_default_bridges()
+    for bridge in bridges:
+        torrc_content += f"Bridge {bridge}\n"
+    
+    torrc_path = paths['torrc']
+    torrc_path.parent.mkdir(parents=True, exist_ok=True)
+    torrc_path.write_text(torrc_content.strip(), encoding='utf-8')
+    return torrc_path
+
+generate_torrc = generate_torrc_config
+
+def run_tor(torrc_path, tor_exe_path, log_filter=None):
+    tor_exe_path = Path(tor_exe_path)
+    if not tor_exe_path.exists():
+        raise FileNotFoundError(f"Tor not found: {tor_exe_path}")
+    
+    env = os.environ.copy()
+    if sys.platform != "win32":
+        lib_path = str(tor_exe_path.parent)
+        env['LD_LIBRARY_PATH'] = f"{lib_path}:{env.get('LD_LIBRARY_PATH', '')}"
+        os.chmod(tor_exe_path, 0o755)
+        lyrebird_path = tor_exe_path.parent / "pluggable_transports" / ("lyrebird" if sys.platform != "win32" else "lyrebird.exe")
+        if lyrebird_path.exists():
+            os.chmod(lyrebird_path, 0o755)
+
+    process = subprocess.Popen(
+        [str(tor_exe_path), "-f", str(torrc_path)],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+        universal_newlines=True,
+        env=env
+    )
+    
+    def filter_log(stream):
+        for line in iter(stream.readline, ''):
+            if not log_filter:
+                print(line, end="")
+            else:
+                for level in log_filter:
+                    if level in LOG_LEVELS and LOG_LEVELS[level] in line:
+                        print(line, end="")
+                        break
+    
+    threading.Thread(target=filter_log, args=(process.stdout,), daemon=True).start()
+    threading.Thread(target=filter_log, args=(process.stderr,), daemon=True).start()
+    
+    return process
+
+def update_tor(channel="stable"):
+    if not requests:
+        print("Error: 'requests' library is not installed. Update skipped.")
+        return False
+
+    os_name, arch = get_system_info()
+    print(f"System detected: {os_name} ({arch})")
+    
+    base_dir = Path(CURRENT_DIR)
+    update_info_file = Path(CURRENT_DIR) / "update_info.json"
+    if update_info_file.exists():
+        try:
+            with _mock_open(update_info_file, 'r') as f:
+                info = json.load(f)
+                folder_name = info.get('use_folder')
+                if folder_name and (Path(CURRENT_DIR) / folder_name).exists():
+                    base_dir = Path(CURRENT_DIR) / folder_name
+        except Exception:
+            pass
+
+    paths = get_paths(base_dir)
+    if not paths['tor_exe'].exists():
+        paths = get_paths(Path(CURRENT_DIR))
+        if not paths['tor_exe'].exists():
+            print("Error: Tor executable not found. Cannot perform update through proxy.")
+            return False
+
+    print("Starting temporary Tor for update...")
+    update_config = {
+        'port': UPDATE_PROXY_PORT,
+        'bridges': get_default_bridges(),
+        'countries': None
+    }
+    
+    torrc_path = generate_torrc_config(update_config, paths)
+    
+    env = os.environ.copy()
+    if sys.platform != "win32":
+        lib_path = str(paths['tor_exe'].parent)
+        env['LD_LIBRARY_PATH'] = f"{lib_path}:{env.get('LD_LIBRARY_PATH', '')}"
+        os.chmod(paths['tor_exe'], 0o755)
+        if paths['lyrebird_exe'].exists():
+            os.chmod(paths['lyrebird_exe'], 0o755)
+
+    tor_process = None
+    try:
+        tor_process = subprocess.Popen(
+            [str(paths['tor_exe']), "-f", str(torrc_path)],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            bufsize=1,
+            universal_newlines=True,
+            env=env
+        )
+        
+        print("Waiting for Tor to bootstrap...")
+        bootstrapped = False
+        start_time = time.time()
+        timeout = 300
+        
+        while True:
+            line = tor_process.stdout.readline()
+            if not line: break
+            if "Bootstrapped 100%" in line:
+                bootstrapped = True
+                break
+            if time.time() - start_time > timeout:
+                print("Timeout waiting for Tor to bootstrap.")
+                break
+                
+        if not bootstrapped:
+            print("Tor failed to bootstrap for update.")
+            tor_process.terminate()
+            return False
+        
+        print("Tor is ready. Fetching download page...")
+        proxies = {
+            'http': f'socks5h://127.0.0.1:{UPDATE_PROXY_PORT}',
+            'https': f'socks5h://127.0.0.1:{UPDATE_PROXY_PORT}'
+        }
+        
+        session = requests.Session()
+        session.proxies = proxies
+        
+        update_url = "https://www.torproject.org/download/tor/"
+        response = session.get(update_url)
+        response.raise_for_status()
+        
+        download_url = parse_download_url(response.text, os_name, arch, channel)
+        if not download_url:
+            print("Could not find download URL.")
+            tor_process.terminate()
+            return False
+            
+        archive_path = download_file(download_url, session)
+        print(f"Downloaded to {archive_path}")
+        
+        print("Stopping temporary Tor...")
+        tor_process.terminate()
+        tor_process.wait()
+        tor_process = None
+        
+    except Exception as e:
+        if tor_process:
+            try: tor_process.terminate()
+            except: pass
+        print(f"Update failed: {e}")
+        return False
+
+    print("Updating folders...")
+    backup_dir = Path(CURRENT_DIR) / "backup"
+    tor_latest_dir = Path(CURRENT_DIR) / "tor_latest"
+    if backup_dir.exists():
+        shutil.rmtree(backup_dir)
+    
+    if tor_latest_dir.exists():
+        shutil.move(str(tor_latest_dir), str(backup_dir))
+    else:
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        for d in ['tor', 'data', 'docs']:
+            src = Path(CURRENT_DIR) / d
+            if src.exists():
+                shutil.move(str(src), str(backup_dir / d))
+
+    tor_latest_dir.mkdir(parents=True, exist_ok=True)
+    
+    print(f"Unpacking {archive_path} to {tor_latest_dir}...")
+    with tarfile.open(archive_path, "r:gz") as tar:
+        if hasattr(tarfile, 'data_filter'):
+            tar.extractall(path=tor_latest_dir, filter='data')
+        else:
+            tar.extractall(path=tor_latest_dir)
+    
+    try: os.remove(archive_path)
+    except: pass
+
+    for d in ['data', 'docs']:
+        wrong_path = tor_latest_dir / "tor" / d
+        right_path = tor_latest_dir / d
+        if wrong_path.exists():
+            if right_path.exists():
+                shutil.rmtree(str(right_path))
+            shutil.move(str(wrong_path), str(right_path))
+
+    tor_inner = tor_latest_dir / "tor" / "tor"
+    tor_exe_inner = tor_latest_dir / "tor" / "tor" / "tor.exe"
+    tor_exe_right = tor_latest_dir / "tor" / "tor.exe"
+    if tor_exe_inner.exists() and not tor_exe_right.exists():
+        temp_tor = tor_latest_dir / "tor_temp_swap"
+        shutil.move(str(tor_inner), str(temp_tor))
+        shutil.rmtree(str(tor_latest_dir / "tor"))
+        shutil.move(str(temp_tor), str(tor_latest_dir / "tor"))
+    
+    with _mock_open(update_info_file, 'w') as f:
+        json.dump({'use_folder': 'tor_latest', 'last_update': time.time(), 'branch': channel}, f)
+    
+    print("Update complete.")
+    return True
+
+update_tor_cli = update_tor
+
+def get_user_config():
+    config = {}
+    config['port'] = input("Enter port (default 9050): ") or "9050"
+    
+    countries_input = input("Enter exit countries (us,de,fr etc. or empty): ").strip()
+    if countries_input:
+        config['countries'] = [c.strip() for c in countries_input.split(',')]
+    else:
+        config['countries'] = []
+    
+    print("Enter bridges (empty line to finish, default is webtunnel):")
+    bridges = []
+    while True:
+        bridge = input("Bridge: ").strip()
+        if not bridge:
+            if not bridges:
+                bridges = get_default_bridges()
+            break
+        bridges.append(bridge)
+    config['bridges'] = bridges
+    
+    print("Select log levels: notice, warn, err")
+    log_input = input("Levels (default all): ").strip()
+    if log_input:
+        config['log_levels'] = [l.strip() for l in log_input.split(',') if l.strip() in LOG_LEVELS]
+    else:
+        config['log_levels'] = list(LOG_LEVELS.keys())
+    
+    config['check_updates'] = input("Check updates on startup? (y/n): ").lower() == 'y'
+    
+    save = input("Save configuration? (y/n): ").lower()
+    if save == 'y':
+        config_name = input("Config name (e.g. 'default'): ").strip() or "default"
+        save_config(config_name, config)
+        print(f"Config '{config_name}' saved.")
+    
+    return config
+
+def cli_main(argv=None):
+    parser = argparse.ArgumentParser(description="Tor Manager (Launcher + Updater & Configurator)")
+    parser.add_argument('--gui', action='store_true', help="Launch GUI configurator")
+    parser.add_argument('--config', help="Config name to load from tor_config.json")
+    parser.add_argument('--update', action='store_true', help="Force update Tor")
+    parser.add_argument('--port', type=int, help="Proxy port (default 9050 or from config)")
+    parser.add_argument('--countries', help="Comma-separated exit countries (e.g. us,de,fr)")
+    parser.add_argument('--bridges', help="Path to bridges file or comma-separated bridges")
+    parser.add_argument('--channel', choices=['stable', 'alpha'], default='stable', help="Update channel")
+    parser.add_argument('--cli', action='store_true', help="Force CLI mode")
+    args = parser.parse_args(argv)
+    
+    if args.gui:
+        launch_gui()
+        return
+        
+    config = load_config(args.config) if args.config else {}
+    if not config and args.config:
+        print(f"Config '{args.config}' not found.")
+        return
+    elif not config and not (args.port or args.countries or args.bridges or args.update):
+        if sys.stdin and hasattr(sys.stdin, 'isatty') and sys.stdin.isatty():
+            config = get_user_config()
+        else:
+            config = {'port': DEFAULT_PROXY_PORT, 'bridges': get_default_bridges()}
+
+    if args.port:
+        config['port'] = args.port
+    if args.countries:
+        config['countries'] = [c.strip() for c in args.countries.split(',')]
+    if args.bridges:
+        if os.path.exists(args.bridges):
+            with open(args.bridges, 'r', encoding='utf-8') as f:
+                config['bridges'] = [l.strip() for l in f if l.strip()]
+        else:
+            config['bridges'] = [b.strip() for b in args.bridges.split(',')]
+
+    if args.update or config.get('check_updates'):
+        print("Checking for updates...")
+        update_tor(channel=args.channel)
+
+    base_dir = Path(CURRENT_DIR)
+    update_info_file = Path(CURRENT_DIR) / "update_info.json"
+    if update_info_file.exists():
+        try:
+            with _mock_open(update_info_file, 'r') as f:
+                info = json.load(f)
+                folder_name = info.get('use_folder')
+                if folder_name and (Path(CURRENT_DIR) / folder_name).exists():
+                    base_dir = Path(CURRENT_DIR) / folder_name
+                    print(f"Using Tor from: {folder_name}")
+        except Exception:
+            pass
+
+    paths = get_paths(base_dir)
+    
+    print("Generating torrc...")
+    torrc_path = generate_torrc_config(config, paths)
+    
+    print(f"Starting Tor from {paths['tor_exe']}...")
+    try:
+        tor_process = run_tor(torrc_path, paths['tor_exe'], config.get('log_levels'))
+    except FileNotFoundError as e:
+        print(f"Error: {e}")
+        print("Maybe you need to run with --update first?")
+        return
+
+    def signal_handler(sig, frame):
+        print("\nStopping Tor...")
+        tor_process.terminate()
+        try:
+            tor_process.wait(timeout=5)
+        except subprocess.TimeoutExpired:
+            tor_process.kill()
+        sys.exit(0)
+    
+    sys_signal.signal(sys_signal.SIGINT, signal_handler)
+    if hasattr(sys_signal, 'SIGTERM'):
+        sys_signal.signal(sys_signal.SIGTERM, signal_handler)
+    
+    print("Tor started. Press Ctrl+C to stop.")
+    try:
+        tor_process.wait()
+    except KeyboardInterrupt:
+        signal_handler(sys_signal.SIGINT, None)
 
 # Dictionary with countries and their code
 countries = {
@@ -165,9 +699,7 @@ class TorUpdaterThread(QThread):
         return os_name, arch
 
     def get_bridges(self):
-        return ["webtunnel [2001:db8:cf6:ce7:c7fc:5a42:72d5:8c8b]:443 D0A1F802127A925F47A7C9713F17A9E1D1292E54 url=https://cdn-131.airstrip1.net/4c5d6e7f8g9h0i1j2k3l4m5n ver=0.0.2", 
-                "webtunnel [2001:db8:50c6:f177:293a:6612:f682:feb0]:443 6736F1245C77FBDCE4252F5711DE3137A7C10125 url=https://www.itssohotrightnow.com/0bc106e5688f206329e24a350b084c43 ver=0.0.4", 
-                "webtunnel [2001:db8:1ecc:edad:a642:10d8:adc1:c886]:443 C2176476CDD39DFAB550BBC94E1DF3980398E5FC url=https://mstdn.plus/Lohguu6eequaethu ver=0.0.2"]
+        return get_default_bridges()
 
     def parse_download_url(self, html_content, os_name, arch, channel):
         links = re.findall(r'href="(https://[^"]+tor-expert-bundle-[^"]+\.tar\.gz)"', html_content)
@@ -627,18 +1159,21 @@ class TorrcConfigurator(QMainWindow):
         
         self.normal_mode_rb = QRadioButton(T("Обычный режим (использовать bridges.txt)", "Normal mode (use bridges.txt)"))
         self.normal_mode_rb.setChecked(True)
+        self.webtunnel_mode_rb = QRadioButton(T("Предустановленные webtunnel мосты", "Pre-installed webtunnel bridges"))
         self.obfs4_mode_rb = QRadioButton(T("Предустановленные obfs4 мосты", "Pre-installed obfs4 bridges"))
         self.snowflake_mode_rb = QRadioButton(T("Предустановленные snowflake мосты", "Pre-installed snowflake bridges"))
         self.conjure_mode_rb = QRadioButton(T("Предустановленные conjure мосты", "Pre-installed conjure bridges"))
         self.meek_mode_rb = QRadioButton(T("Предустановленные meek мосты", "Pre-installed meek bridges"))
         
         self.bridge_mode_group.addButton(self.normal_mode_rb, 0)
-        self.bridge_mode_group.addButton(self.obfs4_mode_rb, 1)
-        self.bridge_mode_group.addButton(self.snowflake_mode_rb, 2)
-        self.bridge_mode_group.addButton(self.conjure_mode_rb, 3)
-        self.bridge_mode_group.addButton(self.meek_mode_rb, 4)
+        self.bridge_mode_group.addButton(self.webtunnel_mode_rb, 1)
+        self.bridge_mode_group.addButton(self.obfs4_mode_rb, 2)
+        self.bridge_mode_group.addButton(self.snowflake_mode_rb, 3)
+        self.bridge_mode_group.addButton(self.conjure_mode_rb, 4)
+        self.bridge_mode_group.addButton(self.meek_mode_rb, 5)
         
         bridges_mode_layout.addWidget(self.normal_mode_rb)
+        bridges_mode_layout.addWidget(self.webtunnel_mode_rb)
         bridges_mode_layout.addWidget(self.obfs4_mode_rb)
         bridges_mode_layout.addWidget(self.snowflake_mode_rb)
         bridges_mode_layout.addWidget(self.conjure_mode_rb)
@@ -646,6 +1181,7 @@ class TorrcConfigurator(QMainWindow):
         
         # Connect radio buttons to update UI
         self.normal_mode_rb.toggled.connect(self.on_bridge_mode_changed)
+        self.webtunnel_mode_rb.toggled.connect(self.on_bridge_mode_changed)
         self.obfs4_mode_rb.toggled.connect(self.on_bridge_mode_changed)
         self.snowflake_mode_rb.toggled.connect(self.on_bridge_mode_changed)
         self.conjure_mode_rb.toggled.connect(self.on_bridge_mode_changed)
@@ -1161,6 +1697,13 @@ class TorrcConfigurator(QMainWindow):
                 transport_plugin = pt_config["pluggableTransports"]["lyrebird"].replace("${pt_path}", pt_path)
             return bridges, transport_plugin
         
+        elif self.webtunnel_mode_rb.isChecked():
+            # WebTunnel preset bridges
+            bridges = get_default_bridges()
+            if "pluggableTransports" in pt_config and "lyrebird" in pt_config["pluggableTransports"]:
+                transport_plugin = pt_config["pluggableTransports"]["lyrebird"].replace("${pt_path}", pt_path)
+            return bridges, transport_plugin
+        
         elif self.obfs4_mode_rb.isChecked():
             # Obfs4 preset bridges
             if "bridges" in pt_config and "obfs4" in pt_config["bridges"]:
@@ -1298,7 +1841,9 @@ class TorrcConfigurator(QMainWindow):
             # Show success message with mode info
 
             mode_text = ""
-            if self.obfs4_mode_rb.isChecked():
+            if self.webtunnel_mode_rb.isChecked():
+                mode_text = " (webtunnel)"
+            elif self.obfs4_mode_rb.isChecked():
                 mode_text = " (obfs4)"
             elif self.snowflake_mode_rb.isChecked():
                 mode_text = " (snowflake)"
@@ -1316,16 +1861,24 @@ class TorrcConfigurator(QMainWindow):
         except Exception as e:
             QMessageBox.critical(self, T("Ошибка", "Error"), f"Не удалось записать конфигурацию, ошибка: {e}")
 
-def main():
+def launch_gui():
     app = QApplication(sys.argv)
     app.setStyle('Fusion')
     
-    # Set application icon (if you have one)
-    app.setWindowIcon(QIcon('icon.ico'))
+    icon_path = os.path.join(CURRENT_DIR, 'icon.ico')
+    if os.path.exists(icon_path):
+        app.setWindowIcon(QIcon(icon_path))
     
     window = TorrcConfigurator()
     window.show()
     sys.exit(app.exec())
+
+def main():
+    cli_flags = {'--update', '--config', '--port', '--countries', '--bridges', '--channel', '--cli', '--run', '-h', '--help'}
+    if any(arg in cli_flags or arg.startswith('--config=') or arg.startswith('--port=') or arg.startswith('--channel=') for arg in sys.argv[1:]):
+        cli_main()
+    else:
+        launch_gui()
 
 if __name__ == '__main__':
     main()

@@ -1,6 +1,7 @@
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-import time
+import sys, os
 from managers import system_utils as lang
+CURRENT_DIR = lang.get_base_dir()
+import time
 from managers.system_utils import AdoptedProcess
 import os
 import subprocess

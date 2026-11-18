@@ -2,7 +2,7 @@ import sys, os; sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspa
 from managers import system_utils as lang
 import subprocess
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CURRENT_DIR = lang.get_base_dir()
 from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout, 
                              QHBoxLayout, QLabel, QPushButton, QTextEdit, 
                              QMessageBox, QStatusBar, QDialog, QDialogButtonBox,

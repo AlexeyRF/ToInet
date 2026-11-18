@@ -157,7 +157,11 @@ class ZDPIMLOptimizer:
     """
     def __init__(self, history_file: Optional[str] = None):
         if history_file is None:
-            base_dir = os.path.dirname(os.path.abspath(__file__))
+            try:
+                from managers.system_utils import get_base_dir
+                base_dir = get_base_dir()
+            except Exception:
+                base_dir = os.path.dirname(os.path.abspath(__file__))
             self.history_file = os.path.join(base_dir, "zdpi_ml_history.json")
         else:
             self.history_file = history_file

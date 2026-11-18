@@ -543,7 +543,11 @@ def build_onefile_release():
     if subs_path.exists():
         cmd.extend(["--add-data", f"{subs_path}{sep}evpn"])
         
-    # Корневые ресурсы
+    # Корневые ресурсы и маркер One-File режима
+    marker_file = BUILD_DIR / "onefile_mode.marker"
+    marker_file.write_text("onefile", encoding="utf-8")
+    cmd.extend(["--add-data", f"{marker_file}{sep}."])
+
     for rf in ("icon.ico", "Toinet.ppx", "README.md"):
         src_path = (BASE_DIR / rf).resolve()
         if src_path.exists():

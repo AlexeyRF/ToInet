@@ -12,12 +12,13 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor
 
 # Setup paths
-CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-if CURRENT_DIR not in sys.path:
-    sys.path.insert(0, CURRENT_DIR)
+_parent_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent_dir not in sys.path:
+    sys.path.insert(0, _parent_dir)
 
 from managers import system_utils
 T = system_utils.T
+CURRENT_DIR = system_utils.get_base_dir()
 
 def find_ppx_path():
     candidates = [

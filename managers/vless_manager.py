@@ -20,7 +20,8 @@ import shutil
 from managers import system_utils as lang
 from managers.system_utils import AdoptedProcess
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 BIN_DIR = os.path.join(CURRENT_DIR, "bin")
 SING_BOX_DIR = os.path.join(BIN_DIR, "sing-box")
 SING_BOX_EXE = os.path.join(SING_BOX_DIR, "sing-box.exe")

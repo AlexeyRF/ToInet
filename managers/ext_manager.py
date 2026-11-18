@@ -2,6 +2,7 @@ import os
 import subprocess
 from PySide6.QtWidgets import QMessageBox
 from managers import config_manager
+from managers.system_utils import get_base_dir
 
 class ExtProgramsManager:
     def __init__(self):
@@ -60,7 +61,7 @@ class ExtProgramsManager:
         print("[Ext] Дополнительные программы перезапущены")
 
     def open_config(self):
-        CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        CURRENT_DIR = get_base_dir()
         exe_path = os.path.join(CURRENT_DIR, "bin", "programs_settings.exe")
         if os.path.exists(exe_path):
             creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0

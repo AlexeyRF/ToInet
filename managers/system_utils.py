@@ -5,9 +5,57 @@ import shutil
 import ctypes
 import locale
 
+# --- BASE DIRECTORY & ONEFILE HANDLING ---
+def is_onefile_mode():
+    """Определяет, запущено ли приложение в режиме единого exe (One-File)"""
+    if os.environ.get("TOINET_ONEFILE") == "1":
+        return True
+    if not getattr(sys, 'frozen', False):
+        return False
+    meipass = getattr(sys, '_MEIPASS', None)
+    if meipass:
+        if os.path.exists(os.path.join(meipass, "onefile_mode.marker")) or os.path.exists(os.path.join(meipass, "onefile_mode.txt")):
+            return True
+        exe_dir = os.path.dirname(sys.executable)
+        if not os.path.exists(os.path.join(exe_dir, "bin", "cpller.exe")) and os.path.exists(os.path.join(meipass, "bin")):
+            return True
+    exe_name = os.path.basename(sys.executable).lower()
+    if "one_file" in exe_name or "onefile" in exe_name:
+        return True
+    return False
+
+def get_appdata_dir():
+    """Возвращает путь к директории ToInet-MAX внутри APPDATA"""
+    appdata = os.environ.get("APPDATA")
+    if not appdata:
+        appdata = os.path.expanduser("~")
+    base = os.path.join(appdata, "ToInet-MAX")
+    return os.path.normpath(base)
+
+def get_base_dir():
+    """
+    Возвращает базовую директорию для хранения данных, логов и настроек:
+    - В One-File режиме: %APPDATA%/ToInet-MAX
+    - В Portable режиме: директория рядом с exe
+    - В режиме скрипта: корень репозитория
+    """
+    override = os.environ.get("TOINET_BASE_DIR")
+    if override:
+        return os.path.normpath(override)
+    if is_onefile_mode():
+        return get_appdata_dir()
+    if getattr(sys, 'frozen', False):
+        return os.path.dirname(sys.executable)
+    cur_file_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.basename(cur_file_dir).lower() in ("managers", "ui", "evpn", "byedpi", "cpp", "bin"):
+        return os.path.dirname(cur_file_dir)
+    return cur_file_dir
+
 # --- CACHER & LOGS ---
-def clean_logs(logs_path="logs", max_size_mb=2, keep_last_kb=200):
+def clean_logs(logs_path=None, max_size_mb=2, keep_last_kb=200):
     """Автоматическая очистка логов: ротация при превышении max_size_mb"""
+    if logs_path is None or logs_path == "logs":
+        logs_path = os.path.join(get_base_dir(), "logs")
     if not os.path.exists(logs_path):
         return
     max_bytes = max_size_mb * 1024 * 1024
@@ -33,8 +81,10 @@ def clean_logs(logs_path="logs", max_size_mb=2, keep_last_kb=200):
     except Exception:
         pass
 
-def clean_data_directory(data_path="data"):
-    clean_logs("logs")
+def clean_data_directory(data_path=None):
+    if data_path is None or data_path == "data":
+        data_path = os.path.join(get_base_dir(), "data")
+    clean_logs()
     if not os.path.exists(data_path):
         print(f"Директория {data_path} не существует!")
         return False
@@ -239,13 +289,7 @@ def get_desktop_path():
         return os.path.join(os.path.expanduser("~"), "Desktop")
 
 def get_app_directory():
-    if getattr(sys, 'frozen', False):
-        return os.path.dirname(sys.executable)
-    else:
-        cur_file_dir = os.path.dirname(os.path.abspath(__file__))
-        if os.path.basename(cur_file_dir).lower() == "managers":
-            return os.path.dirname(cur_file_dir)
-        return cur_file_dir
+    return get_base_dir()
 
 def create_shortcut(target_file="main.pyw"):
     try:
@@ -554,11 +598,71 @@ def open_project_folder(directory):
         QMessageBox.critical(None, T("Ошибка", "Error"), f"Не удалось открыть папку проекта:\n{e}")
         return False
 
-def open_browser_properties():
+def refresh_internet_settings():
+    """Уведомляет Windows и запущенные браузеры о смене настроек прокси."""
     try:
-        subprocess.run(['inetcpl.cpl'], shell=True)
+        INTERNET_OPTION_SETTINGS_CHANGED = 39
+        INTERNET_OPTION_REFRESH = 37
+        internet_set_option = ctypes.windll.Wininet.InternetSetOptionW
+        internet_set_option(0, INTERNET_OPTION_SETTINGS_CHANGED, 0, 0)
+        internet_set_option(0, INTERNET_OPTION_REFRESH, 0, 0)
     except Exception as e:
-        QMessageBox.warning(None, T("Ошибка", "Error"), f"Не удалось открыть свойства браузера:\n{e}")
+        log(f"[SystemProxy] Ошибка Wininet: {e}")
+
+def enable_system_proxy(port=2080, host="127.0.0.1"):
+    """Включает системный SOCKS5 прокси в Windows с исключением <local>."""
+    try:
+        proxy_server = f"socks={host}:{port}"
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE) as key:
+            winreg.SetValueEx(key, "ProxyEnable", 0, winreg.REG_DWORD, 1)
+            winreg.SetValueEx(key, "ProxyServer", 0, winreg.REG_SZ, proxy_server)
+            winreg.SetValueEx(key, "ProxyOverride", 0, winreg.REG_SZ, "<local>")
+        refresh_internet_settings()
+        return True
+    except Exception as e:
+        log(f"[SystemProxy] Ошибка включения прокси: {e}")
+        return False
+
+def disable_system_proxy():
+    """Отключает системный прокси в Windows."""
+    try:
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_WRITE) as key:
+            winreg.SetValueEx(key, "ProxyEnable", 0, winreg.REG_DWORD, 0)
+            try:
+                winreg.DeleteValue(key, "ProxyServer")
+            except FileNotFoundError:
+                pass
+        refresh_internet_settings()
+        return True
+    except Exception as e:
+        log(f"[SystemProxy] Ошибка отключения прокси: {e}")
+        return False
+
+def get_system_proxy_status():
+    """Проверяет текущее состояние системного прокси."""
+    try:
+        key_path = r"Software\Microsoft\Windows\CurrentVersion\Internet Settings"
+        with winreg.OpenKey(winreg.HKEY_CURRENT_USER, key_path, 0, winreg.KEY_READ) as key:
+            enabled, _ = winreg.QueryValueEx(key, "ProxyEnable")
+            try:
+                server, _ = winreg.QueryValueEx(key, "ProxyServer")
+            except FileNotFoundError:
+                server = ""
+            return bool(enabled), server
+    except Exception:
+        return False, ""
+
+def open_inetcpl():
+    """Открывает стандартное диалоговое окно «Свойства браузера» (inetcpl.cpl)."""
+    try:
+        os.startfile("inetcpl.cpl")
+    except Exception:
+        subprocess.Popen(["control.exe", "inetcpl.cpl"], shell=True)
+
+def open_browser_properties():
+    open_inetcpl()
 
 class AdoptedProcess:
     """Обертка над psutil.Process для прозрачной совместимости с subprocess.Popen"""

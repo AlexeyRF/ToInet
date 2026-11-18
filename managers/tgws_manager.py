@@ -4,10 +4,8 @@ import time
 import socket
 import subprocess
 
-if getattr(sys, 'frozen', False):
-    CURRENT_DIR = os.path.dirname(sys.executable)
-else:
-    CURRENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 
 def _find_gatik_exe():
     candidates = [

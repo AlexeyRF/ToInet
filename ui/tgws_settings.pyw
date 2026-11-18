@@ -1,8 +1,7 @@
 import sys
 import os
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
+PARENT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if PARENT_DIR not in sys.path:
     sys.path.insert(0, PARENT_DIR)
 
@@ -12,7 +11,8 @@ from PySide6.QtWidgets import (QDialog, QVBoxLayout, QHBoxLayout, QLabel,
                              QMessageBox, QApplication)
 from PySide6.QtCore import Qt
 
-from managers.system_utils import T
+from managers.system_utils import T, get_base_dir
+CURRENT_DIR = get_base_dir()
 from managers import config_manager
 
 class TGWSSettingsDialog(QDialog):

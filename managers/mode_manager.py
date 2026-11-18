@@ -20,7 +20,7 @@ from managers import config_manager
 
 
 
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+CURRENT_DIR = lang.get_base_dir()
 
 CPLLER_EXE = os.path.join(CURRENT_DIR, "bin", "cpller.exe")
 
@@ -31,6 +31,10 @@ class ModeManager:
     def __init__(self):
 
         self.tun_process = None
+
+        self.inetcpl_process = None
+
+        self.inetcpl_active = False
 
         self.inetcpl_tor_active = False
 
@@ -55,6 +59,14 @@ class ModeManager:
 
 
     def run_cpller(self, port, action_flag):
+        try:
+            from managers import system_utils
+            if action_flag:
+                system_utils.enable_system_proxy(int(port))
+            else:
+                system_utils.disable_system_proxy()
+        except Exception:
+            pass
         if not os.path.exists(CPLLER_EXE):
             self.log(f"cpller.exe не найден: {CPLLER_EXE}")
             return False
@@ -535,11 +547,14 @@ class ModeManager:
 
 
 
-    def _generate_singbox_config(self, port=None):
+    def _generate_singbox_config(self, port=None, is_inetcpl=False, inetcpl_port=None, target_cfg_path=None):
 
         import json
 
         cfg = config_manager.load_config()
+
+        if inetcpl_port is None:
+            inetcpl_port = int(cfg.get("inetcpl_socks_port", 2080))
 
         dns_address = cfg.get("tun_dns_address", "77.88.8.8")
 
@@ -665,7 +680,7 @@ class ModeManager:
 
 
 
-        if proxy_dns:
+        if proxy_dns and not is_inetcpl:
 
             rules.append({
 
@@ -675,7 +690,7 @@ class ModeManager:
 
             })
 
-        else:
+        elif not is_inetcpl:
 
             rules.append({
 
@@ -797,7 +812,7 @@ class ModeManager:
 
         final_outbound = "direct"
 
-        if port and port != 0:
+        if port and port != 0 and not is_inetcpl:
 
             for o in outbounds:
 
@@ -851,6 +866,20 @@ class ModeManager:
 
                 {
 
+                    "type": "mixed",
+
+                    "tag": "mixed-in",
+
+                    "listen": "127.0.0.1",
+
+                    "listen_port": inetcpl_port
+
+                }
+
+            ] if is_inetcpl else [
+
+                {
+
                     "type": "tun",
 
                     "tag": "tun-in",
@@ -872,6 +901,18 @@ class ModeManager:
                     "endpoint_independent_nat": True,
 
                     "stack": tun_stack
+
+                },
+
+                {
+
+                    "type": "mixed",
+
+                    "tag": "mixed-in",
+
+                    "listen": "127.0.0.1",
+
+                    "listen_port": inetcpl_port
 
                 }
 
@@ -895,25 +936,37 @@ class ModeManager:
 
 
 
-        cfg_path = os.path.join(CURRENT_DIR, "data", "tun_config.json")
+        if not target_cfg_path:
 
-        with open(cfg_path, "w", encoding="utf-8") as f:
+            if is_inetcpl:
+
+                target_cfg_path = os.path.join(CURRENT_DIR, "data", "inetcpl_config.json")
+
+            else:
+
+                target_cfg_path = os.path.join(CURRENT_DIR, "data", "tun_config.json")
+
+
+
+        with open(target_cfg_path, "w", encoding="utf-8") as f:
 
             json.dump(config, f, indent=2, ensure_ascii=False)
 
             
 
-        root_cfg_path = os.path.join(CURRENT_DIR, "config.json")
+        if not is_inetcpl:
 
-        try:
+            root_cfg_path = os.path.join(CURRENT_DIR, "config.json")
 
-            with open(root_cfg_path, "w", encoding="utf-8") as f:
+            try:
 
-                json.dump(config, f, indent=2, ensure_ascii=False)
+                with open(root_cfg_path, "w", encoding="utf-8") as f:
 
-        except Exception:
+                    json.dump(config, f, indent=2, ensure_ascii=False)
 
-            pass
+            except Exception:
+
+                pass
 
             
 
@@ -1669,56 +1722,179 @@ class ModeManager:
 
 
 
-    def reset_inetcpl_proxy(self):
+    def find_existing_inetcpl_process(self):
+        try:
+            for proc in psutil.process_iter(['pid', 'name']):
+                try:
+                    name = (proc.info.get('name') or "").lower()
+                    if 'sing-box' in name:
+                        cmdline = proc.cmdline() or []
+                        if any('inetcpl_config.json' in arg for arg in cmdline):
+                            return proc.info['pid']
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    continue
+        except Exception:
+            pass
+        return None
 
-        if self.inetcpl_tor_active:
+    def inetcpl_running(self):
+        if self.inetcpl_process:
+            if self.inetcpl_process.poll() is None:
+                return True
+            else:
+                self.inetcpl_process = None
+        else:
+            existing_pid = self.find_existing_inetcpl_process()
+            if existing_pid:
+                self.inetcpl_process = AdoptedProcess(existing_pid)
+                return True
+        return False
 
-            self.run_cpller(9853, 0)
+    def is_inetcpl_active(self):
+        if self.inetcpl_active and self.inetcpl_running():
+            return True
+        try:
+            from managers import system_utils
+            enabled, srv = system_utils.get_system_proxy_status()
+            if enabled and self.inetcpl_running():
+                self.inetcpl_active = True
+                return True
+        except Exception:
+            pass
+        return False
 
-            self.inetcpl_tor_active = False
+    def start_inetcpl_proxy(self, port=None):
+        if self.inetcpl_running():
+            self.inetcpl_active = True
+            return True
 
-            self.log("Отключен TOR прокси из inetcpl")
-
-        
-
-        if self.inetcpl_bd_active:
-
-            self.run_cpller(1780, 0)
-
-            self.inetcpl_bd_active = False
-
-            self.log("Отключен BD прокси из inetcpl")
-
-            
-
-        if self.inetcpl_opera_active:
-
-            self.run_cpller(1785, 0)
-
-            self.inetcpl_opera_active = False
-
-            self.log("Отключен Opera прокси из inetcpl")
-
-            
-
-        if self.inetcpl_vless_active:
-
-            self.run_cpller(1790, 0)
-
-            self.inetcpl_vless_active = False
-
-            self.log("Отключен VLESS прокси из inetcpl")
-
-
-
-        if getattr(self, 'inetcpl_ssh_active', False):
-
+        if not port:
             cfg = config_manager.load_config()
+            port = int(cfg.get("inetcpl_socks_port", 2080))
 
-            self.run_cpller(cfg.get("ssh_socks_port", 1770), 0)
+        existing_pid = self.find_existing_inetcpl_process()
+        if existing_pid:
+            self.log(f"sing-box inetcpl найден уже запущенным (PID {existing_pid}), используем его.")
+            self.inetcpl_process = AdoptedProcess(existing_pid)
+            self.inetcpl_active = True
+            from managers import system_utils
+            system_utils.enable_system_proxy(port)
+            self.run_cpller(port, 1)
+            return True
 
+        cfg_path = os.path.join(CURRENT_DIR, "data", "inetcpl_config.json")
+        self._generate_singbox_config(port=port, is_inetcpl=True, inetcpl_port=port, target_cfg_path=cfg_path)
+
+        import platform
+        exe_name = "sing-box.exe" if platform.system() == "Windows" else "sing-box"
+        sing_box_exe = os.path.join(CURRENT_DIR, "bin", "sing-box", exe_name)
+        if not os.path.exists(sing_box_exe):
+            QMessageBox.critical(None, "Ошибка inetcpl", "sing-box не найден в bin/sing-box/")
+            return False
+
+        cmd = [sing_box_exe, "run", "-c", cfg_path]
+        kwargs = {}
+        if platform.system() == "Windows":
+            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+
+        env = os.environ.copy()
+        env["ENABLE_DEPRECATED_LEGACY_DNS_SERVERS"] = "true"
+        env["ENABLE_DEPRECATED_OUTBOUND_DNS_RULE_ITEM"] = "true"
+        env["ENABLE_DEPRECATED_MISSING_DOMAIN_RESOLVER"] = "true"
+
+        log_path = os.path.join(CURRENT_DIR, "data", "inetcpl_singbox.log")
+        try:
+            if hasattr(self, 'inetcpl_log_file') and self.inetcpl_log_file:
+                try:
+                    self.inetcpl_log_file.close()
+                except Exception:
+                    pass
+            self.inetcpl_log_file = open(log_path, "w", encoding="utf-8")
+        except Exception:
+            self.inetcpl_log_file = None
+
+        try:
+            self.inetcpl_process = subprocess.Popen(
+                cmd,
+                cwd=CURRENT_DIR,
+                env=env,
+                stdout=self.inetcpl_log_file or subprocess.DEVNULL,
+                stderr=subprocess.STDOUT,
+                **kwargs
+            )
+            self.inetcpl_active = True
+            from managers import system_utils
+            system_utils.enable_system_proxy(port)
+            self.run_cpller(port, 1)
+            self.log(f"sing-box inetcpl запущен на порт {port} с правилами фильтрации")
+            return True
+        except Exception as e:
+            self.log(f"Ошибка запуска sing-box inetcpl: {e}")
+            return False
+
+    def stop_inetcpl_proxy(self):
+        cfg = config_manager.load_config()
+        port = int(cfg.get("inetcpl_socks_port", 2080))
+        try:
+            from managers import system_utils
+            system_utils.disable_system_proxy()
+            self.run_cpller(port, 0)
+        except Exception:
+            pass
+
+        self.inetcpl_active = False
+
+        if self.inetcpl_process:
+            try:
+                self.inetcpl_process.terminate()
+                try:
+                    self.inetcpl_process.wait(timeout=2)
+                except Exception:
+                    self.inetcpl_process.kill()
+                self.log("inetcpl sing-box процесс остановлен")
+            except Exception as e:
+                self.log(f"Ошибка остановки inetcpl sing-box процесса: {e}")
+            self.inetcpl_process = None
+
+        if hasattr(self, 'inetcpl_log_file') and self.inetcpl_log_file:
+            try:
+                self.inetcpl_log_file.close()
+            except Exception:
+                pass
+            self.inetcpl_log_file = None
+
+        existing_pid = self.find_existing_inetcpl_process()
+        if existing_pid:
+            try:
+                proc = psutil.Process(existing_pid)
+                proc.kill()
+            except Exception:
+                pass
+
+        self.log("inetcpl прокси полностью остановлен")
+        return True
+
+    def restart_inetcpl_proxy(self, port=None):
+        self.stop_inetcpl_proxy()
+        time.sleep(0.5)
+        return self.start_inetcpl_proxy(port)
+
+    def reset_inetcpl_proxy(self):
+        self.stop_inetcpl_proxy()
+        if self.inetcpl_tor_active:
+            self.inetcpl_tor_active = False
+            self.log("Отключен TOR прокси из inetcpl")
+        if self.inetcpl_bd_active:
+            self.inetcpl_bd_active = False
+            self.log("Отключен BD прокси из inetcpl")
+        if self.inetcpl_opera_active:
+            self.inetcpl_opera_active = False
+            self.log("Отключен Opera прокси из inetcpl")
+        if self.inetcpl_vless_active:
+            self.inetcpl_vless_active = False
+            self.log("Отключен VLESS прокси из inetcpl")
+        if getattr(self, 'inetcpl_ssh_active', False):
             self.inetcpl_ssh_active = False
-
             self.log("Отключен SSH прокси из inetcpl")
 
 

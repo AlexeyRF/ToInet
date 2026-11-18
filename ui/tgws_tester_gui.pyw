@@ -12,10 +12,12 @@ from PySide6.QtWidgets import (QApplication, QMainWindow, QWidget, QVBoxLayout,
 from PySide6.QtGui import QFont
 from PySide6.QtCore import Qt
 
-import sys, os; CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
-PARENT_DIR = os.path.dirname(CURRENT_DIR)
-if PARENT_DIR not in sys.path:
-    sys.path.insert(0, PARENT_DIR)
+_parent = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _parent not in sys.path:
+    sys.path.insert(0, _parent)
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
+PARENT_DIR = _parent
 
 from managers import config_manager
 

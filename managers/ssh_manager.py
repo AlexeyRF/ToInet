@@ -9,7 +9,8 @@ import threading
 import psutil
 from PySide6.QtCore import QObject, Signal
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 SSH_TUNNEL_EXE = os.path.join(CURRENT_DIR, "bin", "ssh_tunnel.exe")
 
 def _pipe_process_output(proc, prefix="[SSHTunnel]"):

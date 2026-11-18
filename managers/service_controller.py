@@ -12,68 +12,32 @@ def init(main_module):
     global m
     m = main_module
 
-def activate_inetcpl_gateway(gw):
-    """Explicitly connects the specified inetcpl gateway without toggling off."""
-    if not gw or gw == "none":
-        m.mode_mgr.reset_inetcpl_proxy()
-        update_proxy_status()
-        m.update_menu()
-        return
+def toggle_inetcpl_rules():
+    """Переключает системный прокси inetcpl с фильтрацией по правилам (Sing-box mixed inbound)."""
+    if m.mode_mgr.is_inetcpl_active():
+        m.mode_mgr.stop_inetcpl_proxy()
+    else:
+        _start_background_providers()
+        m.mode_mgr.start_inetcpl_proxy()
+    update_proxy_status()
+    m.update_menu()
 
-    if gw != "tor" and m.mode_mgr.inetcpl_tor_active:
-        if m.mode_mgr.run_cpller(9853, 0):
-            m.mode_mgr.inetcpl_tor_active = False
-    if gw != "byedpi" and m.mode_mgr.inetcpl_bd_active:
-        if m.mode_mgr.run_cpller(1780, 0):
-            m.mode_mgr.inetcpl_bd_active = False
-    if gw != "opera" and m.mode_mgr.inetcpl_opera_active:
-        if m.mode_mgr.run_cpller(1785, 0):
-            m.mode_mgr.inetcpl_opera_active = False
-    if gw != "vless" and m.mode_mgr.inetcpl_vless_active:
-        if m.mode_mgr.run_cpller(1790, 0):
-            m.mode_mgr.inetcpl_vless_active = False
-    if gw != "ssh" and getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-        ssh_port = int(m.config.get("ssh_socks_port", 1770))
-        if m.mode_mgr.run_cpller(ssh_port, 0):
-            m.mode_mgr.inetcpl_ssh_active = False
-
-    if gw == "tor":
-        if not m.tor_manager.is_running():
-            m.tor_manager.start()
-        if m.mode_mgr.run_cpller(9853, 1):
-            m.mode_mgr.inetcpl_tor_active = True
-    elif gw == "opera":
-        if not m.opera_mgr.is_running():
-            m.opera_mgr.start()
-        if m.mode_mgr.run_cpller(1785, 1):
-            m.mode_mgr.inetcpl_opera_active = True
-    elif gw == "ssh":
-        if not m.ssh_mgr.is_running():
-            m.ssh_mgr.start(silent_if_not_configured=True)
-        ssh_port = int(m.config.get("ssh_socks_port", 1770))
-        if m.mode_mgr.run_cpller(ssh_port, 1):
-            m.mode_mgr.inetcpl_ssh_active = True
-    elif gw == "vless":
-        if not m.vless_mgr.is_running():
-            m.vless_mgr.start()
-        if m.mode_mgr.run_cpller(1790, 1):
-            m.mode_mgr.inetcpl_vless_active = True
-    else:  # byedpi
-        if not m.byedpi_manager.is_running():
-            m.byedpi_manager.start()
-        if m.mode_mgr.run_cpller(1780, 1):
-            m.mode_mgr.inetcpl_bd_active = True
-
+def activate_inetcpl_gateway(gw=None):
+    """Подключает или отключает системный прокси inetcpl по правилам."""
+    if gw == "none" or gw is False:
+        m.mode_mgr.stop_inetcpl_proxy()
+    else:
+        _start_background_providers()
+        m.mode_mgr.start_inetcpl_proxy()
     update_proxy_status()
     m.update_menu()
 
 def connect_default_inetcpl_gateway():
-    """Connects the user-selected default gateway when in inetcpl mode."""
-    gw = m.config.get("inetcpl_default_gateway", "none")
-    if not gw or gw == "none":
-        m.mode_mgr.reset_inetcpl_proxy()
-        return
-    activate_inetcpl_gateway(gw)
+    """Подключает системный прокси Windows с автофильтрацией по правилам."""
+    _start_background_providers()
+    m.mode_mgr.start_inetcpl_proxy()
+    update_proxy_status()
+    m.update_menu()
 
 def _start_background_providers():
     try:
@@ -112,14 +76,8 @@ def update_proxy_status():
         elif m.mode_type == "tun":
             is_active = m.mode_mgr.tun_running()
         elif m.mode_type == "inetcpl":
-            is_active = (
-                getattr(m.mode_mgr, 'inetcpl_bd_active', False) or
-                getattr(m.mode_mgr, 'inetcpl_tor_active', False) or
-                getattr(m.mode_mgr, 'inetcpl_opera_active', False) or
-                getattr(m.mode_mgr, 'inetcpl_ssh_active', False) or
-                getattr(m.mode_mgr, 'inetcpl_vless_active', False)
-            )
-            if not is_active and m.config.get("inetcpl_default_gateway", "none") == "none":
+            is_active = m.mode_mgr.is_inetcpl_active()
+            if not is_active:
                 is_active = (
                     m.tor_manager.is_running() or
                     m.byedpi_manager.is_running() or
@@ -171,11 +129,7 @@ def toggle_all():
                 m.ssh_mgr.start()
         
         if m.mode_type == "inetcpl":
-            gw = m.config.get("inetcpl_default_gateway", "none")
-            if gw and gw != "none":
-                activate_inetcpl_gateway(gw)
-            else:
-                m.mode_mgr.reset_inetcpl_proxy()
+            m.mode_mgr.start_inetcpl_proxy()
         elif m.mode_type == "tun":
             m.mode_mgr.start_tun()
         elif m.mode_type == "evpn":
@@ -206,23 +160,11 @@ def toggle_all():
             m.pip_manager.stop()
             m.bdsher.clear_pip_proxy()
             
-            if m.mode_mgr.inetcpl_tor_active:
-                m.mode_mgr.run_cpller(9853, 0)
-                m.mode_mgr.inetcpl_tor_active = False
-            if m.mode_mgr.inetcpl_bd_active:
-                m.mode_mgr.run_cpller(1780, 0)
-                m.mode_mgr.inetcpl_bd_active = False
-            if m.mode_mgr.inetcpl_opera_active:
-                m.mode_mgr.run_cpller(1785, 0)
-                m.mode_mgr.inetcpl_opera_active = False
-            if m.mode_mgr.inetcpl_vless_active:
-                m.mode_mgr.run_cpller(1790, 0)
-                m.mode_mgr.inetcpl_vless_active = False
-            if getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-                m.mode_mgr.run_cpller(m.config.get("ssh_socks_port", 1770), 0)
-                m.mode_mgr.inetcpl_ssh_active = False
+            m.mode_mgr.stop_inetcpl_proxy()
         
-        if m.mode_type == "tun":
+        if m.mode_type == "inetcpl":
+            m.mode_mgr.stop_inetcpl_proxy()
+        elif m.mode_type == "tun":
             m.mode_mgr.stop_tun()
         elif m.mode_type == "evpn":
             m.evpn_mgr.stop()
@@ -290,134 +232,19 @@ def toggle_proxifier():
     m.update_menu()
 
 def toggle_inetcpl_tor():
-    if not m.mode_mgr.inetcpl_tor_active:
-        if m.mode_mgr.inetcpl_vless_active:
-            if m.mode_mgr.run_cpller(1790, 0):
-                m.mode_mgr.inetcpl_vless_active = False
-        if m.mode_mgr.inetcpl_bd_active:
-            if m.mode_mgr.run_cpller(1780, 0):
-                m.mode_mgr.inetcpl_bd_active = False
-        if m.mode_mgr.inetcpl_opera_active:
-            if m.mode_mgr.run_cpller(1785, 0):
-                m.mode_mgr.inetcpl_opera_active = False
-        if getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-            ssh_port = int(m.config.get("ssh_socks_port", 1770))
-            if m.mode_mgr.run_cpller(ssh_port, 0):
-                m.mode_mgr.inetcpl_ssh_active = False
-
-        if not m.tor_manager.is_running():
-            m.tor_manager.start()
-        if m.mode_mgr.run_cpller(9853, 1):
-            m.mode_mgr.inetcpl_tor_active = True
-    else:
-        if m.mode_mgr.run_cpller(9853, 0):
-            m.mode_mgr.inetcpl_tor_active = False
-    update_proxy_status()
-    m.update_menu()
+    toggle_inetcpl_rules()
 
 def toggle_inetcpl_bd():
-    if not m.mode_mgr.inetcpl_bd_active:
-        if m.mode_mgr.inetcpl_vless_active:
-            if m.mode_mgr.run_cpller(1790, 0):
-                m.mode_mgr.inetcpl_vless_active = False
-        if m.mode_mgr.inetcpl_tor_active:
-            if m.mode_mgr.run_cpller(9853, 0):
-                m.mode_mgr.inetcpl_tor_active = False
-        if m.mode_mgr.inetcpl_opera_active:
-            if m.mode_mgr.run_cpller(1785, 0):
-                m.mode_mgr.inetcpl_opera_active = False
-        if getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-            ssh_port = int(m.config.get("ssh_socks_port", 1770))
-            if m.mode_mgr.run_cpller(ssh_port, 0):
-                m.mode_mgr.inetcpl_ssh_active = False
-
-        if not m.byedpi_manager.is_running():
-            m.byedpi_manager.start()
-        if m.mode_mgr.run_cpller(1780, 1):
-            m.mode_mgr.inetcpl_bd_active = True
-    else:
-        if m.mode_mgr.run_cpller(1780, 0):
-            m.mode_mgr.inetcpl_bd_active = False
-    update_proxy_status()
-    m.update_menu()
+    toggle_inetcpl_rules()
 
 def toggle_inetcpl_vless():
-    if not m.mode_mgr.inetcpl_vless_active:
-        if m.mode_mgr.inetcpl_bd_active:
-            if m.mode_mgr.run_cpller(1780, 0):
-                m.mode_mgr.inetcpl_bd_active = False
-        if m.mode_mgr.inetcpl_tor_active:
-            if m.mode_mgr.run_cpller(9853, 0):
-                m.mode_mgr.inetcpl_tor_active = False
-        if m.mode_mgr.inetcpl_opera_active:
-            if m.mode_mgr.run_cpller(1785, 0):
-                m.mode_mgr.inetcpl_opera_active = False
-        if getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-            ssh_port = int(m.config.get("ssh_socks_port", 1770))
-            if m.mode_mgr.run_cpller(ssh_port, 0):
-                m.mode_mgr.inetcpl_ssh_active = False
-
-        if not m.vless_mgr.is_running():
-            m.vless_mgr.start()
-        if m.mode_mgr.run_cpller(1790, 1):
-            m.mode_mgr.inetcpl_vless_active = True
-    else:
-        if m.mode_mgr.run_cpller(1790, 0):
-            m.mode_mgr.inetcpl_vless_active = False
-    update_proxy_status()
-    m.update_menu()
+    toggle_inetcpl_rules()
 
 def toggle_inetcpl_opera():
-    if not m.mode_mgr.inetcpl_opera_active:
-        if m.mode_mgr.inetcpl_bd_active:
-            if m.mode_mgr.run_cpller(1780, 0):
-                m.mode_mgr.inetcpl_bd_active = False
-        if m.mode_mgr.inetcpl_tor_active:
-            if m.mode_mgr.run_cpller(9853, 0):
-                m.mode_mgr.inetcpl_tor_active = False
-        if m.mode_mgr.inetcpl_vless_active:
-            if m.mode_mgr.run_cpller(1790, 0):
-                m.mode_mgr.inetcpl_vless_active = False
-        if getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-            ssh_port = int(m.config.get("ssh_socks_port", 1770))
-            if m.mode_mgr.run_cpller(ssh_port, 0):
-                m.mode_mgr.inetcpl_ssh_active = False
-
-        if not m.opera_mgr.is_running():
-            m.opera_mgr.start()
-        if m.mode_mgr.run_cpller(1785, 1):
-            m.mode_mgr.inetcpl_opera_active = True
-    else:
-        if m.mode_mgr.run_cpller(1785, 0):
-            m.mode_mgr.inetcpl_opera_active = False
-    update_proxy_status()
-    m.update_menu()
+    toggle_inetcpl_rules()
 
 def toggle_inetcpl_ssh():
-    ssh_port = int(m.config.get("ssh_socks_port", 1770))
-    if not getattr(m.mode_mgr, 'inetcpl_ssh_active', False):
-        if m.mode_mgr.inetcpl_bd_active:
-            if m.mode_mgr.run_cpller(1780, 0):
-                m.mode_mgr.inetcpl_bd_active = False
-        if m.mode_mgr.inetcpl_tor_active:
-            if m.mode_mgr.run_cpller(9853, 0):
-                m.mode_mgr.inetcpl_tor_active = False
-        if m.mode_mgr.inetcpl_vless_active:
-            if m.mode_mgr.run_cpller(1790, 0):
-                m.mode_mgr.inetcpl_vless_active = False
-        if m.mode_mgr.inetcpl_opera_active:
-            if m.mode_mgr.run_cpller(1785, 0):
-                m.mode_mgr.inetcpl_opera_active = False
-
-        if not m.ssh_mgr.is_running():
-            m.ssh_mgr.start(silent_if_not_configured=True)
-        if m.mode_mgr.run_cpller(ssh_port, 1):
-            m.mode_mgr.inetcpl_ssh_active = True
-    else:
-        if m.mode_mgr.run_cpller(ssh_port, 0):
-            m.mode_mgr.inetcpl_ssh_active = False
-    update_proxy_status()
-    m.update_menu()
+    toggle_inetcpl_rules()
 
 def toggle_singbox_tun(port, ptype="socks"):
     if m.mode_mgr.tun_proxy_port == port:

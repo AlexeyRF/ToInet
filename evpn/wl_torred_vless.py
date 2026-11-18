@@ -2,7 +2,10 @@ import os
 import sys
 def safe_print(*args, **kwargs):
     try:
-        with open(os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'logs', 'wl_vless.log'), 'a', encoding='utf-8') as f:
+        from managers.system_utils import get_base_dir
+        log_dir = os.path.join(get_base_dir(), 'logs')
+        os.makedirs(log_dir, exist_ok=True)
+        with open(os.path.join(log_dir, 'wl_vless.log'), 'a', encoding='utf-8') as f:
             f.write(' '.join(map(str, args)) + '\n')
     except:
         pass
@@ -22,7 +25,8 @@ import subprocess
 import threading
 import psutil
 
-CURRENT_DIR = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.abspath(__file__))
+from managers.system_utils import get_base_dir
+CURRENT_DIR = get_base_dir()
 BIN_DIR = os.path.join(CURRENT_DIR, "bin")
 SING_BOX_DIR = os.path.join(BIN_DIR, "sing-box")
 SING_BOX_EXE = os.path.join(SING_BOX_DIR, "sing-box.exe")
