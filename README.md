@@ -17,7 +17,7 @@
 
 ### Основные возможности
 
-* **zDPI & ByeDPI:** продвинутый локальный обход DPI прямо на ПК без внешних серверов (объединяет ByeDPI и desync-методы Zapret2 в чистом User-Space без драйверов: L7-диссекция TLS ClientHello/QUIC/HTTP, динамические маркеры midsld/sniext, fake-шаблоны Kyber/Google, сброс QUIC, а также встроенный ML-оптимизатор стратегий).
+* **zDPI:** локальный обход DPI (десинхронизация и фрагментация TCP/HTTP/TLS/QUIC) прямо на компьютере без внешних серверов.
 * **Tor:** анонимная маршрутизация трафика с поддержкой мостов и подключаемых транспортов (obfs4, snowflake, conjure).
 * **TGWS & Gatik:** MTProto-проксирование через веб-сокеты и динамический SOCKS5-шлюз для Telegram.
 * **Opera Proxy:** быстрый прокси-туннель через распределенную инфраструктуру Opera.
@@ -53,7 +53,7 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 
 ### Key Features
 
-* **zDPI & ByeDPI:** Advanced local DPI evasion without external servers (combines ByeDPI and Zapret2 desync methods in pure User-Space without drivers: L7 TLS ClientHello/QUIC/HTTP dissection, dynamic midsld/sniext markers, built-in Kyber/Google fake payloads, QUIC drop, plus an integrated ML strategy optimizer).
+* **zDPI:** Local DPI evasion (TCP/HTTP/TLS/QUIC desynchronization and fragmentation) directly on your PC without external servers.
 * **Tor:** Anonymous onion routing with bridge support and pluggable transports (obfs4, snowflake, conjure).
 * **TGWS & Gatik:** WebSocket-based MTProto proxying and dynamic SOCKS5 gateway for Telegram.
 * **Opera Proxy:** Fast proxy tunnel utilizing Opera's distributed infrastructure.
@@ -89,7 +89,7 @@ Conçu pour restaurer un accès libre à Internet tout en **préservant au maxim
 
 ### Fonctionnalités principales
 
-* **zDPI & ByeDPI :** Contournement DPI local avancé sans serveur tiers (combine ByeDPI et les techniques de désynchronisation Zapret2 en pur User-Space sans pilote : dissection L7 TLS ClientHello/QUIC/HTTP, marqueurs dynamiques midsld/sniext, faux paquets Kyber/Google, rejet QUIC et optimiseur de stratégies ML).
+* **zDPI :** Contournement DPI local (désynchronisation et fragmentation TCP/HTTP/TLS/QUIC) directement sur votre PC sans serveur tiers.
 * **Tor :** Routage en oignon anonyme avec gestion des ponts et transports enfichables (obfs4, snowflake, conjure).
 * **TGWS & Gatik :** Proxy MTProto sur WebSockets et passerelle SOCKS5 dynamique pour Telegram.
 * **Opera Proxy :** Tunnel proxy rapide s'appuyant sur l'infrastructure distribuée d'Opera.
