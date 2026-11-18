@@ -12,19 +12,22 @@ and genetic / Bayesian strategy synthesis.
 """
 
 import os
+import sys
 import re
 import json
 import time
 import random
 from typing import List, Dict, Tuple, Any, Optional
 
-try:
-    import numpy as np
-    from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-    from sklearn.exceptions import NotFittedError
-    HAS_SKLEARN = True
-except ImportError:
-    HAS_SKLEARN = False
+# Optional ML backend:
+# By default, to prevent bundling massive deep learning / scientific packages
+# (torch, scipy, numpy, transformers ~2.5+ GB) into the distribution, we use a
+# built-in lightweight pure-Python ML optimizer (KNN surrogate predictor,
+# feature correlation analysis, and genetic mutation/synthesis).
+# Full scikit-learn model training can be enabled optionally in non-frozen environments
+# via the TOINET_ENABLE_SKLEARN=1 environment variable.
+HAS_SKLEARN = False
+RandomForestRegressor = None
 
 FEATURE_NAMES = [
     "has_fake",
@@ -236,44 +239,70 @@ class ZDPIMLOptimizer:
         X = [item["features"] for item in self.history]
         y = [item["score"] for item in self.history]
 
-        if HAS_SKLEARN:
+        # Optional scikit-learn backend (if explicitly enabled and installed)
+        if os.environ.get("TOINET_ENABLE_SKLEARN", "0") == "1":
             try:
-                # Random Forest with Gradient Boosting ensemble
-                self.model = RandomForestRegressor(
-                    n_estimators=40,
-                    max_depth=6,
-                    random_state=42
-                )
+                import importlib
+                sklearn_ensemble = importlib.import_module("sklearn.ensemble")
+                rf_cls = getattr(sklearn_ensemble, "RandomForestRegressor")
+                self.model = rf_cls(n_estimators=40, max_depth=6, random_state=42)
                 self.model.fit(X, y)
-                
-                # Calculate feature importances
                 importances = self.model.feature_importances_
                 paired = list(zip(FEATURE_NAMES, importances))
                 paired.sort(key=lambda p: p[1], reverse=True)
                 self.top_features = [(name, float(val)) for name, val in paired if val > 0.03][:5]
                 return True
             except Exception as e:
-                print(f"[zDPI ML] Ошибка обучения модели: {e}")
-                self.model = None
-                return False
-        else:
-            # Fallback KNN surrogate model
-            self.model = "fallback_knn"
-            return True
+                print(f"[zDPI ML] Ошибка обучения sklearn модели, переход на встроенный движок: {e}")
+
+        # Lightweight pure-Python surrogate model (KNN + correlation analysis)
+        self.model = "fallback_knn"
+
+        # Calculate pure-Python feature importance based on correlation with score
+        try:
+            n = len(y)
+            avg_y = sum(y) / n
+            var_y = sum((val - avg_y) ** 2 for val in y)
+            if var_y > 1e-9:
+                correlations = []
+                for j, fname in enumerate(FEATURE_NAMES):
+                    col = [row[j] for row in X]
+                    avg_c = sum(col) / n
+                    var_c = sum((c - avg_c) ** 2 for c in col)
+                    if var_c > 1e-9:
+                        cov = sum((c - avg_c) * (val - avg_y) for c, val in zip(col, y))
+                        r = max(0.0, cov / ((var_c * var_y) ** 0.5))
+                        correlations.append((fname, r))
+                    else:
+                        correlations.append((fname, 0.0))
+                total_r = sum(c[1] for c in correlations)
+                if total_r > 0:
+                    paired = [(fname, r / total_r) for fname, r in correlations]
+                    paired.sort(key=lambda p: p[1], reverse=True)
+                    self.top_features = [(name, float(val)) for name, val in paired if val > 0.03][:5]
+                else:
+                    self.top_features = []
+            else:
+                self.top_features = []
+        except Exception as e:
+            print(f"[zDPI ML] Ошибка анализа факторов: {e}")
+            self.top_features = []
+
+        return True
 
     def predict_score(self, strategy: str) -> float:
         """
         Predict circumvention success score (0.0 to 100.0) for an untested strategy.
         """
         feat = extract_features(strategy)
-        if HAS_SKLEARN and self.model and self.model != "fallback_knn":
+        if self.model and self.model != "fallback_knn":
             try:
                 val = self.model.predict([feat])[0]
                 return float(max(0.0, min(100.0, val)))
             except Exception:
                 pass
 
-        # Fallback heuristic prediction using weighted history comparison
+        # Lightweight pure-Python heuristic prediction using weighted history comparison (KNN)
         if not self.history:
             return 50.0
 

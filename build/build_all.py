@@ -49,6 +49,28 @@ EXCLUDE_DATA_FILES = {"cached-certs", "cached-descriptors", "cached-descriptors.
 EXCLUDE_EVPN_FILES = {"subs_cache.json", "working_nodes.json", "evpn_config.json",
                       "vless_state.json", "blacklist.json", "evpn.log"}
 
+# Модули, исключаемые из сборщика PyInstaller
+# Исключение тяжелых ML / Data Science пакетов (torch, scipy, sklearn, transformers и т.д.)
+# предотвращает раздувание EXE на 2.5-3 ГБ.
+# Модуль zDPI ML использует встроенный чистый Python-движок (KNN + генетический синтез).
+EXCLUDE_MODULES = [
+    # Неиспользуемые GUI библиотеки
+    "PyQt5", "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets",
+    "PyQt6", "PyQt6.QtCore", "PyQt6.QtGui", "PyQt6.QtWidgets",
+    "PySide2", "tkinter", "Tkinter",
+    # Тяжелые ML / Deep Learning / Scientific пакеты
+    "torch", "torchvision", "torchaudio", "triton",
+    "scipy", "sklearn", "scikit_learn",
+    "matplotlib", "pandas", "numpy", "polars",
+    "transformers", "datasets", "huggingface_hub", "safetensors",
+    "cv2", "PIL", "Pillow",
+    "onnx", "onnxruntime", "openvino", "tensorboard",
+    "IPython", "ipykernel", "jupyter", "notebook", "traitlets",
+    "sympy", "llvmlite", "numba", "cupy", "jax", "dask",
+    "accelerate", "bitsandbytes",
+    "pytest", "unittest", "unittest.mock"
+]
+
 
 def download_file(url, output_path, timeout=60):
     """Скачивает файл с заголовком User-Agent"""
@@ -368,12 +390,12 @@ def compile_exe():
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
         "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
-        "managers.tgws_manager", "ui.tgws_settings"
+        "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
         
-    for em in ["PyQt5", "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets", "PyQt6", "PySide2", "tkinter"]:
+    for em in EXCLUDE_MODULES:
         cmd.extend(["--exclude-module", em])
         
     # Вшиваем модули в sys._MEIPASS
@@ -501,12 +523,12 @@ def build_onefile_release():
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
         "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
-        "managers.tgws_manager", "ui.tgws_settings"
+        "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
         
-    for em in ["PyQt5", "PyQt5.QtCore", "PyQt5.QtGui", "PyQt5.QtWidgets", "PyQt6", "PySide2", "tkinter"]:
+    for em in EXCLUDE_MODULES:
         cmd.extend(["--exclude-module", em])
         
     sep = ";" if os.name == "nt" else ":"
