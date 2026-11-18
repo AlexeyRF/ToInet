@@ -3,20 +3,36 @@ import re
 from PySide6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QCheckBox
 from PySide6.QtCore import QObject, Signal, Qt
 from PySide6.QtGui import QTextCursor
-from managers.system_utils import T
+from managers.system_utils import T, get_base_dir, clean_logs
+
+# Обеспечиваем совместимость при вызове .End на экземпляре QTextCursor (например, text_edit.textCursor().End) в PySide6
+try:
+    _orig_tc_getattr = getattr(QTextCursor, '__getattr__', None)
+    def _tc_getattr(self, name):
+        if hasattr(type(self), name):
+            return getattr(type(self), name)
+        if _orig_tc_getattr:
+            return _orig_tc_getattr(self, name)
+        raise AttributeError(f"'{type(self).__name__}' object has no attribute '{name}'")
+    QTextCursor.__getattr__ = _tc_getattr
+    if not hasattr(QTextCursor, 'End'):
+        setattr(QTextCursor, 'End', QTextCursor.MoveOperation.End)
+except Exception:
+    pass
 
 class OutputLogger(QObject):
     log_signal = Signal(str)
     def __init__(self, original_stream):
         super().__init__()
         self.original_stream = original_stream
-        import os
-        if not os.path.exists('logs'): os.makedirs('logs')
-        self.log_file = os.path.join('logs', 'app.log')
+        base_dir = get_base_dir()
+        logs_dir = os.path.join(base_dir, 'logs')
+        if not os.path.exists(logs_dir):
+            os.makedirs(logs_dir, exist_ok=True)
+        self.log_file = os.path.join(logs_dir, 'app.log')
         self._write_count = 0
         try:
-            from managers.system_utils import clean_logs
-            clean_logs('logs')
+            clean_logs(logs_dir)
         except Exception:
             pass
 
@@ -109,12 +125,24 @@ class AppLogWindow(QDialog):
         self.all_logs = []  # Store raw tuples of (category, text)
         self.current_category = "Other"
 
+    def _scroll_to_end(self):
+        try:
+            self.text_edit.moveCursor(QTextCursor.MoveOperation.End)
+        except Exception:
+            try:
+                self.text_edit.moveCursor(getattr(QTextCursor, 'End', None))
+            except Exception:
+                pass
+
     def clear_logs(self):
         self.all_logs = []
         self.text_edit.clear()
         try:
-            if hasattr(self, 'log_file') and os.path.exists(self.log_file):
-                with open(self.log_file, 'w', encoding='utf-8') as f:
+            log_file = getattr(self, 'log_file', None)
+            if not log_file and hasattr(sys.stdout, 'log_file'):
+                log_file = sys.stdout.log_file
+            if log_file and os.path.exists(log_file):
+                with open(log_file, 'w', encoding='utf-8') as f:
                     f.write("")
         except Exception:
             pass
@@ -139,7 +167,7 @@ class AppLogWindow(QDialog):
         for cat, text in self.all_logs:
             if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
                 self.text_edit.insertPlainText(text)
-        self.text_edit.moveCursor(QTextCursor.End)
+        self._scroll_to_end()
 
     def append_log(self, text):
         if not text:
@@ -165,9 +193,9 @@ class AppLogWindow(QDialog):
         
         # If the category is checked (or it's "Other"), append to text edit
         if cat == "Other" or (cat in self.categories and self.categories[cat].isChecked()):
-            self.text_edit.moveCursor(QTextCursor.End)
+            self._scroll_to_end()
             self.text_edit.insertPlainText(text)
-            self.text_edit.moveCursor(QTextCursor.End)
+            self._scroll_to_end()
 
 app_log_window = None
 def setup_logging():
