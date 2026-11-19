@@ -91,6 +91,7 @@ toggle_opera = service_controller.toggle_opera
 toggle_ssh = service_controller.toggle_ssh
 toggle_tgws = service_controller.toggle_tgws
 toggle_proxifier = service_controller.toggle_proxifier
+toggle_tun = service_controller.toggle_tun
 toggle_inetcpl_tor = service_controller.toggle_inetcpl_tor
 toggle_inetcpl_bd = service_controller.toggle_inetcpl_bd
 toggle_inetcpl_vless = service_controller.toggle_inetcpl_vless
@@ -212,11 +213,10 @@ def create_tray_menu():
             
         if mode_type == "inetcpl":
             connect_default_inetcpl_gateway()
-        elif "proxifier" in tools and mode_type != "evpn":
-            if mode_type == "empty":
-                mode_mgr.start_proxifier()
-            else:
-                mode_mgr.start_tun()
+        elif mode_type == "tun":
+            mode_mgr.start_tun()
+        elif mode_type == "empty" and "proxifier" in tools:
+            mode_mgr.start_proxifier()
             
         if "ext" in tools:
             ext_programs_manager.start_all()
@@ -229,11 +229,6 @@ def create_tray_menu():
         tools = config.get("autostart_tools", ["byedpi", "tor", "opera", "tgws", "ext"])
         if "tgws" in tools and (not lang._is_en or config.get("enable_ru_features", False)):
             QTimer.singleShot(2000, lambda: tgws_mgr.start() if not tgws_mgr.running else None)
-        if "proxifier" in tools and mode_type != "evpn":
-            if mode_type == "empty":
-                mode_mgr.start_proxifier()
-            else:
-                mode_mgr.start_tun()
         if "ext" in tools:
             ext_programs_manager.start_all()
         

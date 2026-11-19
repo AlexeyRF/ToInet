@@ -153,7 +153,7 @@ class AutostartSettingsWindow(QMainWindow):
         self.cb_tgws.toggled.connect(self.on_tgws_toggled)
         tools_layout.addWidget(self.cb_tgws, 2, 0)
         
-        self.cb_proxifier = QCheckBox(T("Проксификатор (TUN)", "Proxifier (TUN)", "Proxificateur (TUN)"))
+        self.cb_proxifier = QCheckBox(T("Внешний Proxifier (режим EMPTY)", "External Proxifier (EMPTY mode)", "Proxifier externe (mode EMPTY)"))
         self.cb_proxifier.setChecked("proxifier" in self.autostart_tools)
         tools_layout.addWidget(self.cb_proxifier, 2, 1)
         

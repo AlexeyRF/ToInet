@@ -1,7 +1,6 @@
 # Список приоритетных сайтов для проверки
 # Эти сайты отмечены галочками в списке доменов
 
-rutracker.org
 youtube.com
 www.youtube.com
 signaler-pa.youtube.com
@@ -26,3 +25,12 @@ rr4---sn-jvhnu5g-c35d.googlevideo.com
 rr1---sn-q4fl6n6y.googlevideo.com
 rr2---sn-hgn7ynek.googlevideo.com
 rr1---sn-xguxaxjvh-gufl.googlevideo.com
+youtu.be
+i.ytimg.com
+i9.ytimg.com
+yt3.ggpht.com
+yt4.ggpht.com
+googleapis.com
+jnn-pa.googleapis.com
+googleusercontent.com
+yt3.googleusercontent.com

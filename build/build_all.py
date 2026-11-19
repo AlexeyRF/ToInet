@@ -261,6 +261,137 @@ def update_tor():
         print(f"  [ПРЕДУПРЕЖДЕНИЕ] Не удалось обновить Tor: {e}. Используется существующая версия.")
 
 
+# Шаблоны и домены, исключаемые из списка блокировки (не являются экстремизмом):
+# Торренты, легитимные медиа, библиотеки, музыка, почта, юмор, игровые порталы
+NON_EXTREMIST_EXCLUSIONS = [
+    # Торренты и файлообмен
+    'rutracker.org', 'waptorrent',
+    # Почта и связь
+    'protonmail.com', 'gmail.ru', 'fasebook.com', 'uk-ua.fasebook',
+    # Музыкальные сервисы и поиск MP3
+    'last.fm', 'last.by', 'last.bu', 'pleer.com', 'pleer.net', 'kivvi.kz', 'lalamus.com',
+    'ipleer.fm', 'myzuka', 'muzofon', 'zvonko.me', 'zvuk.me', 'realmusic.ru', 'tune.cc',
+    'fmusic', 'gdeepmusic', 'hqmp3', 'kibergrad', 'kinopesenki', 'domino-music',
+    'mp3', 'muz', 'pesni', 'pesnja', 'pesenok', 'audios.xyz', 'laudios.ru', 'ozaudio.ru',
+    'unasmuz', 'vmuzic', 'vmuzike', 'vozmimp3', 'vozmitxt', 'xmusic', 'yesmp3',
+    'musezone', 'musicalka', 'musvid', 'my-hit.me', 'mypesnik', 'myzlo', 'naitimp3',
+    'nemp.ru', 'nemp3.ru', 'onesong.ru', 'online-song.net', 'plus-music', 'songhouse',
+    'songspro', 'textpesni', 'webkind.ru', 'wedkind.ru', 'wikibit.net', 'alllyrix', 'altwall.net',
+    'eeefm.eom',
+    # Электронные библиотеки, аккорды, документы
+    'coollib.net', 'lib.rus.ec', 'lib.aldebaran.ru', 'lib.mn', 'libes.ru', 'libforum.ru',
+    'libros.am', 'cultlib.alfaspace.net', 'docplayer.ru', 'mychords.net', 'ru.scribd.com',
+    'pdf.knigi-x.ru', 'pandia.ru', 'uchebana5.ru', 'refdb.ru', 'mybiblioteka.su', 'vb.userdocs.ru',
+    'litbash.sitecity.ru',
+    # Игры и развлечения
+    'gametracker.com', 'clashroyaledeckbuilder.com', 'poigraem.net', 'digftnplay.ru',
+    # Мемы, аниме, юмор
+    'joyreactor.cc', 'joyreactor.ee', 'anime.old.reactor.cc', 'animevid.ru', 'absurdopedia.net',
+    'demotivators.to', 'dezinfo.net', 'troll-face.ru', 'hlamer.ru', 'hm6.ru', 'nibler.ru',
+    'ucrazy.ru', 'crazynet.ru', 'copypaste.me',
+    # Новостные издания и порталы
+    'snob.ru', 'mk.ru', 'inosmi.ru', 'regnum.ru', 'zaks.ru', 'zavtra.ru', 'newsland.com',
+    'newslab.ru', 'news29.ru', 'bnkomi.ru', 'sovinform.ru', 'sovsekretno.ru', 'credo.ru',
+    'portal.credo.ru', 'bolshoyvopros.ru', 'anews.com', 'argumentua.com', 'gazeta.ua',
+    'fakty.ictv.ua', 'uapress.info', 'uagolos.com', 'mediaport.ua', 'replyua.net',
+    'vesti.kg', 'dal.by',
+    # Тематические форумы и дача
+    'talks.guns.ru', 'wcb.ru', 'driveural.ru', 'color.ru', 'fanat1k.ru', 'fank.ru',
+    'fans-edge.info', 'vip-samodelki.ru', 'tvoybaby.org', 'style.emoolive.ru', 'bod-mod.ru',
+    'otvetmail.ru', 'radonvideo.ru', 'rbtube.ru', 'smotrovik.me', 'smoz.ru', 'tubethe.com',
+    'videoscop.cc', 'videosme.ru', 'vidooly.com', 'vidoz.net', 'vidoz.pp.ua', 'vids.bastizone.com',
+    'truba.com', 'tube.com', 'go2films.ru', 'cxz.to', 'grandhdcns.net',
+    # Блоговые платформы и городские порталы
+    'maxpark.com', 'mirtesen.ru', 'zakon.mirtesen', 'zakon.mirtesen.ru', 'livejornal.com',
+    'livejoumai.com', 'liveiournal.com', 'livegournal.com', 'livrjournal.com', 'livainternet.ru',
+    'gorod.cn.ua', 'gorodsalavat.ru', 'gorno-altaisk.info', 'kuban.ru', 'portalpermi.ru',
+    'kazak-chita.ru', 'shurarb.ru',
+    # Опечатки и служебные
+    'google.ry', 'youtube.come', 'yotube.com', 'video.yandex.ra', 'ok.ni', 'km.ru', 'mobi.ru',
+    'el.ru', 'k.com', 'kre.ru',
+    # Хостинги картинок и файлов
+    'i.piccy.info', 'i037.radikal.ru', 'keep4u.ru', 's2.postimg.org', 'simplest-image-hosting.net',
+    'file-up.net', 'filka.info', 'rapidzona.com', 'rabidshare.info', 'mc01.userfiles.me',
+    'mc01.usersfiles.me', 'msxc.userfiles.me',
+    # Прочие неэкстремистские сайты
+    'bilokurakvne.pp.ua', 'carshsmpoo.ru', 'chuhotezvous.ru', 'dmitrilove.my1.ru',
+    'elniki-fans.ru', 'forum.kukmara-rayon.ru', 'ilia13.dubki.ru', 'intelbi.ru',
+    'iodzone.de', 'iomedia.ru', 'korsar-bomb.do.am', 'loys.life', 'master-of-life.ru',
+    'masteroff.org', 'minjust.net', 'mixpromo.net', 'mmoru.com', 'molvica.com', 'mozzic.ru',
+    'nationalism.org', 'nofollow.ru', 'novostink.ru', 'nrnews.ru', 'offtop.ru', 'opppa.ru',
+    'palbit.ru', 'palbu.ru', 'phao.info', 'punk.nnov.ru', 'rest24.mypage.ru', 'rfvrfzcenter.com',
+    'ri-online.ru', 'rodonews.ru', 'rr-rus.ru', 'sakh-88.nm.ru', 'schooler.org.ua',
+    'setkazak.mybb.ru', 'shareclip.net', 'shob.ru', 'simplest-image-hosting.net',
+    'slavyanskaya-kultura.ru', 'specnaz.ru', 'stroidom.com.ua', 'tatar-gazeta.ru',
+    'tatarlar.ru', 'tekstili.blogspot.ru', 'tekstovoi.ru', 'tovbin.hoter.ru',
+    'uboyno.ru', 'ufagub.com', 'uzhgorod.in', 'vchaspik.ua', 'vdesyatku.biz',
+    'victorbeliy.mypage.ru', 'vladrons.com', 'vnmazurenko.biogspot.ru', 'vsesuki.com',
+    'western-138.ru', 'xartman.ru', 'za-info.ru', 'zdravomyslie.ru'
+]
+
+
+def is_non_extremist_domain(d: str) -> bool:
+    clean = d.lower().strip('.* ')
+    for pat in NON_EXTREMIST_EXCLUSIONS:
+        if clean == pat or clean.endswith('.' + pat) or pat in clean:
+            return True
+    return False
+
+
+def sync_blocked_domains():
+    """Автоматическая загрузка, фильтрация и слияние списка экстремистских доменов при сборке"""
+    print("\n[СИНХРОНИЗАЦИЯ] Обновление списка экстремистских доменов (AlexeyRF/extremism_domains)...")
+    new_domains = []
+    try:
+        url = "https://raw.githubusercontent.com/AlexeyRF/extremism_domains/main/banned_domains.txt"
+        req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+        with urllib.request.urlopen(req, timeout=12) as resp:
+            text = resp.read().decode('utf-8', errors='ignore')
+            new_domains = [l.strip() for l in text.splitlines() if l.strip()]
+        print(f"  -> Загружено {len(new_domains)} доменов из репозитория.")
+    except Exception as e:
+        print(f"  [ПРЕДУПРЕЖДЕНИЕ] Не удалось загрузить extremism_domains: {e}. Используются локальные данные.")
+
+    ppx_file = BASE_DIR / "Toinet.ppx"
+    if ppx_file.exists():
+        content = ppx_file.read_text(encoding="utf-8")
+        pattern = r'(<Rule enabled="true">\s*<Action type="Block"\s*/>\s*<Targets>)(.*?)(</Targets>\s*<Name>Block</Name>)'
+        m = re.search(pattern, content, re.DOTALL)
+        if m:
+            old_raw = m.group(2)
+            old_items = [x.strip() for x in re.split(r'[\s;\n\r]+', old_raw) if x.strip()]
+            all_items = old_items + new_domains
+            seen = set()
+            unique_items = []
+            for it in all_items:
+                clean = it.strip('; \r\n\t').lower()
+                if not clean or is_non_extremist_domain(clean):
+                    continue
+                if clean not in seen:
+                    seen.add(clean)
+                    unique_items.append(it.strip('; \r\n\t'))
+
+            lines = []
+            chunk = []
+            for item in unique_items:
+                chunk.append(item)
+                if len(chunk) >= 5:
+                    lines.append('; '.join(chunk) + ';')
+                    chunk = []
+            if chunk:
+                lines.append('; '.join(chunk) + ';')
+
+            formatted_targets = '\n' + '\n'.join(lines) + '\n'
+            new_rule = m.group(1) + formatted_targets + m.group(3)
+            new_content = content[:m.start()] + new_rule + content[m.end():]
+            ppx_file.write_text(new_content, encoding="utf-8")
+
+            data_banned = BASE_DIR / "data" / "banned_domains.txt"
+            data_banned.parent.mkdir(parents=True, exist_ok=True)
+            data_banned.write_text("\n".join(unique_items) + "\n", encoding="utf-8")
+            print(f"  -> Профиль Toinet.ppx и data/banned_domains.txt обновлены ({len(unique_items)} проверенных доменов).")
+
+
 def update_all_binaries():
     """Последовательно обновляет все внешние зависимости"""
     print("\n==================================================")
@@ -333,6 +464,7 @@ def build_python_zip():
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/banned_domains.txt",
             "data/telegram.jpg",
             "data/telegram.png",
             "tor/tor.exe",
@@ -465,6 +597,7 @@ def build_portable_zip(compiled_exe_path):
             "data/geoip6",
             "data/bridges.txt",
             "data/google_cidrs.json",
+            "data/banned_domains.txt",
             "data/telegram.jpg",
             "data/telegram.png",
             "evpn/subs.txt",
@@ -552,6 +685,7 @@ def build_onefile_release():
         "data/geoip6",
         "data/bridges.txt",
         "data/google_cidrs.json",
+        "data/banned_domains.txt",
         "data/telegram.jpg",
         "data/telegram.png",
     ]
@@ -652,6 +786,9 @@ def build_all(update_binaries=False, target="all"):
     print("==================================================")
     
     clean_temp_files()
+    
+    # Автоматическая синхронизация и очистка заблокированных доменов
+    sync_blocked_domains()
     
     if update_binaries:
         update_all_binaries()

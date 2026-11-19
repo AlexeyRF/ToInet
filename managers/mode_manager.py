@@ -1181,11 +1181,13 @@ class ModeManager:
 
 
     def start_proxifier(self):
+        cfg = config_manager.load_config()
+        if cfg.get("mode_type", "").lower() == "tun":
+            self.log("Режим TUN активен: sing-box TUN выполняет роль сетевого проксификатора.")
+            return self.start_tun()
 
         import shlex
-
         from PySide6.QtWidgets import QMessageBox
-
         from managers import system_utils as lang
 
 
@@ -1295,6 +1297,9 @@ class ModeManager:
         
 
     def stop_proxifier(self, force=True):
+        cfg = config_manager.load_config()
+        if cfg.get("mode_type", "").lower() == "tun":
+            return self.stop_tun()
 
         path_line = self.get_tun_app_path()
 
@@ -1385,6 +1390,9 @@ class ModeManager:
 
 
     def restart_proxifier(self):
+        cfg = config_manager.load_config()
+        if cfg.get("mode_type", "").lower() == "tun":
+            return self.restart_tun()
 
         self.log("Перезапуск проксификатора...")
 
@@ -1399,6 +1407,9 @@ class ModeManager:
         return res
 
     def proxifier_running(self):
+        cfg = config_manager.load_config()
+        if cfg.get("mode_type", "").lower() == "tun":
+            return self.tun_running()
 
         if hasattr(self, 'proxifier_process') and self.proxifier_process:
 
@@ -1565,6 +1576,15 @@ class ModeManager:
             subprocess.Popen([exe_path], creationflags=creationflags)
         else:
             self.log(f"programs_settings.exe не найден: {exe_path}")
+
+    def open_rules_editor(self, parent=None):
+        try:
+            from ui.rules_editor import RulesEditorDialog
+            dlg = RulesEditorDialog(parent=parent)
+            dlg.exec()
+        except Exception as e:
+            from PySide6.QtWidgets import QMessageBox
+            QMessageBox.warning(parent, "Ошибка", f"Не удалось открыть редактор правил: {e}")
 
 
 

@@ -223,7 +223,18 @@ def toggle_tgws():
     update_proxy_status()
     m.update_menu()
 
+def toggle_tun():
+    if m.mode_mgr.tun_running():
+        m.mode_mgr.stop_tun()
+    else:
+        m.mode_mgr.start_tun()
+    update_proxy_status()
+    m.update_menu()
+
 def toggle_proxifier():
+    if m.mode_type == "tun":
+        toggle_tun()
+        return
     if not m.mode_mgr.proxifier_running():
         m.mode_mgr.start_proxifier()
     else:

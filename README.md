@@ -42,6 +42,15 @@
 
 > Остальные компоненты и методы обхода (гибридный zDPI, Gatik, SSH Tunnel, cpller, ML-оптимизатор, системные утилиты и лаунчер) разработаны автором репозитория.
 
+### Конституционные гарантии свободы слова
+
+* **Конституция Российской Федерации, Статья 29:**
+  > 1. Каждому гарантируется свобода мысли и слова.  
+  > 2. Не допускаются пропаганда или агитация, возбуждающие социальную, расовую, национальную или религиозную ненависть и вражду. Запрещается пропаганда социального, расового, национального, религиозного или языкового превосходства.  
+  > 3. Никто не может быть принужден к выражению своих мнений и убеждений или отказу от них.  
+  > 4. Каждый имеет право свободно искать, получать, передавать, производить и распространять информацию любым законным способом. Перечень сведений, составляющих государственную тайну, определяется федеральным законом.  
+  > 5. Гарантируется свобода массовой информации. Цензура запрещается.
+
 ---
 
 ## English
@@ -78,6 +87,13 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 
 > The remaining bypass methods and components (hybrid zDPI, Gatik, SSH Tunnel, cpller, ML Optimizer, system utilities, and launcher) were developed by the repository author.
 
+### Constitutional Guarantees of Freedom of Speech
+
+* **Constitutional Law (Human Rights Act 1998, Bill of Rights 1689):**
+  > The UK has an uncodified constitution; the right to freedom of expression is protected by cornerstone constitutional statutes:  
+  > **Human Rights Act 1998, Schedule 1, Article 10:** *"Everyone has the right to freedom of expression. This right shall include freedom to hold opinions and to receive and impart information and ideas without interference by public authority and regardless of frontiers..."*  
+  > **Bill of Rights 1689, Article 9:** Historic foundational protection of freedom of speech and debate.
+
 ---
 
 ## Français
@@ -113,3 +129,8 @@ Conçu pour restaurer un accès libre à Internet tout en **préservant au maxim
 * **Abonnements VLESS** — [zieng2](https://github.com/zieng2/wl)
 
 > Les autres composants et méthodes de contournement (zDPI hybride, Gatik, SSH Tunnel, cpller, optimiseur ML, utilitaires système et le lanceur) ont été développés par l'auteur du projet.
+
+### Garanties constitutionnelles de la liberté d'expression
+
+* **Déclaration des Droits de l'Homme et du Citoyen de 1789 (Bloc de constitutionnalité), Article 11 :**
+  > *« La libre communication des pensées et des opinions est un des droits les plus précieux de l'homme : tout citoyen peut donc parler, écrire, imprimer librement, sauf à répondre de l'abus de cette liberté dans les cas déterminés par la loi. »*

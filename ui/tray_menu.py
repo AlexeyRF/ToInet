@@ -222,8 +222,24 @@ def _update_menu_impl_unsafe():
             tg_wa = create_service_action(control_menu, "TGWS", m.tgws_mgr.running, m.toggle_tgws, lambda: (m.tgws_mgr.stop(), time.sleep(1), m.tgws_mgr.start()))
             control_menu.addAction(tg_wa)
             
-        tun_wa = create_service_action(control_menu, m.T("Проксификатор", "Proxifier"), m.mode_mgr.proxifier_running(), m.toggle_proxifier, m.mode_mgr.restart_proxifier)
-        control_menu.addAction(tun_wa)
+        if m.mode_type == "tun":
+            tun_wa = create_service_action(
+                control_menu,
+                m.T("Sing-box TUN", "Sing-box TUN"),
+                m.mode_mgr.tun_running(),
+                getattr(m, 'toggle_tun', lambda: m.mode_mgr.stop_tun() if m.mode_mgr.tun_running() else m.mode_mgr.start_tun()),
+                m.mode_mgr.restart_tun
+            )
+            control_menu.addAction(tun_wa)
+        elif m.mode_type == "empty":
+            proxi_wa = create_service_action(
+                control_menu,
+                m.T("Проксификатор", "Proxifier"),
+                m.mode_mgr.proxifier_running(),
+                m.toggle_proxifier,
+                m.mode_mgr.restart_proxifier
+            )
+            control_menu.addAction(proxi_wa)
         
         def toggle_ext():
             if m.ext_programs_manager.is_running():

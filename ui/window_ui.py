@@ -693,10 +693,12 @@ class MainWindow(QMainWindow):
             lbl_title = QLabel(title)
             lbl_title.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
             lbl_title.setStyleSheet("border: none; color: #FFFFFF; background: transparent;")
+            card.lbl_title = lbl_title
 
             lbl_port = QLabel(port_desc)
             lbl_port.setFont(QFont("Segoe UI Variable Text", 9))
             lbl_port.setStyleSheet("border: none; color: #0078D4; background: transparent; font-weight: bold;")
+            card.lbl_port = lbl_port
 
             top_row.addWidget(lbl_title)
             top_row.addWidget(lbl_port)
@@ -719,6 +721,7 @@ class MainWindow(QMainWindow):
             lbl_desc.setFont(QFont("Segoe UI Variable Text", 8))
             lbl_desc.setStyleSheet("border: none; color: #8e8e8e; background: transparent;")
             lbl_desc.setWordWrap(True)
+            card.lbl_desc = lbl_desc
             card_layout.addWidget(lbl_desc)
 
             if actions:
@@ -981,29 +984,76 @@ class MainWindow(QMainWindow):
             mini_tg_btn=gatik_tg_btn
         ))
 
-        # Section: Split Tunneling & Proxifier
+        # Section: Split Tunneling & System Interception
         sc_header = QLabel(T("Системный перехват и проксификация", "System Redirection & Proxification"))
         sc_header.setFont(QFont("Segoe UI Variable Text", 10, QFont.Bold))
         sc_header.setStyleSheet("color: #8e8e8e; margin-top: 6px; background: transparent;")
         c_layout.addWidget(sc_header)
 
-        proxi_btn = make_prov_btn(T("Путь к проксификатору", "Path to Proxifier", "Chemin vers Proxifier"),
-                                  lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_proxifier_config())
-        tun_btn = make_prov_btn(T("Параметры TUN (Sing-box) →", "Sing-box TUN Config →", "Paramètres TUN (Sing-box) →"),
-                                lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_advanced_tun_config())
+        self.interceptor_proxi_btn = make_prov_btn(
+            T("Путь к проксификатору", "Path to Proxifier", "Chemin vers Proxifier"),
+            lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_proxifier_config()
+        )
+        self.interceptor_tun_btn = make_prov_btn(
+            T("Параметры TUN (Sing-box) →", "Sing-box TUN Config →", "Paramètres TUN (Sing-box) →"),
+            lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_advanced_tun_config()
+        )
+        self.interceptor_rules_btn = make_prov_btn(
+            T("Редактор правил (Toinet.ppx) →", "Rules Editor (Toinet.ppx) →", "Éditeur de règles (Toinet.ppx) →"),
+            lambda: getattr(m, 'mode_mgr', None) and m.mode_mgr.open_rules_editor(self)
+        )
 
-        self.prox_restart_btn = make_mini_btn("↻", T("Перезапустить Proxifier", "Restart Proxifier"), lambda: (getattr(m, 'mode_mgr', None) and m.mode_mgr.restart_proxifier(), self.update_ui_state()))
-        self.prox_toggle_btn = make_mini_btn("▶", T("Запустить Proxifier", "Start Proxifier"), lambda: (m.toggle_proxifier(), self.update_ui_state()))
+        def toggle_interceptor():
+            cur_mode = getattr(m, 'mode_type', 'inetcpl').lower()
+            if cur_mode == "tun":
+                if hasattr(m, 'toggle_tun'):
+                    m.toggle_tun()
+                elif m.mode_mgr.tun_running():
+                    m.mode_mgr.stop_tun()
+                else:
+                    m.mode_mgr.start_tun()
+            elif cur_mode == "empty":
+                m.toggle_proxifier()
+            elif cur_mode == "inetcpl":
+                if hasattr(m, 'toggle_inetcpl_rules'):
+                    m.toggle_inetcpl_rules()
+                elif hasattr(m, 'activate_inetcpl_gateway'):
+                    m.activate_inetcpl_gateway()
+            elif cur_mode == "evpn":
+                if hasattr(m, 'evpn_mgr'):
+                    if m.evpn_mgr.is_running:
+                        m.evpn_mgr.stop()
+                    else:
+                        m.evpn_mgr.start()
+            self.update_ui_state()
 
-        c_layout.addWidget(create_provider_card(
+        def restart_interceptor():
+            cur_mode = getattr(m, 'mode_type', 'inetcpl').lower()
+            if cur_mode == "tun":
+                m.mode_mgr.restart_tun()
+            elif cur_mode == "empty":
+                m.mode_mgr.restart_proxifier()
+            elif cur_mode == "inetcpl":
+                m.mode_mgr.reset_inetcpl_proxy()
+                m.mode_mgr.start_inetcpl_proxy()
+            elif cur_mode == "evpn":
+                if hasattr(m, 'evpn_mgr'):
+                    m.evpn_mgr.restart()
+            self.update_ui_state()
+
+        self.prox_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart"), restart_interceptor)
+        self.prox_toggle_btn = make_mini_btn("▶", T("Запустить", "Start"), toggle_interceptor)
+
+        self.interceptor_card = create_provider_card(
             T("Системный перехват и проксификатор", "System Redirection & Proxifier", "Redirection système et Proxifier"),
             "",
             T("Маршрутизация приложений и хостов через Toinet.ppx с гибкой фильтрацией.",
               "Application and hostname routing via Toinet.ppx with flexible filtering rules."),
-            [proxi_btn, tun_btn],
+            [self.interceptor_proxi_btn, self.interceptor_tun_btn, self.interceptor_rules_btn],
             self.prox_restart_btn,
             self.prox_toggle_btn
-        ))
+        )
+        c_layout.addWidget(self.interceptor_card)
 
         c_layout.addStretch()
         scroll.setWidget(content)
@@ -1739,8 +1789,54 @@ class MainWindow(QMainWindow):
             self._update_mini_controls(getattr(self, 'gatik_restart_btn', None), self.gatik_toggle_btn, gatik_on)
 
         if hasattr(self, 'prox_toggle_btn'):
-            prox_on = getattr(m, 'mode_mgr', None) and m.mode_mgr.proxifier_running()
-            self._update_mini_controls(getattr(self, 'prox_restart_btn', None), self.prox_toggle_btn, prox_on)
+            cur_mode = getattr(m, 'mode_type', 'inetcpl').lower()
+            if cur_mode == "tun":
+                interceptor_on = bool(getattr(m, 'mode_mgr', None) and m.mode_mgr.tun_running())
+                if hasattr(self, 'interceptor_proxi_btn'):
+                    self.interceptor_proxi_btn.setVisible(False)
+                if hasattr(self, 'interceptor_tun_btn'):
+                    self.interceptor_tun_btn.setVisible(True)
+                if hasattr(self, 'interceptor_rules_btn'):
+                    self.interceptor_rules_btn.setVisible(True)
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_title'):
+                    self.interceptor_card.lbl_title.setText(T("Сетевой перехват (Sing-box TUN)", "Network Interception (Sing-box TUN)"))
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_desc'):
+                    self.interceptor_card.lbl_desc.setText(T("Глобальная маршрутизация системы и приложений через Sing-box TUN по правилам Toinet.ppx.",
+                                                             "Global system and application routing via Sing-box TUN with Toinet.ppx rules."))
+                self.prox_toggle_btn.setToolTip(T("Остановить Sing-box TUN", "Stop Sing-box TUN") if interceptor_on else T("Запустить Sing-box TUN", "Start Sing-box TUN"))
+                self.prox_restart_btn.setToolTip(T("Перезапустить Sing-box TUN", "Restart Sing-box TUN"))
+            elif cur_mode == "empty":
+                interceptor_on = bool(getattr(m, 'mode_mgr', None) and m.mode_mgr.proxifier_running())
+                if hasattr(self, 'interceptor_proxi_btn'):
+                    self.interceptor_proxi_btn.setVisible(True)
+                if hasattr(self, 'interceptor_tun_btn'):
+                    self.interceptor_tun_btn.setVisible(False)
+                if hasattr(self, 'interceptor_rules_btn'):
+                    self.interceptor_rules_btn.setVisible(True)
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_title'):
+                    self.interceptor_card.lbl_title.setText(T("Внешний проксификатор (Proxifier)", "External Proxifier (Proxifier)"))
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_desc'):
+                    self.interceptor_card.lbl_desc.setText(T("Маршрутизация приложений через сторонний Proxifier.exe по профилю Toinet.ppx.",
+                                                             "Application routing via external Proxifier.exe with Toinet.ppx profile."))
+                self.prox_toggle_btn.setToolTip(T("Остановить Proxifier", "Stop Proxifier") if interceptor_on else T("Запустить Proxifier", "Start Proxifier"))
+                self.prox_restart_btn.setToolTip(T("Перезапустить Proxifier", "Restart Proxifier"))
+            else:
+                interceptor_on = bool(getattr(m, 'mode_mgr', None) and getattr(m.mode_mgr, 'inetcpl_active', False))
+                if hasattr(self, 'interceptor_proxi_btn'):
+                    self.interceptor_proxi_btn.setVisible(False)
+                if hasattr(self, 'interceptor_tun_btn'):
+                    self.interceptor_tun_btn.setVisible(True)
+                if hasattr(self, 'interceptor_rules_btn'):
+                    self.interceptor_rules_btn.setVisible(True)
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_title'):
+                    self.interceptor_card.lbl_title.setText(T("Системный перехват и фильтрация", "System Redirection & Filtering"))
+                if hasattr(self, 'interceptor_card') and hasattr(self.interceptor_card, 'lbl_desc'):
+                    self.interceptor_card.lbl_desc.setText(T("Маршрутизация приложений и хостов через Toinet.ppx с гибкой фильтрацией.",
+                                                             "Application and hostname routing via Toinet.ppx with flexible filtering rules."))
+                self.prox_toggle_btn.setToolTip(T("Отключить перехват", "Disable Redirection") if interceptor_on else T("Включить перехват", "Enable Redirection"))
+                self.prox_restart_btn.setToolTip(T("Перезапустить", "Restart"))
+
+            self._update_mini_controls(getattr(self, 'prox_restart_btn', None), self.prox_toggle_btn, interceptor_on)
 
         # Update quick server switch buttons on main screen (Tor circuit / EVPN server)
         tor_active = getattr(m, 'tor_manager', None) and m.tor_manager.tor_running

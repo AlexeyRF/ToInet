@@ -176,6 +176,7 @@ def apply_runtime_patches():
     default_files = [
         (os.path.join(meipass, "data", "bridges.txt"), os.path.join(storage_dir, "data", "bridges.txt")),
         (os.path.join(meipass, "data", "google_cidrs.json"), os.path.join(storage_dir, "data", "google_cidrs.json")),
+        (os.path.join(meipass, "data", "banned_domains.txt"), os.path.join(storage_dir, "data", "banned_domains.txt")),
         (os.path.join(meipass, "data", "telegram.jpg"), os.path.join(storage_dir, "data", "telegram.jpg")),
         (os.path.join(meipass, "data", "telegram.png"), os.path.join(storage_dir, "data", "telegram.png")),
         (os.path.join(meipass, "evpn", "subs.txt"), os.path.join(storage_dir, "evpn", "subs.txt")),
@@ -206,6 +207,7 @@ def apply_runtime_patches():
             (os.path.join(exe_dir, "data", "config.json"), os.path.join(storage_dir, "data", "config.json")),
             (os.path.join(exe_dir, "data", "tor_config.json"), os.path.join(storage_dir, "data", "tor_config.json")),
             (os.path.join(exe_dir, "data", "bridges.txt"), os.path.join(storage_dir, "data", "bridges.txt")),
+            (os.path.join(exe_dir, "data", "banned_domains.txt"), os.path.join(storage_dir, "data", "banned_domains.txt")),
             (os.path.join(exe_dir, "evpn", "subs.txt"), os.path.join(storage_dir, "evpn", "subs.txt")),
             (os.path.join(exe_dir, "Toinet.ppx"), os.path.join(storage_dir, "Toinet.ppx")),
         ]
