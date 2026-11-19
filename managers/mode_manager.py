@@ -564,7 +564,9 @@ class ModeManager:
 
         dns_detour = cfg.get("tun_dns_detour", "direct")
 
-        tun_stack = cfg.get("tun_stack", "mixed")
+        tun_stack = cfg.get("tun_stack", "gvisor")
+        if tun_stack == "mixed":
+            tun_stack = "gvisor"
 
         proxy_dns = cfg.get("proxy_dns_tun_evpn", True)
 
@@ -877,45 +879,19 @@ class ModeManager:
                 }
 
             ] if is_inetcpl else [
-
                 {
-
                     "type": "tun",
-
                     "tag": "tun-in",
-
                     "interface_name": "toinet-tun",
-
                     "address": [
-
                         "172.19.0.1/30"
-
                     ],
-
                     "mtu": 1500,
-
                     "auto_route": True,
-
                     "strict_route": False,
-
                     "endpoint_independent_nat": True,
-
                     "stack": tun_stack
-
-                },
-
-                {
-
-                    "type": "mixed",
-
-                    "tag": "mixed-in",
-
-                    "listen": "127.0.0.1",
-
-                    "listen_port": inetcpl_port
-
                 }
-
             ],
 
             "outbounds": outbounds,
@@ -1093,89 +1069,87 @@ class ModeManager:
         
 
         import platform
-
         exe_name = "sing-box.exe" if platform.system() == "Windows" else "sing-box"
-
         sing_box_exe = os.path.join(CURRENT_DIR, "bin", "sing-box", exe_name)
+        if not os.path.exists(sing_box_exe) and getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            cand = os.path.join(sys._MEIPASS, "bin", "sing-box", exe_name)
+            if os.path.exists(cand):
+                sing_box_exe = cand
 
         if not os.path.exists(sing_box_exe):
-
-            QMessageBox.critical(None, "Ошибка TUN", "sing-box не найден в bin/sing-box/")
-
+            QMessageBox.critical(None, "Ошибка TUN", f"sing-box не найден в bin/sing-box/")
             return False
 
-            
+        # Завершаем предыдущий зависший процесс sing-box с tun_config.json, если есть
+        stuck_pid = self.find_existing_tun_process()
+        if stuck_pid:
+            try:
+                proc = psutil.Process(stuck_pid)
+                proc.kill()
+                time.sleep(0.5)
+            except Exception:
+                pass
 
         cmd = [sing_box_exe, "run", "-c", cfg_path]
-
         kwargs = {}
-
         if platform.system() == "Windows":
-
             kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
 
-
-
         env = os.environ.copy()
-
         env["ENABLE_DEPRECATED_LEGACY_DNS_SERVERS"] = "true"
-
         env["ENABLE_DEPRECATED_OUTBOUND_DNS_RULE_ITEM"] = "true"
-
         env["ENABLE_DEPRECATED_MISSING_DOMAIN_RESOLVER"] = "true"
 
-
-
         log_path = os.path.join(CURRENT_DIR, "data", "tun_singbox.log")
-
         try:
-
             if hasattr(self, 'tun_log_file') and self.tun_log_file:
-
                 try:
-
                     self.tun_log_file.close()
-
                 except Exception:
-
                     pass
-
             self.tun_log_file = open(log_path, "w", encoding="utf-8")
-
         except Exception:
-
             self.tun_log_file = None
 
-            
+        self.log("Запуск сетевого перехвата (Sing-box TUN)...")
 
         try:
-
             self.tun_process = subprocess.Popen(
-
                 cmd,
-
                 cwd=CURRENT_DIR,
-
                 env=env,
-
                 stdout=self.tun_log_file or subprocess.DEVNULL,
-
                 stderr=subprocess.STDOUT,
-
                 **kwargs
-
             )
-
             self.tun_proxy_port = port
 
-            self.log(f"sing-box TUN запущен на порт {port}")
+            # Даем sing-box время инициализировать TUN-адаптер toinet-tun
+            time.sleep(1.2)
+            if self.tun_process.poll() is not None:
+                exit_code = self.tun_process.poll()
+                err_text = ""
+                try:
+                    if self.tun_log_file:
+                        self.tun_log_file.flush()
+                    if os.path.exists(log_path):
+                        with open(log_path, "r", encoding="utf-8", errors="ignore") as f:
+                            err_lines = f.readlines()
+                            err_text = "".join(err_lines[-12:]).strip()
+                except Exception:
+                    pass
+                admin_hint = ""
+                err_lower = err_text.lower()
+                if "access is denied" in err_lower or "administrator" in err_lower or "privilege" in err_lower:
+                    admin_hint = "\n[ВАЖНО] Для создания виртуального TUN-адаптера требуются права администратора! Запустите программу от имени администратора."
+                self.log(f"Ошибка: sing-box TUN аварийно завершился (код {exit_code}).{admin_hint}\n{err_text}")
+                self.tun_process = None
+                return False
 
+            self.log("Sing-box TUN успешно запущен (сетевой интерфейс toinet-tun активен).")
             return True
-
         except Exception as e:
-
             self.log(f"Ошибка запуска sing-box TUN: {e}")
-
             return False
 
 

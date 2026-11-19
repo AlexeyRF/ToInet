@@ -83,11 +83,16 @@ class TorManager:
         config_manager.save_config(cfg)
 
     def _launch_tor_direct(self):
-        if not os.path.exists(TOR_EXE):
-            log("tor.exe not found!")
+        tor_exe = TOR_EXE
+        if not os.path.exists(tor_exe) and getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            cand = os.path.join(sys._MEIPASS, "tor", "tor.exe")
+            if os.path.exists(cand):
+                tor_exe = cand
+        if not os.path.exists(tor_exe):
+            log(f"tor.exe not found at {tor_exe}!")
             return False
         if not os.path.exists(TORRC_FILE):
-            log("torrc not found!")
+            log(f"torrc not found at {TORRC_FILE}!")
             return False
             
         creation_flags = subprocess.CREATE_NEW_CONSOLE if self.show_window else subprocess.CREATE_NO_WINDOW
@@ -95,7 +100,13 @@ class TorManager:
         stderr = None if self.show_window else subprocess.DEVNULL
         
         try:
-            self.tor_process = subprocess.Popen([TOR_EXE, '-f', TORRC_FILE], stdout=stdout, stderr=stderr, creationflags=creation_flags)
+            self.tor_process = subprocess.Popen([tor_exe, '-f', TORRC_FILE], stdout=stdout, stderr=stderr, creationflags=creation_flags, cwd=CURRENT_DIR)
+            time.sleep(1.0)
+            if self.tor_process.poll() is not None:
+                log(f"Ошибка: tor.exe аварийно завершился (код {self.tor_process.poll()})")
+                self.tor_running = False
+                self.tor_process = None
+                return False
             self.tor_running = True
             log("tor.exe started directly")
             return True
@@ -146,11 +157,16 @@ class TorManager:
                 cand = os.path.join(sys._MEIPASS, "tor", "pluggable_transports", "lyrebird.exe")
                 if os.path.exists(cand):
                     lyrebird_path = cand
+
+        data_dir_str = str(data_dir).replace('\\', '/')
+        geoip_str = str(geoip_path).replace('\\', '/')
+        geoip6_str = str(geoip6_path).replace('\\', '/')
+        lyrebird_str = str(lyrebird_path).replace('\\', '/')
         
         torrc_lines = [
-            f"DataDirectory {data_dir}",
-            f"GeoIPFile {geoip_path}",
-            f"GeoIPv6File {geoip6_path}",
+            f'DataDirectory "{data_dir_str}"',
+            f'GeoIPFile "{geoip_str}"',
+            f'GeoIPv6File "{geoip6_str}"',
             "SocksPort 9853",
             "HTTPTunnelPort 9854",
             "ControlPort 9851",
@@ -160,7 +176,7 @@ class TorManager:
         ]
         torrc_lines.extend([f"Bridge {bridge}" for bridge in bridges])
         torrc_lines.extend([
-            f"ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec {lyrebird_path}",
+            f'ClientTransportPlugin meek_lite,obfs2,obfs3,obfs4,scramblesuit,webtunnel exec "{lyrebird_str}"',
             "AvoidDiskWrites 1",
             "HardwareAccel 1",
             "ClientOnly 1",

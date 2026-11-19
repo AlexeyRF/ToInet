@@ -169,8 +169,31 @@ def apply_runtime_patches():
         sys.exit(1)
 
     # Ensure required working directories exist for storage_dir (AppData in onefile mode)
-    for d in ("data", "logs", "evpn", "byedpi", "tor"):
+    for d in ("data", "logs", "evpn", "byedpi", "tor", "bin"):
         os.makedirs(os.path.join(storage_dir, d), exist_ok=True)
+
+    # In One-File mode, extract all bundled directories (tor, bin, byedpi, data, evpn) from sys._MEIPASS into storage_dir (AppData)
+    if onefile:
+        user_config_names = {"config.json", "tor_config.json", "subs.txt", "Toinet.ppx"}
+        for folder in ("tor", "bin", "byedpi", "data", "evpn"):
+            src_folder = os.path.join(meipass, folder)
+            dst_folder = os.path.join(storage_dir, folder)
+            if original_exists(src_folder):
+                for root, _, files in os.walk(src_folder):
+                    rel = os.path.relpath(root, src_folder)
+                    target_dir = os.path.join(dst_folder, rel) if rel != "." else dst_folder
+                    os.makedirs(target_dir, exist_ok=True)
+                    for f in files:
+                        src_f = os.path.join(root, f)
+                        dst_f = os.path.join(target_dir, f)
+                        # Do not overwrite existing user configs
+                        if f in user_config_names and original_exists(dst_f):
+                            continue
+                        if not original_exists(dst_f) or os.path.getsize(dst_f) != os.path.getsize(src_f):
+                            try:
+                                shutil.copy2(src_f, dst_f)
+                            except Exception:
+                                pass
 
     # Copy default user data files if not already present in storage_dir
     default_files = [
