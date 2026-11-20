@@ -253,16 +253,6 @@ def _update_menu_impl_unsafe():
         # 2. Настройки Компонентов
         settings_menu = QMenu(m.T("Настройки компонентов", "Component Settings", "Paramètres des composants"), m.tray_menu)
         settings_menu.addAction(m.T("Настройки TOR", "TOR Settings", "Paramètres TOR"), m.tor_manager.open_settings)
-        tor_share_act = QAction(m.T("Раздавать TOR в локальную сеть", "Share TOR in Local Network (LAN)", "Partager TOR sur le réseau local"), settings_menu)
-        tor_share_act.setCheckable(True)
-        tor_share_act.setChecked(bool(m.config.get("tor_share_lan", False)))
-        def toggle_tor_share():
-            cur = bool(m.config.get("tor_share_lan", False))
-            m.tor_manager.set_share_lan(not cur)
-            m.config["tor_share_lan"] = not cur
-            tor_share_act.setChecked(not cur)
-        tor_share_act.triggered.connect(toggle_tor_share)
-        settings_menu.addAction(tor_share_act)
         
         settings_menu.addAction(m.T("Настройки zDPI", "zDPI Settings", "Paramètres zDPI"), m.byedpi_manager.open_settings)
         settings_menu.addAction(m.T("Настройки SSH Туннеля", "SSH Tunnel Settings", "Paramètres du tunnel SSH"), m.ssh_mgr.open_settings)

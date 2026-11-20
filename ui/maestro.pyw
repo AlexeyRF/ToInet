@@ -261,12 +261,14 @@ def generate_torrc_config(config, paths=None):
     if not data_dir.exists():
         data_dir.mkdir(parents=True, exist_ok=True)
 
+    bind_addr = "0.0.0.0" if config.get('tor_share_lan', False) else "127.0.0.1"
     port = config.get('port', DEFAULT_PROXY_PORT)
     torrc_content = f"""DataDirectory {data_dir}
 GeoIPFile {paths['geoip']}
 GeoIPv6File {paths['geoip6']}
-SocksPort 0.0.0.0:{port}
-ControlPort 9851
+SocksPort {bind_addr}:{port}
+HTTPTunnelPort {bind_addr}:9854
+ControlPort 127.0.0.1:9851
 HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1
 """
     if exit_nodes:
@@ -1349,6 +1351,21 @@ class TorrcConfigurator(QMainWindow):
         main_layout.addWidget(pool_group)
 
         self.load_pool_settings()
+
+        # LAN Sharing
+        lan_group = QGroupBox(T("Раздача в локальную сеть (LAN)", "LAN Sharing (Local Network)"))
+        lan_group.setFont(QFont("Segoe UI", 10))
+        lan_layout = QVBoxLayout(lan_group)
+        self.share_lan_cb = QCheckBox(T("Разрешить раздачу TOR в локальную сеть (слушать 0.0.0.0)", "Enable TOR LAN sharing (bind to 0.0.0.0)"))
+        self.share_lan_cb.setStyleSheet("color: #e0e0e0; font-size: 11px;")
+        lan_hint = QLabel(T("Слушать 0.0.0.0 вместо 127.0.0.1 (SOCKS: 9853, HTTP: 9854) для подключения других устройств.",
+                            "Listen on 0.0.0.0 instead of 127.0.0.1 (SOCKS: 9853, HTTP: 9854) to allow other LAN devices to connect."))
+        lan_hint.setStyleSheet("color: #888; font-size: 10px; margin-left: 20px;")
+        lan_layout.addWidget(self.share_lan_cb)
+        lan_layout.addWidget(lan_hint)
+        main_layout.addWidget(lan_group)
+
+        self.load_lan_settings()
         
         # Initialize bridge UI state
         self.on_bridge_mode_changed()
@@ -1432,6 +1449,24 @@ class TorrcConfigurator(QMainWindow):
             self.pool_spinbox.setValue(pool_size)
         except Exception as e:
             print("Failed to load pool settings:", e)
+
+    def load_lan_settings(self):
+        try:
+            from managers import config_manager
+            config = config_manager.load_config()
+            self.share_lan_cb.setChecked(bool(config.get("tor_share_lan", False)))
+        except Exception as e:
+            print("Failed to load LAN settings:", e)
+        self.share_lan_cb.toggled.connect(self.on_share_lan_toggled)
+
+    def on_share_lan_toggled(self, checked):
+        try:
+            from managers import config_manager
+            config = config_manager.load_config()
+            config["tor_share_lan"] = checked
+            config_manager.save_config(config)
+        except Exception as e:
+            print("Failed to save LAN setting:", e)
 
 
     def on_autoupdate_changed(self, state):
@@ -1766,12 +1801,14 @@ class TorrcConfigurator(QMainWindow):
                 return
         
         # Generate torrc content
+        bind_addr = "0.0.0.0" if self.share_lan_cb.isChecked() else "127.0.0.1"
         torrc_lines = [
             f"DataDirectory {self.data_edit.text()}",
             f"GeoIPFile {self.geoip_edit.text()}",
             f"GeoIPv6File {self.geoipv6_edit.text()}",
-            "SocksPort 9853",
-            "ControlPort 9851",
+            f"SocksPort {bind_addr}:9853",
+            f"HTTPTunnelPort {bind_addr}:9854",
+            "ControlPort 127.0.0.1:9851",
             "HashedControlPassword 16:FDD492298759EE7D608D25F04A895488921206AD3109F87E7CC80F09D1",
         ]
         
@@ -1828,15 +1865,16 @@ class TorrcConfigurator(QMainWindow):
             with open(output_path, 'w', encoding='utf-8') as f:
                 f.write('\n'.join(torrc_lines))
             
-            # Save pool settings to data/config.json
+            # Save pool and LAN settings to data/config.json
             try:
                 from managers import config_manager
                 config = config_manager.load_config()
                 config["tor_pool_enabled"] = self.pool_checkbox.isChecked()
                 config["tor_pool_size"] = self.pool_spinbox.value()
+                config["tor_share_lan"] = self.share_lan_cb.isChecked()
                 config_manager.save_config(config)
             except Exception as e:
-                print(f"Failed to save pool settings: {e}")
+                print(f"Failed to save pool/lan settings: {e}")
             
             # Show success message with mode info
 

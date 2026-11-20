@@ -43,15 +43,154 @@ except Exception:
     else:
         SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 
-# Import ML Optimizer
-try:
-    from ui.zdpi_ml_optimizer import ZDPIMLOptimizer, HAS_SKLEARN
-except ImportError:
-    try:
-        from zdpi_ml_optimizer import ZDPIMLOptimizer, HAS_SKLEARN
-    except ImportError:
-        ZDPIMLOptimizer = None
-        HAS_SKLEARN = False
+# C++ ML Optimizer Bridge (bin/zdpi_ml_optimizer.exe)
+class ZDPIMLOptimizer:
+    """Bridge for the C++ zDPI ML Strategy Optimizer binary"""
+    def __init__(self, history_file=None):
+        self.exe_path = self._find_exe()
+        self.history_file = history_file or self._resolve_history_file()
+        self.history = []
+        self.top_features = []
+        self.load_history()
+        self.train_model()
+
+    def _find_exe(self):
+        candidates = [
+            os.path.join(SCRIPT_DIR, "bin", "zdpi_ml_optimizer.exe"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "bin", "zdpi_ml_optimizer.exe"),
+            os.path.join(os.getcwd(), "bin", "zdpi_ml_optimizer.exe"),
+        ]
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            candidates.insert(0, os.path.join(sys._MEIPASS, "bin", "zdpi_ml_optimizer.exe"))
+        for c in candidates:
+            if os.path.exists(c):
+                return os.path.abspath(c)
+        return None
+
+    def _resolve_history_file(self):
+        candidates = [
+            os.path.join(SCRIPT_DIR, "ui", "zdpi_ml_history.json"),
+            os.path.join(os.path.dirname(os.path.abspath(__file__)), "zdpi_ml_history.json"),
+            os.path.join(SCRIPT_DIR, "data", "zdpi_ml_history.json"),
+        ]
+        for c in candidates:
+            if os.path.exists(c):
+                return os.path.abspath(c)
+        return os.path.join(SCRIPT_DIR, "ui", "zdpi_ml_history.json")
+
+    def load_history(self):
+        if self.history_file and os.path.exists(self.history_file):
+            try:
+                with open(self.history_file, 'r', encoding='utf-8') as f:
+                    self.history = json.load(f)
+                    return True
+            except Exception:
+                pass
+        self.history = []
+        return False
+
+    def add_result(self, strategy, overall_pct, pri_pct, ok_cnt, tot_cnt, details=None):
+        if not self.exe_path or not os.path.exists(self.exe_path):
+            return False
+        try:
+            cmd = [
+                self.exe_path,
+                "add",
+                strategy,
+                str(float(overall_pct)),
+                str(float(pri_pct)),
+                str(int(ok_cnt)),
+                str(int(tot_cnt))
+            ]
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            res = subprocess.run(cmd, capture_output=True, text=True, creationflags=flags, timeout=5)
+            self.load_history()
+            return res.returncode == 0
+        except Exception as e:
+            print(f"[zDPI ML Bridge] add_result error: {e}")
+            return False
+
+    def train_model(self):
+        if not self.exe_path or not os.path.exists(self.exe_path):
+            return False
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            cmd = [self.exe_path, "top-features"]
+            res = subprocess.run(cmd, capture_output=True, text=True, creationflags=flags, timeout=5)
+            if res.returncode == 0:
+                features = []
+                for line in res.stdout.strip().splitlines():
+                    parts = line.strip().split("\t")
+                    if len(parts) == 2:
+                        try:
+                            features.append((parts[0].strip(), float(parts[1].strip())))
+                        except ValueError:
+                            pass
+                self.top_features = features
+            self.load_history()
+            return True
+        except Exception as e:
+            print(f"[zDPI ML Bridge] train_model error: {e}")
+            return False
+
+    def generate_ai_strategies(self, count=15, existing_strategies=None):
+        if not self.exe_path or not os.path.exists(self.exe_path):
+            return []
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            temp_file = None
+            cmd = [self.exe_path, "generate", str(count)]
+            if existing_strategies:
+                import tempfile
+                with tempfile.NamedTemporaryFile('w', delete=False, encoding='utf-8', suffix='.txt') as tf:
+                    temp_file = tf.name
+                    for s in existing_strategies:
+                        tf.write(s.strip() + "\n")
+                cmd.append(temp_file)
+
+            res = subprocess.run(cmd, capture_output=True, text=True, creationflags=flags, timeout=10)
+            if temp_file and os.path.exists(temp_file):
+                try: os.remove(temp_file)
+                except Exception: pass
+
+            if res.returncode == 0:
+                out = res.stdout.strip()
+                start = out.find('[')
+                end = out.rfind(']')
+                if start != -1 and end != -1:
+                    return json.loads(out[start:end+1])
+            return []
+        except Exception as e:
+            print(f"[zDPI ML Bridge] generate_ai_strategies error: {e}")
+            return []
+
+    def predict_score(self, strategy):
+        if not self.exe_path or not os.path.exists(self.exe_path):
+            return 50.0
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            res = subprocess.run([self.exe_path, "predict", strategy], capture_output=True, text=True, creationflags=flags, timeout=3)
+            if res.returncode == 0:
+                return float(res.stdout.strip())
+        except Exception:
+            pass
+        return 50.0
+
+    def explain_recommendation(self, strategy):
+        if not self.exe_path or not os.path.exists(self.exe_path):
+            return ""
+        try:
+            flags = subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
+            res = subprocess.run([self.exe_path, "explain", strategy], capture_output=True, text=True, creationflags=flags, timeout=3)
+            if res.returncode == 0:
+                return res.stdout.strip()
+        except Exception:
+            pass
+        return ""
+
+HAS_SKLEARN = True
+if not ZDPIMLOptimizer().exe_path:
+    ZDPIMLOptimizer = None
 
 # Optional ToInet-MAX integration fallbacks
 try:
