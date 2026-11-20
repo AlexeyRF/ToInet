@@ -1088,6 +1088,81 @@ LRESULT CALLBACK ButtonSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
     return DefSubclassProc(hWnd, uMsg, wParam, lParam);
 }
 
+// Subclassed header proc for custom calm dark styling (eliminates jet black background)
+LRESULT CALLBACK HeaderSubclassProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam, UINT_PTR uIdSubclass, DWORD_PTR dwRefData) {
+    (void)dwRefData;
+    switch (uMsg) {
+    case WM_PAINT: {
+        PAINTSTRUCT ps;
+        HDC hdc = BeginPaint(hWnd, &ps);
+
+        RECT rcClient;
+        GetClientRect(hWnd, &rcClient);
+
+        // Calm dark slate/charcoal background (#262626)
+        HBRUSH hBr = CreateSolidBrush(RGB(38, 38, 38));
+        FillRect(hdc, &rcClient, hBr);
+        DeleteObject(hBr);
+
+        int count = Header_GetItemCount(hWnd);
+        HPEN hPenDivider = CreatePen(PS_SOLID, 1, RGB(58, 58, 58));
+        HGDIOBJ oldPen = SelectObject(hdc, hPenDivider);
+        SelectObject(hdc, g_hFontBold);
+        SetBkMode(hdc, TRANSPARENT);
+        SetTextColor(hdc, RGB(220, 220, 220));
+
+        const wchar_t* colFallbacks[] = {
+            T_COL_NAME.get(), T_COL_APPS.get(), T_COL_TARGETS.get(), T_COL_PORTS.get(), T_COL_ACTION.get()
+        };
+
+        for (int i = 0; i < count; ++i) {
+            RECT rcItem;
+            Header_GetItemRect(hWnd, i, &rcItem);
+
+            wchar_t textBuf[128] = { 0 };
+            HDITEMW hdi = { 0 };
+            hdi.mask = HDI_TEXT;
+            hdi.pszText = textBuf;
+            hdi.cchTextMax = 128;
+            Header_GetItem(hWnd, i, &hdi);
+
+            const wchar_t* pText = textBuf;
+            if (wcslen(pText) == 0 && i < 5) {
+                pText = colFallbacks[i];
+            }
+
+            RECT rcText = rcItem;
+            rcText.left += 8;
+            rcText.right -= 8;
+            DrawTextW(hdc, pText, -1, &rcText, DT_LEFT | DT_VCENTER | DT_SINGLELINE | DT_END_ELLIPSIS);
+
+            // Divider on the right
+            MoveToEx(hdc, rcItem.right - 1, rcItem.top + 3, NULL);
+            LineTo(hdc, rcItem.right - 1, rcItem.bottom - 3);
+        }
+
+        // Bottom border
+        HPEN hPenBottom = CreatePen(PS_SOLID, 1, RGB(50, 50, 50));
+        SelectObject(hdc, hPenBottom);
+        MoveToEx(hdc, rcClient.left, rcClient.bottom - 1, NULL);
+        LineTo(hdc, rcClient.right, rcClient.bottom - 1);
+        DeleteObject(hPenBottom);
+
+        SelectObject(hdc, oldPen);
+        DeleteObject(hPenDivider);
+
+        EndPaint(hWnd, &ps);
+        return 0;
+    }
+    case WM_ERASEBKGND:
+        return 1;
+    case WM_NCDESTROY:
+        RemoveWindowSubclass(hWnd, HeaderSubclassProc, uIdSubclass);
+        break;
+    }
+    return DefSubclassProc(hWnd, uMsg, wParam, lParam);
+}
+
 // Custom button renderer (calm, muted palette)
 void DrawCustomButton(LPDRAWITEMSTRUCT dis) {
     HDC hdc = dis->hDC;
@@ -1160,7 +1235,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
         HWND hHeader = ListView_GetHeader(g_hListView);
         if (hHeader) {
-            SetWindowTheme(hHeader, L"DarkMode_ItemsView", NULL);
+            SetWindowSubclass(hHeader, HeaderSubclassProc, (UINT_PTR)hHeader, 0);
             SendMessageW(hHeader, WM_SETFONT, (WPARAM)g_hFontBold, TRUE);
         }
 

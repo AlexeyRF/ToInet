@@ -263,7 +263,7 @@ def _update_menu_impl_unsafe():
 
         
         if not lang._is_en or m.config.get("enable_ru_features", False):
-            settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: m.utils.run_script("ui/tgws_settings.pyw"))
+            settings_menu.addAction(m.T("Настройки TGWS Proxy", "TGWS Proxy Settings"), lambda: subprocess.Popen([os.path.join(m.CURRENT_DIR, "bin", "tgws_settings.exe")], cwd=m.CURRENT_DIR, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
             
         settings_menu.addAction(m.T("Настройки TUN", "TUN Settings", "Paramètres TUN"), m.mode_mgr.open_advanced_tun_config)
         settings_menu.addAction(m.T("Пути программ", "Program Paths", "Chemins des programmes"), m.mode_mgr.open_proxifier_config)
@@ -344,7 +344,7 @@ def _update_menu_impl_unsafe():
         sys_menu.addAction(app_logs_act)
         
         ast_act = QAction(m.T("Настройки автозапуска", "Autostart Settings", "Paramètres de démarrage"), sys_menu)
-        ast_act.triggered.connect(lambda: subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
+        ast_act.triggered.connect(lambda: subprocess.Popen([os.path.join(m.CURRENT_DIR, "bin", "autostart_settings.exe")], cwd=m.CURRENT_DIR, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0))
         sys_menu.addAction(ast_act)
         sys_menu.addAction(m.T("Очистка кеша", "Clear Cache", "Vider le cache"), lambda: m.utils.clean_data_directory())
         sys_menu.addAction(m.T("Открыть папку проекта", "Open Project Folder", "Ouvrir le dossier du projet"), lambda: m.utils.open_project_folder(m.CURRENT_DIR))

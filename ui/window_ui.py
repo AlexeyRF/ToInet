@@ -768,7 +768,11 @@ class MainWindow(QMainWindow):
 
         # 2. Tor
         def open_tor_bridges():
-            subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
+            exe = os.path.join(getattr(m, 'CURRENT_DIR', CURRENT_DIR), "bin", "edit_bridges.exe")
+            if os.path.exists(exe):
+                subprocess.Popen([exe], cwd=getattr(m, 'CURRENT_DIR', CURRENT_DIR))
+            else:
+                subprocess.Popen([sys.executable, "ui/edit_bridges.pyw"])
         tor_bridges_btn = make_prov_btn(T("Редактор мостов", "Bridges Config"), open_tor_bridges)
         
         def open_torrc():
@@ -920,11 +924,11 @@ class MainWindow(QMainWindow):
             self.update_ui_state()
 
         def open_tgws_settings():
-            if hasattr(m, 'utils') and hasattr(m.utils, 'run_script'):
-                m.utils.run_script("ui/tgws_settings.pyw")
-            else:
-                from managers import system_utils
-                system_utils.run_script("ui/tgws_settings.pyw")
+            exe = os.path.join(getattr(m, 'CURRENT_DIR', CURRENT_DIR), "bin", "tgws_settings.exe")
+            if os.path.exists(exe):
+                subprocess.Popen([exe], cwd=getattr(m, 'CURRENT_DIR', CURRENT_DIR), creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            elif hasattr(m, 'utils') and hasattr(m.utils, 'run_script'):
+                m.utils.run_script("bin/tgws_settings.exe")
         tgws_cfg_btn = make_prov_btn(T("Настройки TGWS", "TGWS Settings", "Paramètres TGWS"), open_tgws_settings)
 
         self.tgws_restart_btn = make_mini_btn("↻", T("Перезапустить", "Restart", "Redemarrer"), restart_tgws)
@@ -1163,8 +1167,8 @@ class MainWindow(QMainWindow):
         c_layout.addWidget(sec_label_ast)
 
         def open_ast_gui():
-            subprocess.Popen([sys.executable, os.path.join(m.CURRENT_DIR, "ui/autostart_settings.pyw")],
-                             creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+            exe = os.path.join(m.CURRENT_DIR, "bin", "autostart_settings.exe")
+            subprocess.Popen([exe], cwd=m.CURRENT_DIR, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
         ast_gui_btn = make_action_btn(T("Настроить службы", "Configure Services"), open_ast_gui)
         c_layout.addWidget(CardRow(T("Выбор служб для автозапуска", "Autostart Services Selection"),
                                    T("Выбор конкретных модулей (zDPI, Tor, SSH, Opera, Proxifier) при старте.",
@@ -1697,9 +1701,12 @@ class MainWindow(QMainWindow):
 
     def open_rules_editor(self):
         try:
-            from ui.rules_editor import RulesEditorDialog
-            dialog = RulesEditorDialog(parent=self)
-            dialog.exec()
+            exe = os.path.join(CURRENT_DIR, "bin", "rules_editor.exe")
+            if os.path.exists(exe):
+                p = subprocess.Popen([exe], cwd=CURRENT_DIR)
+                p.wait()
+            else:
+                QMessageBox.warning(self, T("Ошибка", "Error", "Erreur"), f"Файл не найден: {exe}")
         except Exception as e:
             QMessageBox.warning(self, T("Ошибка", "Error", "Erreur"), f"Не удалось открыть редактор правил: {e}")
 

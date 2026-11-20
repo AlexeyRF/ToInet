@@ -1401,10 +1401,10 @@ class TorrcConfigurator(QMainWindow):
                 pass
 
     def run_edit_bridges(self):
-        import subprocess, sys
-        script_path = os.path.join(self.current_dir, "ui/edit_bridges.pyw")
-        if os.path.exists(script_path):
-            subprocess.Popen([sys.executable, script_path], creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
+        import subprocess
+        exe_path = os.path.join(self.current_dir, "bin", "edit_bridges.exe")
+        if os.path.exists(exe_path):
+            subprocess.Popen([exe_path], cwd=self.current_dir, creationflags=subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0)
 
     def delete_tor_config(self):
         reply = QMessageBox.question(self, T("Подтверждение", "Confirm"), 

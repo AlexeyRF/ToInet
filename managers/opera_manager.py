@@ -458,10 +458,14 @@ class OperaProxyManager(QObject):
 
 
     def open_settings(self):
-
-        from managers import system_utils as utils
-
-        utils.run_script("ui/opera_settings.pyw")
+        from managers.system_utils import get_base_dir
+        base_dir = get_base_dir()
+        exe = os.path.join(base_dir, "bin", "opera_settings.exe")
+        if os.path.exists(exe):
+            subprocess.Popen([exe], cwd=base_dir, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+        else:
+            from managers import system_utils as utils
+            utils.run_script("bin/opera_settings.exe")
 
 
 

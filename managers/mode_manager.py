@@ -1553,9 +1553,13 @@ class ModeManager:
 
     def open_rules_editor(self, parent=None):
         try:
-            from ui.rules_editor import RulesEditorDialog
-            dlg = RulesEditorDialog(parent=parent)
-            dlg.exec()
+            exe_path = os.path.join(CURRENT_DIR, "bin", "rules_editor.exe")
+            if os.path.exists(exe_path):
+                p = subprocess.Popen([exe_path], cwd=CURRENT_DIR)
+                p.wait()
+            else:
+                from PySide6.QtWidgets import QMessageBox
+                QMessageBox.warning(parent, "Ошибка", f"Файл не найден: {exe_path}")
         except Exception as e:
             from PySide6.QtWidgets import QMessageBox
             QMessageBox.warning(parent, "Ошибка", f"Не удалось открыть редактор правил: {e}")
@@ -1684,12 +1688,7 @@ class ModeManager:
         
         edit_rules_btn = QPushButton("Редактировать правила...")
         def open_rules():
-            try:
-                from ui.rules_editor import RulesEditorDialog
-                ed = RulesEditorDialog(parent=dialog)
-                ed.exec()
-            except Exception as e:
-                QMessageBox.warning(dialog, "Ошибка", f"Не удалось открыть редактор правил: {e}")
+            self.open_rules_editor(dialog)
         edit_rules_btn.clicked.connect(open_rules)
         btn_layout.addWidget(edit_rules_btn)
         

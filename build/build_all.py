@@ -520,10 +520,9 @@ def compile_exe():
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
         "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
-        "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
-        "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
-        "ui.maestro", "ui.opera_settings", "ui.ssh_settings",
-        "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
+        "ui.app_log_window", "ui.window_ui", "ui.tray_menu",
+        "ui.byedpi_tester_gui", "ui.maestro",
+        "managers.tgws_manager", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
@@ -654,10 +653,9 @@ def build_onefile_release():
         "managers.torchok", "managers.opera_manager", "managers.vless_manager",
         "managers.mode_manager", "managers.evpn_manager", "managers.ext_manager",
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
-        "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
-        "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
-        "ui.maestro", "ui.opera_settings", "ui.ssh_settings",
-        "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
+        "ui.app_log_window", "ui.window_ui", "ui.tray_menu",
+        "ui.byedpi_tester_gui", "ui.maestro",
+        "managers.tgws_manager", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])

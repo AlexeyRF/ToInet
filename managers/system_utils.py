@@ -497,11 +497,30 @@ def _script_exists(script_name):
     return False
 
 def run_script(script_name, args=None):
+    # Check if a compiled binary exists in bin/
+    base = os.path.splitext(os.path.basename(script_name))[0]
+    bin_candidate = os.path.join(get_base_dir(), "bin", f"{base}.exe")
+    if os.path.exists(bin_candidate):
+        cmd = [bin_candidate]
+        if args:
+            cmd.extend(args)
+        subprocess.Popen(cmd, cwd=get_base_dir(), creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+        log(f"Started binary: {bin_candidate}")
+        return True
+
+    if script_name.endswith(".exe") and os.path.exists(script_name):
+        cmd = [script_name]
+        if args:
+            cmd.extend(args)
+        subprocess.Popen(cmd, cwd=get_base_dir(), creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
+        log(f"Started binary: {script_name}")
+        return True
+
     if _script_exists(script_name):
         cmd = [sys.executable, script_name]
         if args:
             cmd.extend(args)
-        subprocess.Popen(cmd, creationflags=subprocess.CREATE_NO_WINDOW)
+        subprocess.Popen(cmd, cwd=get_base_dir(), creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
         log(f"Started: {script_name}")
         return True
     else:

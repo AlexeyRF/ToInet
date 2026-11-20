@@ -267,9 +267,12 @@ class SSHTunnelManager(QObject):
         return self.start()
 
     def open_settings(self):
-        script_path = os.path.join(CURRENT_DIR, "ui", "ssh_settings.pyw")
+        exe_path = os.path.join(CURRENT_DIR, "bin", "ssh_settings.exe")
         creationflags = subprocess.CREATE_NO_WINDOW if os.name == "nt" else 0
-        subprocess.Popen([sys.executable, script_path], creationflags=creationflags)
+        if os.path.exists(exe_path):
+            subprocess.Popen([exe_path], cwd=CURRENT_DIR, creationflags=creationflags)
+        else:
+            print(f"[SSH Manager] Binary not found: {exe_path}")
 
 _manager = None
 
