@@ -522,7 +522,7 @@ def compile_exe():
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
-        "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
+        "ui.maestro", "ui.opera_settings", "ui.ssh_settings",
         "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
@@ -656,7 +656,7 @@ def build_onefile_release():
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu", "ui.rules_editor",
         "ui.autostart_settings", "ui.byedpi_tester_gui", "ui.edit_bridges",
-        "ui.maestro", "ui.opera_settings", "ui.tgws_tester_gui", "ui.ssh_settings",
+        "ui.maestro", "ui.opera_settings", "ui.ssh_settings",
         "managers.tgws_manager", "ui.tgws_settings", "ui.zdpi_ml_optimizer"
     ]
     for hi in hidden_imports:
