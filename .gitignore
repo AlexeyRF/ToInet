@@ -50,3 +50,5 @@ logs/
 # External tools and specific paths
 tor/
 Proxifier/
+
+*.manifest
