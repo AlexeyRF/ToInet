@@ -45,31 +45,23 @@ class ByeDPIManager(QObject):
 
     def find_existing_process(self):
         port_str = str(self.default_port)
-        params = self.get_params()
-        is_router = isinstance(params, str) and params.startswith("{")
 
         try:
             for proc in psutil.process_iter(['pid', 'name']):
                 try:
                     name = (proc.info.get('name') or "").lower()
-                    if is_router:
-                        if 'python' in name:
-                            cmdline = proc.cmdline() or []
-                            if any('byedpi_router.py' in arg for arg in cmdline) and port_str in cmdline:
-                                return proc.info['pid']
-                    else:
-                        if 'ciadpi' in name or 'zdpi' in name:
-                            cmdline = proc.cmdline() or []
-                            matched = False
-                            for i, arg in enumerate(cmdline):
-                                if arg in ('-p', '--port') and i + 1 < len(cmdline) and cmdline[i + 1] == port_str:
-                                    matched = True
-                                    break
-                                elif arg in (f'-p{port_str}', f'--port={port_str}'):
-                                    matched = True
-                                    break
-                            if matched:
-                                return proc.info['pid']
+                    if 'ciadpi' in name or 'zdpi' in name:
+                        cmdline = proc.cmdline() or []
+                        matched = False
+                        for i, arg in enumerate(cmdline):
+                            if arg in ('-p', '--port') and i + 1 < len(cmdline) and cmdline[i + 1] == port_str:
+                                matched = True
+                                break
+                            elif arg in (f'-p{port_str}', f'--port={port_str}'):
+                                matched = True
+                                break
+                        if matched:
+                            return proc.info['pid']
                 except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                     continue
         except Exception as e:
@@ -81,9 +73,6 @@ class ByeDPIManager(QObject):
         params_str = self.config.get(self.config_key, "") if use_custom else ""
         if not params_str:
             params_str = DEFAULT_BYEDPI_PARAMS if self.default_port == 1780 else ""
-            
-        if params_str.strip().startswith("{"):
-            return params_str.strip()
             
         params = params_str.split()
         
@@ -115,28 +104,6 @@ class ByeDPIManager(QObject):
             return True
             
         params = self.get_params()
-        if isinstance(params, str) and params.startswith("{"):
-            router_script = os.path.join(CURRENT_DIR, os.path.join("byedpi", "byedpi_router.py"))
-            router_exists = os.path.exists(router_script) or (getattr(sys, 'frozen', False) and getattr(sys, '_MEIPASS', None) and os.path.exists(os.path.join(sys._MEIPASS, "byedpi", "byedpi_router.py")))
-            if not router_exists:
-                error_msg = f"Файл маршрутизатора не найден:\n{router_script}"
-                self.error_occurred.emit(error_msg)
-                return False
-                
-            cmd = [sys.executable, router_script, str(self.default_port), params]
-            try:
-                self.process = subprocess.Popen(
-                    cmd, 
-                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
-                )
-                self.running = True
-                self.status_changed.emit(True)
-                print(f"[ByeDPI Router {self.default_port}] Запущен маршрутизатор.")
-                return True
-            except Exception as e:
-                error_msg = f"Не удалось запустить маршрутизатор ({self.default_port}):\n{e}"
-                self.error_occurred.emit(error_msg)
-                return False
 
         if not os.path.exists(BYEDPI_EXE):
             error_msg = f"Файл Byedpi не найден:\n{BYEDPI_EXE}"
@@ -184,13 +151,13 @@ class ByeDPIManager(QObject):
         killed_count = 0
         port_str = str(self.default_port)
         
-        router_pids = []
+        our_pids = []
         if self.process:
-            router_pids.append(self.process.pid)
+            our_pids.append(self.process.pid)
             try:
                 parent = psutil.Process(self.process.pid)
                 for child in parent.children(recursive=True):
-                    router_pids.append(child.pid)
+                    our_pids.append(child.pid)
             except:
                 pass
 
@@ -204,7 +171,7 @@ class ByeDPIManager(QObject):
                         except psutil.AccessDenied:
                             cmdline = []
                         is_our_process = False
-                        if proc.info['pid'] in router_pids:
+                        if proc.info['pid'] in our_pids:
                             is_our_process = True
                         else:
                             for i, arg in enumerate(cmdline):

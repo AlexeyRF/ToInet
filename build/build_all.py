@@ -581,7 +581,6 @@ def build_portable_zip(compiled_exe_path):
         add_to_zip(zipf, "byedpi/ciadpi.exe")
         add_to_zip(zipf, "byedpi/zdpi.exe")
         add_to_zip(zipf, "byedpi/zdpi_ml_optimizer.py")
-        add_to_zip(zipf, "byedpi/byedpi_router.py")
         
         # Ресурсы sing-box, Tor, Opera, базы
         portable_resources = [
