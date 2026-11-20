@@ -457,6 +457,12 @@ def build_python_zip():
             "bin/programs_settings.exe",
             "bin/tgws.exe",
             "bin/tgws_settings.exe",
+            "bin/edit_bridges.exe",
+            "bin/ssh_settings.exe",
+            "bin/opera_settings.exe",
+            "bin/rules_editor.exe",
+            "bin/autostart_settings.exe",
+            "bin/zdpi_ml_optimizer.exe",
             "bin/opera-proxy.windows-amd64.exe",
             "bin/sing-box",
             "bin/tgws_accel.dll",
@@ -522,7 +528,7 @@ def compile_exe():
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu",
         "ui.byedpi_tester_gui", "ui.maestro",
-        "managers.tgws_manager", "ui.zdpi_ml_optimizer"
+        "managers.tgws_manager"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
@@ -579,7 +585,6 @@ def build_portable_zip(compiled_exe_path):
             add_to_zip(zipf, bf)
         add_to_zip(zipf, "byedpi/ciadpi.exe")
         add_to_zip(zipf, "byedpi/zdpi.exe")
-        add_to_zip(zipf, "byedpi/zdpi_ml_optimizer.py")
         
         # Ресурсы sing-box, Tor, Opera, базы
         portable_resources = [
@@ -589,6 +594,12 @@ def build_portable_zip(compiled_exe_path):
             "bin/programs_settings.exe",
             "bin/tgws.exe",
             "bin/tgws_settings.exe",
+            "bin/edit_bridges.exe",
+            "bin/ssh_settings.exe",
+            "bin/opera_settings.exe",
+            "bin/rules_editor.exe",
+            "bin/autostart_settings.exe",
+            "bin/zdpi_ml_optimizer.exe",
             "bin/opera-proxy.windows-amd64.exe",
             "bin/sing-box",
             "bin/tgws_accel.dll",
@@ -655,7 +666,7 @@ def build_onefile_release():
         "managers.ssh_manager", "managers.dependencies", "managers.runtime_patch", "managers.service_controller",
         "ui.app_log_window", "ui.window_ui", "ui.tray_menu",
         "ui.byedpi_tester_gui", "ui.maestro",
-        "managers.tgws_manager", "ui.zdpi_ml_optimizer"
+        "managers.tgws_manager"
     ]
     for hi in hidden_imports:
         cmd.extend(["--hidden-import", hi])
