@@ -1,0 +1,14 @@
+# Список приоритетных сайтов для проверки
+# Эти сайты отмечены галочками в списке доменов
+
+rutracker.org
+nyaa.si
+rutor.org
+nnmclub.to
+speedtest.net
+youtube.com
+youtu.be
+i.ytimg.com
+googleapis.com
+googleusercontent.com
+manifest.googlevideo.com

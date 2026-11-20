@@ -20,13 +20,27 @@ releases/
 
 # Executables and Binaries
 *.exe
+*.dll
 *.zip
 *.old
+*.ini
 
 # App Data & Configs
 /config.json
-data/
-evpn/subs.txt
+data/cached-*
+data/lock
+data/state
+data/torrc
+data/config.json
+data/inetcpl_*
+data/tun_*
+data/*.log
+data/alexeyrf_raw.txt
+data/geoip
+data/geoip6
+data/FACTS.png
+data/banned_domains.txt
+data/bridges.txt
 evpn/subs_cache.json
 evpn/evpn_config.json
 evpn/vless_state.json
@@ -34,7 +48,5 @@ logs/
 *.log
 
 # External tools and specific paths
-byedpi/
 tor/
 Proxifier/
-icon.ico
