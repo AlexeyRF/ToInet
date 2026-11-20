@@ -1,7 +1,7 @@
 @echo off
 setlocal
 echo ========================================================
-echo Building C++ utilities (cpller, gatik, ssh_tunnel, programs_settings, tgws_accel, zdpi)
+echo Building C++ utilities (cpller, gatik, ssh_tunnel, programs_settings, tgws_accel, zdpi, zdpi_ml_optimizer)
 echo ========================================================
 
 set "VS_VCVARS="
@@ -57,8 +57,10 @@ if not "%VS_VCVARS%"=="" (
         move /y "%~dp0..\bin\tgws_accel.dll" "%~dp0..\bin\tgws_accel.old" >nul 2>&1
         move /y "%~dp0..\bin\tgws_accel.new.dll" "%~dp0..\bin\tgws_accel.dll" >nul 2>&1
     )
+    echo Compiling zdpi_ml_optimizer.exe...
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /Fo:"%~dp0zdpi_ml_optimizer.obj" "%~dp0zdpi_ml_optimizer.cpp" /Fe:"%~dp0..\bin\zdpi_ml_optimizer.exe"
     del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
-    del /q "%~dp0..\*.obj" "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "edit_bridges.obj" "ssh_settings.obj" "opera_settings.obj" "rules_editor.obj" "autostart_settings.obj" "tgws_accel.obj" *.obj 2>nul
+    del /q "%~dp0..\*.obj" "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "edit_bridges.obj" "ssh_settings.obj" "opera_settings.obj" "rules_editor.obj" "autostart_settings.obj" "tgws_accel.obj" "zdpi_ml_optimizer.obj" *.obj 2>nul
     echo Done!
 ) else (
     echo MSVC vcvars64.bat not found. Trying g++...
@@ -76,6 +78,7 @@ if not "%VS_VCVARS%"=="" (
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0opera_settings.cpp" -o "%~dp0..\bin\opera_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0rules_editor.cpp" -o "%~dp0..\bin\rules_editor.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -luxtheme -lshell32
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0autostart_settings.cpp" -o "%~dp0..\bin\autostart_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -luxtheme -ladvapi32 -lshell32
+    g++ -O2 -std=c++17 "%~dp0zdpi_ml_optimizer.cpp" -o "%~dp0..\bin\zdpi_ml_optimizer.exe"
     g++ -O2 -std=c++17 -mavx2 "%~dp0tgws\*.cpp" -o "%~dp0..\bin\tgws.new.exe" -lws2_32 -lsecur32 -lcrypt32 -lbcrypt
     if exist "%~dp0..\bin\tgws.new.exe" (
         move /y "%~dp0..\bin\tgws.exe" "%~dp0..\bin\tgws.old" >nul 2>&1
