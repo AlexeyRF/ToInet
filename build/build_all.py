@@ -445,7 +445,7 @@ def build_python_zip():
             add_to_zip(zipf, rf)
             
         # Каталоги с исходным кодом и скриптами
-        code_dirs = ["ui", "managers", "server", "evpn", "byedpi"]
+        code_dirs = ["ui", "managers", "evpn", "byedpi"]
         for cdir in code_dirs:
             add_to_zip(zipf, cdir)
             
@@ -532,7 +532,7 @@ def compile_exe():
         
     # Вшиваем модули в sys._MEIPASS
     sep = ";" if os.name == "nt" else ":"
-    dirs_to_add = ["ui", "managers", "server", "evpn", "byedpi"]
+    dirs_to_add = ["ui", "managers", "evpn", "byedpi"]
     for d in dirs_to_add:
         src_path = (BASE_DIR / d).resolve()
         if src_path.exists():
@@ -666,7 +666,7 @@ def build_onefile_release():
     sep = ";" if os.name == "nt" else ":"
     
     # Модули и код
-    dirs_to_add = ["ui", "managers", "server", "evpn", "byedpi"]
+    dirs_to_add = ["ui", "managers", "evpn", "byedpi"]
     for d in dirs_to_add:
         src_path = (BASE_DIR / d).resolve()
         if src_path.exists():

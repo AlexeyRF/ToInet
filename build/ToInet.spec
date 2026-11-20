@@ -5,7 +5,7 @@ a = Analysis(
     ['D:\\Documents\\ToInet-MAX\\main.pyw'],
     pathex=['D:\\Documents\\ToInet-MAX'],
     binaries=[],
-    datas=[('D:\\Documents\\ToInet-MAX\\ui', 'ui'), ('D:\\Documents\\ToInet-MAX\\managers', 'managers'), ('D:\\Documents\\ToInet-MAX\\server', 'server'), ('D:\\Documents\\ToInet-MAX\\evpn', 'evpn'), ('D:\\Documents\\ToInet-MAX\\byedpi', 'byedpi'), ('D:\\Documents\\ToInet-MAX\\icon.ico', '.'), ('D:\\Documents\\ToInet-MAX\\Toinet.ppx', '.')],
+    datas=[('D:\\Documents\\ToInet-MAX\\ui', 'ui'), ('D:\\Documents\\ToInet-MAX\\managers', 'managers'), ('D:\\Documents\\ToInet-MAX\\evpn', 'evpn'), ('D:\\Documents\\ToInet-MAX\\byedpi', 'byedpi'), ('D:\\Documents\\ToInet-MAX\\icon.ico', '.'), ('D:\\Documents\\ToInet-MAX\\Toinet.ppx', '.')],
     hiddenimports=['requests', 'pythoncom', 'win32com', 'win32com.client', 'psutil', 'cryptography', 'pyperclip', 'socks', 'h2', 'certifi', 'httpx', 'PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets', 'managers.system_utils', 'managers.config_manager', 'managers.bdsher', 'managers.torchok', 'managers.opera_manager', 'managers.vless_manager', 'managers.mode_manager', 'managers.evpn_manager', 'managers.ext_manager', 'managers.ssh_manager', 'managers.dependencies', 'managers.runtime_patch', 'managers.service_controller', 'ui.app_log_window', 'ui.window_ui', 'ui.tray_menu', 'ui.byedpi_tester_gui', 'ui.maestro', 'managers.tgws_manager', 'ui.zdpi_ml_optimizer'],
     hookspath=[],
     hooksconfig={},

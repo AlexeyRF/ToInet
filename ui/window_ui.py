@@ -1433,6 +1433,27 @@ class MainWindow(QMainWindow):
             self.inetcpl_port_spin
         ))
 
+        # Tor LAN sharing
+        tor_lan_cb = QCheckBox()
+        tor_lan_cb.setChecked(bool(m.config.get("tor_share_lan", False)))
+        tor_lan_cb.setCursor(Qt.PointingHandCursor)
+        def on_tor_lan_toggled(checked):
+            if hasattr(m, 'tor_manager') and hasattr(m.tor_manager, 'set_share_lan'):
+                m.tor_manager.set_share_lan(checked)
+            else:
+                m.config["tor_share_lan"] = checked
+                m.config_manager.save_config(m.config)
+            if hasattr(m, 'update_menu'):
+                m.update_menu()
+        tor_lan_cb.toggled.connect(on_tor_lan_toggled)
+        c_layout.addWidget(CardRow(
+            T("Раздача Tor в локальную сеть (LAN)", "Share Tor in Local Network (LAN)", "Partager Tor sur le réseau local (LAN)"),
+            T("Слушать 0.0.0.0 вместо 127.0.0.1 (SOCKS: 9853, HTTP: 9854) для подключения других устройств.",
+              "Bind ports to 0.0.0.0 instead of 127.0.0.1 (SOCKS: 9853, HTTP: 9854) so other LAN devices can connect.",
+              "Écouter sur 0.0.0.0 au lieu de 127.0.0.1 (SOCKS: 9853, HTTP: 9854) pour d'autres appareils."),
+            tor_lan_cb
+        ))
+
         # Language selection (from tray menu)
         lang_combo = QComboBox()
         lang_map = [("auto", T("Авто (Система)", "Auto (System)", "Auto (Système)")),

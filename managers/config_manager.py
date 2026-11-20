@@ -24,6 +24,7 @@ DEFAULT_CONFIG = {
     "auto_start": False,
     "auto_connect_last_mode": False,
     "tor_show_window": False,
+    "tor_share_lan": False,
     "autostart_tools": ["byedpi", "tor", "opera", "vless", "tgws", "ext"],
     "ssh_host": "",
     "ssh_port": 22,
