@@ -42,7 +42,7 @@ if not "%VS_VCVARS%"=="" (
     echo Compiling opera_settings.exe...
     cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0opera_settings.obj" "%~dp0opera_settings.cpp" /Fe:"%~dp0..\bin\opera_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
     echo Compiling rules_editor.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0rules_editor.obj" "%~dp0rules_editor.cpp" /Fe:"%~dp0..\bin\rules_editor.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib shell32.lib /SUBSYSTEM:WINDOWS
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0rules_editor.obj" "%~dp0rules_editor.cpp" /Fe:"%~dp0..\bin\rules_editor.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib uxtheme.lib shell32.lib /SUBSYSTEM:WINDOWS
     echo Compiling autostart_settings.exe...
     cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /DUNICODE /D_UNICODE /Fo:"%~dp0autostart_settings.obj" "%~dp0autostart_settings.cpp" /Fe:"%~dp0..\bin\autostart_settings.exe" /link user32.lib gdi32.lib comdlg32.lib comctl32.lib dwmapi.lib uxtheme.lib advapi32.lib shell32.lib /SUBSYSTEM:WINDOWS
     echo Compiling tgws.exe...
@@ -74,7 +74,7 @@ if not "%VS_VCVARS%"=="" (
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0edit_bridges.cpp" -o "%~dp0..\bin\edit_bridges.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0ssh_settings.cpp" -o "%~dp0..\bin\ssh_settings.exe" -lws2_32 -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0opera_settings.cpp" -o "%~dp0..\bin\opera_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
-    g++ -O2 -std=c++17 -municode -mwindows "%~dp0rules_editor.cpp" -o "%~dp0..\bin\rules_editor.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -lshell32
+    g++ -O2 -std=c++17 -municode -mwindows "%~dp0rules_editor.cpp" -o "%~dp0..\bin\rules_editor.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -luxtheme -lshell32
     g++ -O2 -std=c++17 -municode -mwindows "%~dp0autostart_settings.cpp" -o "%~dp0..\bin\autostart_settings.exe" -luser32 -lgdi32 -lcomdlg32 -lcomctl32 -ldwmapi -luxtheme -ladvapi32 -lshell32
     g++ -O2 -std=c++17 -mavx2 "%~dp0tgws\*.cpp" -o "%~dp0..\bin\tgws.new.exe" -lws2_32 -lsecur32 -lcrypt32 -lbcrypt
     if exist "%~dp0..\bin\tgws.new.exe" (

@@ -9,6 +9,7 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <dwmapi.h>
+#include <uxtheme.h>
 #include <shellapi.h>
 #include <string>
 #include <vector>
@@ -20,7 +21,10 @@
 #pragma comment(lib, "gdi32.lib")
 #pragma comment(lib, "comctl32.lib")
 #pragma comment(lib, "dwmapi.lib")
+#pragma comment(lib, "uxtheme.lib")
 #pragma comment(lib, "shell32.lib")
+
+#pragma comment(linker,"\"/manifestdependency:type='win32' name='Microsoft.Windows.Common-Controls' version='6.0.0.0' processorArchitecture='*' publicKeyToken='6595b64144ccf1df' language='*'\"")
 
 // Control IDs
 #define IDC_LIST_RULES        101
@@ -59,42 +63,69 @@ struct LStr {
     const wchar_t* en;
     const wchar_t* fr;
     const wchar_t* get() const {
-        if (g_lang == LANG_FR) return fr;
-        if (g_lang == LANG_EN) return en;
+        if (g_lang == LANG_FR && fr) return fr;
+        if (g_lang == LANG_EN && en) return en;
         return ru;
     }
 };
 
-static const LStr T_WIN_TITLE        = { L"Правила проксификации (Toinet.ppx)", L"Proxification Rules (Toinet.ppx)", L"Règles de proxification (Toinet.ppx)" };
-static const LStr T_HEADER_NOTE      = {
+static const LStr T_WIN_TITLE           = { L"Правила маршрутизации (Toinet.ppx)", L"Routing Rules (Toinet.ppx)", L"Règles de routage (Toinet.ppx)" };
+static const LStr T_HEADER_NOTE         = {
     L"Правила маршрутизации трафика (приоритет сверху вниз). Синхронизируются с Proxifier и Sing-box TUN.",
     L"Traffic routing rules (processed top-down). Synchronized with Proxifier and Sing-box TUN.",
     L"Règles de routage du trafic (traitées de haut en bas). Synchronisées avec Proxifier et Sing-box TUN."
 };
 
-static const LStr T_COL_NAME         = { L"Имя правила", L"Rule Name", L"Nom de la règle" };
-static const LStr T_COL_APPS         = { L"Приложения", L"Applications", L"Applications" };
-static const LStr T_COL_TARGETS      = { L"Целевые хосты", L"Target Hosts", L"Hôtes cibles" };
-static const LStr T_COL_PORTS        = { L"Порты", L"Target Ports", L"Ports cibles" };
-static const LStr T_COL_ACTION       = { L"Действие", L"Action", L"Action" };
+static const LStr T_COL_NAME            = { L"Имя правила", L"Rule Name", L"Nom de la règle" };
+static const LStr T_COL_APPS            = { L"Приложения", L"Applications", L"Applications" };
+static const LStr T_COL_TARGETS         = { L"Целевые хосты", L"Target Hosts", L"Hôtes cibles" };
+static const LStr T_COL_PORTS           = { L"Порты", L"Ports", L"Ports" };
+static const LStr T_COL_ACTION          = { L"Действие", L"Action", L"Action" };
 
-static const LStr T_BTN_ADD_RULE     = { L"Добавить правило...", L"Add Rule...", L"Ajouter règle..." };
-static const LStr T_BTN_ADD_PROXY    = { L"Добавить прокси...", L"Add Proxy...", L"Ajouter proxy..." };
-static const LStr T_BTN_EDIT         = { L"Редактировать...", L"Edit...", L"Modifier..." };
-static const LStr T_BTN_DELETE       = { L"Удалить", L"Delete", L"Supprimer" };
-static const LStr T_BTN_UP           = { L"▲ Вверх", L"▲ Up", L"▲ Haut" };
-static const LStr T_BTN_DOWN         = { L"▼ Вниз", L"▼ Down", L"▼ Bas" };
-static const LStr T_BTN_CANCEL       = { L"Отмена", L"Cancel", L"Annuler" };
-static const LStr T_BTN_SAVE         = { L"Сохранить", L"Save", L"Enregistrer" };
+static const LStr T_BTN_ADD_RULE        = { L"Добавить правило...", L"Add Rule...", L"Ajouter règle..." };
+static const LStr T_BTN_ADD_PROXY       = { L"Добавить прокси...", L"Add Proxy...", L"Ajouter proxy..." };
+static const LStr T_BTN_EDIT            = { L"Редактировать...", L"Edit...", L"Modifier..." };
+static const LStr T_BTN_DELETE          = { L"Удалить", L"Delete", L"Supprimer" };
+static const LStr T_BTN_UP              = { L"▲ Вверх", L"▲ Up", L"▲ Haut" };
+static const LStr T_BTN_DOWN            = { L"▼ Вниз", L"▼ Down", L"▼ Bas" };
+static const LStr T_BTN_CANCEL          = { L"Отмена", L"Cancel", L"Annuler" };
+static const LStr T_BTN_SAVE            = { L"Сохранить", L"Save", L"Enregistrer" };
 
-static const LStr T_MSG_TITLE_OK     = { L"Успех", L"Success", L"Succès" };
-static const LStr T_MSG_TITLE_WARN   = { L"Внимание", L"Warning", L"Attention" };
-static const LStr T_MSG_TITLE_ERR    = { L"Ошибка", L"Error", L"Erreur" };
-static const LStr T_MSG_TITLE_CONF   = { L"Подтверждение", L"Confirmation", L"Confirmation" };
+static const LStr T_MSG_TITLE_OK        = { L"Успех", L"Success", L"Succès" };
+static const LStr T_MSG_TITLE_WARN      = { L"Внимание", L"Warning", L"Attention" };
+static const LStr T_MSG_TITLE_ERR       = { L"Ошибка", L"Error", L"Erreur" };
+static const LStr T_MSG_TITLE_CONF      = { L"Подтверждение", L"Confirmation", L"Confirmation" };
 
-static const LStr T_MSG_SAVED        = { L"Правила успешно сохранены в Toinet.ppx!", L"Rules successfully saved to Toinet.ppx!", L"Règles enregistrées avec succès dans Toinet.ppx !" };
-static const LStr T_WARN_DEFAULT_DEL = { L"Правило 'Default' нельзя удалить.", L"Cannot delete 'Default' rule.", L"Impossible de supprimer la règle 'Default'." };
-static const LStr T_WARN_DEL_PROMPT  = { L"Удалить выбранное правило?", L"Delete selected rule?", L"Supprimer la règle sélectionnée ?" };
+static const LStr T_MSG_SAVED           = { L"Правила успешно сохранены в Toinet.ppx!", L"Rules successfully saved to Toinet.ppx!", L"Règles enregistrées avec succès dans Toinet.ppx !" };
+static const LStr T_WARN_DEFAULT_DEL    = { L"Правило 'Default' нельзя удалить.", L"Cannot delete 'Default' rule.", L"Impossible de supprimer la règle 'Default'." };
+static const LStr T_WARN_DEL_PROMPT     = { L"Удалить выбранное правило?", L"Delete selected rule?", L"Supprimer la règle sélectionnée ?" };
+
+// Single Rule Dialog translations
+static const LStr T_DLG_RULE_TITLE_NEW  = { L"Добавить правило маршрутизации", L"Add Routing Rule", L"Ajouter une règle de routage" };
+static const LStr T_DLG_RULE_TITLE_EDIT = { L"Редактирование правила", L"Edit Routing Rule", L"Modifier la règle de routage" };
+static const LStr T_DLG_LBL_NAME        = { L"Название правила:", L"Rule Name:", L"Nom de la règle :" };
+static const LStr T_DLG_LBL_APPS        = { L"Приложения (через точку с запятой или 'Any'):", L"Applications (semicolon separated or 'Any'):", L"Applications (séparées par ';' ou 'Any') :" };
+static const LStr T_DLG_LBL_TARGETS     = { L"Целевые хосты (через точку с запятой или 'Any'):", L"Target Hosts (semicolon separated or 'Any'):", L"Hôtes cibles (séparés par ';' ou 'Any') :" };
+static const LStr T_DLG_LBL_PORTS       = { L"Порты (например, 80; 443 или 'Any'):", L"Ports (e.g. 80; 443 or 'Any'):", L"Ports (ex. 80; 443 ou 'Any') :" };
+static const LStr T_DLG_LBL_ACTION      = { L"Действие маршрутизации:", L"Routing Action:", L"Action de routage :" };
+static const LStr T_DLG_CHK_ENABLED     = { L"Правило активно (включено)", L"Rule Enabled", L"Règle activée" };
+static const LStr T_DLG_BTN_OK          = { L"Сохранить", L"Save", L"Enregistrer" };
+static const LStr T_DLG_BTN_CANCEL      = { L"Отмена", L"Cancel", L"Annuler" };
+static const LStr T_DLG_ERR_NAME        = { L"Укажите название правила.", L"Please enter rule name.", L"Veuillez entrer le nom de la règle." };
+
+static const LStr T_ACT_DIRECT          = { L"Direct (Напрямую, без прокси)", L"Direct (No proxy)", L"Direct (Sans proxy)" };
+static const LStr T_ACT_BLOCK           = { L"Block (Блокировать трафик)", L"Block (Drop traffic)", L"Bloquer (Rejeter le trafic)" };
+
+// Add Proxy Dialog translations
+static const LStr T_PRX_TITLE           = { L"Добавить прокси-сервер", L"Add Proxy Server", L"Ajouter un serveur proxy" };
+static const LStr T_PRX_LBL_NAME        = { L"Название / Метка:", L"Label / Name:", L"Étiquette / Nom :" };
+static const LStr T_PRX_LBL_PROTO       = { L"Протокол:", L"Protocol:", L"Protocole :" };
+static const LStr T_PRX_LBL_HOST        = { L"Адрес хоста (IP или домен):", L"Host Address (IP or domain):", L"Adresse d'hôte (IP ou domaine) :" };
+static const LStr T_PRX_LBL_PORT        = { L"Порт:", L"Port:", L"Port :" };
+static const LStr T_PRX_BTN_ADD         = { L"Добавить", L"Add", L"Ajouter" };
+static const LStr T_PRX_BTN_CANCEL      = { L"Отмена", L"Cancel", L"Annuler" };
+static const LStr T_PRX_ERR_EMPTY       = { L"Укажите название и адрес хоста прокси!", L"Please provide proxy label and host address!", L"Veuillez indiquer le nom et l'hôte du proxy !" };
+static const LStr T_PRX_SUCCESS_TITLE   = { L"Прокси добавлен", L"Proxy Added", L"Proxy ajouté" };
 
 struct ProxyItem {
     std::wstring id;
@@ -196,13 +227,13 @@ static std::wstring ExtractAttribute(const std::wstring& tagStr, const std::wstr
 }
 
 std::wstring GetActionLabel(const std::wstring& actionKey) {
-    if (actionKey == L"Direct") return L"Direct";
-    if (actionKey == L"Block") return L"Block";
+    if (actionKey == L"Direct") return (g_lang == LANG_RU) ? L"Direct (Прямое)" : L"Direct";
+    if (actionKey == L"Block") return (g_lang == LANG_RU) ? L"Block (Блокировка)" : L"Block";
     if (actionKey.rfind(L"Proxy:", 0) == 0) {
         std::wstring pid = actionKey.substr(6);
         for (const auto& p : g_proxies) {
             if (p.id == pid) {
-                return L"Proxy " + p.type + L" " + p.label;
+                return L"Proxy " + p.type + L" (" + p.label + L")";
             }
         }
         return L"Proxy (" + pid + L")";
@@ -210,7 +241,14 @@ std::wstring GetActionLabel(const std::wstring& actionKey) {
     return actionKey;
 }
 
-void InitPaths() {
+void ApplyFontToAllChildren(HWND hWnd, HFONT hFont) {
+    EnumChildWindows(hWnd, [](HWND hChild, LPARAM lp) -> BOOL {
+        SendMessageW(hChild, WM_SETFONT, (WPARAM)lp, TRUE);
+        return TRUE;
+    }, (LPARAM)hFont);
+}
+
+void InitPathsAndLang() {
     wchar_t exePath[MAX_PATH];
     GetModuleFileNameW(NULL, exePath, MAX_PATH);
     std::wstring dir = exePath;
@@ -234,6 +272,35 @@ void InitPaths() {
         g_rootDir = fullRoot;
     }
     g_ppxPath = g_rootDir + L"\\Toinet.ppx";
+
+    // Read language setting from config.json
+    std::wstring cfgPath = g_rootDir + L"\\data\\config.json";
+    std::ifstream cfg(cfgPath, std::ios::binary);
+    std::string lang = "ru";
+    if (cfg.is_open()) {
+        std::stringstream ss;
+        ss << cfg.rdbuf();
+        std::string content = ss.str();
+        cfg.close();
+
+        std::string search = "\"language\"";
+        size_t pos = content.find(search);
+        if (pos != std::string::npos) {
+            pos = content.find(':', pos);
+            if (pos != std::string::npos) {
+                size_t q1 = content.find('\"', pos);
+                if (q1 != std::string::npos) {
+                    size_t q2 = content.find('\"', q1 + 1);
+                    if (q2 != std::string::npos) {
+                        lang = content.substr(q1 + 1, q2 - q1 - 1);
+                    }
+                }
+            }
+        }
+    }
+    if (lang == "fr") g_lang = LANG_FR;
+    else if (lang == "en") g_lang = LANG_EN;
+    else g_lang = LANG_RU;
 }
 
 bool LoadPPX() {
@@ -383,11 +450,11 @@ bool SavePPX() {
     outXml += L"\t</RuleList>\n";
     outXml += L"</ProxifierProfile>\n";
 
+    std::ofstream file(g_ppxPath, std::ios::binary);
+    if (!file.is_open()) return false;
     std::string utf8 = Utf16ToUtf8(outXml);
-    std::ofstream out(g_ppxPath, std::ios::binary | std::ios::trunc);
-    if (!out.is_open()) return false;
-    out.write(utf8.c_str(), utf8.size());
-    out.close();
+    file.write(utf8.c_str(), utf8.size());
+    file.close();
     return true;
 }
 
@@ -403,7 +470,6 @@ void PopulateListView() {
         lvi.pszText = const_cast<wchar_t*>(r.name.c_str());
         ListView_InsertItem(g_hListView, &lvi);
 
-        // Normalize newlines for display
         std::wstring appsDisp = r.apps;
         std::replace(appsDisp.begin(), appsDisp.end(), L'\n', L' ');
         std::wstring targetsDisp = r.targets;
@@ -420,34 +486,89 @@ void PopulateListView() {
     }
 }
 
+// Dialog Button Drawing Helper
+static void DrawCustomDialogButton(LPDRAWITEMSTRUCT dis, HWND hHovered) {
+    HDC hdc = dis->hDC;
+    RECT rc = dis->rcItem;
+    bool isSelected = (dis->itemState & ODS_SELECTED) != 0;
+    bool isHovered = (dis->hwndItem == hHovered);
+
+    FillRect(hdc, &rc, g_hBrushBg);
+
+    COLORREF colBg;
+    COLORREF colBorder;
+
+    if (dis->CtlID == IDC_DLG_OK || dis->CtlID == IDC_PRX_ADD) {
+        // Calm steel blue
+        if (isSelected)      { colBg = RGB(24, 62, 96);  colBorder = RGB(36, 82, 126); }
+        else if (isHovered)  { colBg = RGB(42, 92, 140); colBorder = RGB(52, 110, 165); }
+        else                 { colBg = RGB(32, 78, 120); colBorder = RGB(36, 82, 126); }
+    } else {
+        // Calm dark charcoal
+        if (isSelected)      { colBg = RGB(36, 36, 36);  colBorder = RGB(58, 58, 58); }
+        else if (isHovered)  { colBg = RGB(60, 60, 60);  colBorder = RGB(75, 75, 75); }
+        else                 { colBg = RGB(46, 46, 46);  colBorder = RGB(58, 58, 58); }
+    }
+
+    HBRUSH hBr = CreateSolidBrush(colBg);
+    HPEN hPen = CreatePen(PS_SOLID, 1, colBorder);
+    HGDIOBJ oldBr = SelectObject(hdc, hBr);
+    HGDIOBJ oldPen = SelectObject(hdc, hPen);
+
+    RoundRect(hdc, rc.left, rc.top, rc.right, rc.bottom, 6, 6);
+
+    SelectObject(hdc, oldBr);
+    SelectObject(hdc, oldPen);
+    DeleteObject(hBr);
+    DeleteObject(hPen);
+
+    wchar_t text[128] = { 0 };
+    GetWindowTextW(dis->hwndItem, text, 128);
+    SetBkMode(hdc, TRANSPARENT);
+    SetTextColor(hdc, RGB(220, 220, 220));
+    SelectObject(hdc, g_hFontNormal);
+    DrawTextW(hdc, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
+}
+
 // Single Rule Dialog Procedure
 static RuleItem g_dlgRule;
 static bool g_dlgRuleAccepted = false;
-static HWND g_hDlgName = NULL, g_hDlgApps = NULL, g_hDlgTargets = NULL, g_hDlgPorts = NULL, g_hDlgAction = NULL, g_hDlgEnabled = NULL;
+static HWND g_hDlgName = NULL, g_hDlgApps = NULL, g_hDlgTargets = NULL, g_hDlgPorts = NULL;
+static HWND g_hDlgAction = NULL, g_hDlgEnabled = NULL, g_hDlgBtnOk = NULL, g_hDlgBtnCancel = NULL;
+static HWND g_hDlgHoveredBtn = NULL;
 
 LRESULT CALLBACK SingleRuleDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_CREATE: {
-        // Labels and Controls
-        CreateWindowExW(0, L"STATIC", L"Rule Name:", WS_CHILD | WS_VISIBLE, 20, 16, 460, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hDlgName = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", g_dlgRule.name.c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 20, 36, 460, 24, hWnd, (HMENU)IDC_DLG_NAME, GetModuleHandle(NULL), NULL);
+        // 1. Name
+        CreateWindowExW(0, L"STATIC", T_DLG_LBL_NAME.get(), WS_CHILD | WS_VISIBLE, 20, 16, 470, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hDlgName = CreateWindowExW(0, L"EDIT", g_dlgRule.name.c_str(), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP, 20, 36, 470, 26, hWnd, (HMENU)IDC_DLG_NAME, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgName, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Applications (semicolon separated or 'Any'):", WS_CHILD | WS_VISIBLE, 20, 68, 460, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hDlgApps = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", g_dlgRule.apps.c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 20, 88, 460, 24, hWnd, (HMENU)IDC_DLG_APPS, GetModuleHandle(NULL), NULL);
+        // 2. Apps
+        CreateWindowExW(0, L"STATIC", T_DLG_LBL_APPS.get(), WS_CHILD | WS_VISIBLE, 20, 68, 470, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hDlgApps = CreateWindowExW(0, L"EDIT", g_dlgRule.apps.c_str(), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP, 20, 88, 470, 26, hWnd, (HMENU)IDC_DLG_APPS, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgApps, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Target Hosts (semicolon separated or 'Any'):", WS_CHILD | WS_VISIBLE, 20, 120, 460, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hDlgTargets = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", g_dlgRule.targets.c_str(), WS_CHILD | WS_VISIBLE | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL, 20, 140, 460, 90, hWnd, (HMENU)IDC_DLG_TARGETS, GetModuleHandle(NULL), NULL);
+        // 3. Targets
+        CreateWindowExW(0, L"STATIC", T_DLG_LBL_TARGETS.get(), WS_CHILD | WS_VISIBLE, 20, 120, 470, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hDlgTargets = CreateWindowExW(0, L"EDIT", g_dlgRule.targets.c_str(), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_MULTILINE | ES_AUTOVSCROLL | WS_VSCROLL | WS_TABSTOP, 20, 140, 470, 85, hWnd, (HMENU)IDC_DLG_TARGETS, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgTargets, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Target Ports (e.g. 80; 443 or 'Any'):", WS_CHILD | WS_VISIBLE, 20, 238, 460, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hDlgPorts = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", g_dlgRule.ports.c_str(), WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 20, 258, 460, 24, hWnd, (HMENU)IDC_DLG_PORTS, GetModuleHandle(NULL), NULL);
+        // 4. Ports
+        CreateWindowExW(0, L"STATIC", T_DLG_LBL_PORTS.get(), WS_CHILD | WS_VISIBLE, 20, 232, 470, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hDlgPorts = CreateWindowExW(0, L"EDIT", g_dlgRule.ports.c_str(), WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP, 20, 252, 470, 26, hWnd, (HMENU)IDC_DLG_PORTS, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgPorts, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Action:", WS_CHILD | WS_VISIBLE, 20, 290, 460, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hDlgAction = CreateWindowExW(0, L"COMBOBOX", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 20, 310, 460, 180, hWnd, (HMENU)IDC_DLG_ACTION, GetModuleHandle(NULL), NULL);
+        // 5. Action
+        CreateWindowExW(0, L"STATIC", T_DLG_LBL_ACTION.get(), WS_CHILD | WS_VISIBLE, 20, 284, 470, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hDlgAction = CreateWindowExW(0, L"COMBOBOX", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 20, 304, 470, 180, hWnd, (HMENU)IDC_DLG_ACTION, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgAction, L"DarkMode_CFD", NULL);
 
-        SendMessageW(g_hDlgAction, CB_ADDSTRING, 0, (LPARAM)L"Direct");
-        SendMessageW(g_hDlgAction, CB_ADDSTRING, 0, (LPARAM)L"Block");
+        SendMessageW(g_hDlgAction, CB_ADDSTRING, 0, (LPARAM)T_ACT_DIRECT.get());
+        SendMessageW(g_hDlgAction, CB_ADDSTRING, 0, (LPARAM)T_ACT_BLOCK.get());
         for (const auto& p : g_proxies) {
-            std::wstring lbl = L"Proxy " + p.type + L" " + p.label;
+            std::wstring lbl = L"Proxy " + p.type + L" (" + p.label + L")";
             SendMessageW(g_hDlgAction, CB_ADDSTRING, 0, (LPARAM)lbl.c_str());
         }
 
@@ -465,20 +586,16 @@ LRESULT CALLBACK SingleRuleDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
         }
         SendMessageW(g_hDlgAction, CB_SETCURSEL, sel, 0);
 
-        g_hDlgEnabled = CreateWindowExW(0, L"BUTTON", L"Включено (Rule Enabled)", WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX, 20, 348, 460, 24, hWnd, (HMENU)IDC_DLG_ENABLED, GetModuleHandle(NULL), NULL);
+        // 6. Checkbox
+        g_hDlgEnabled = CreateWindowExW(0, L"BUTTON", T_DLG_CHK_ENABLED.get(), WS_CHILD | WS_VISIBLE | BS_AUTOCHECKBOX | WS_TABSTOP, 20, 340, 470, 24, hWnd, (HMENU)IDC_DLG_ENABLED, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hDlgEnabled, L"DarkMode_Explorer", NULL);
         SendMessageW(g_hDlgEnabled, BM_SETCHECK, g_dlgRule.enabled ? BST_CHECKED : BST_UNCHECKED, 0);
 
-        // Buttons
-        CreateWindowExW(0, L"BUTTON", L"OK", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 300, 390, 85, 30, hWnd, (HMENU)IDC_DLG_OK, GetModuleHandle(NULL), NULL);
-        CreateWindowExW(0, L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 395, 390, 85, 30, hWnd, (HMENU)IDC_DLG_CANCEL, GetModuleHandle(NULL), NULL);
+        // 7. Action Buttons (Owner-draw calm style)
+        g_hDlgBtnOk = CreateWindowExW(0, L"BUTTON", T_DLG_BTN_OK.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP, 275, 385, 105, 32, hWnd, (HMENU)IDC_DLG_OK, GetModuleHandle(NULL), NULL);
+        g_hDlgBtnCancel = CreateWindowExW(0, L"BUTTON", T_DLG_BTN_CANCEL.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP, 390, 385, 100, 32, hWnd, (HMENU)IDC_DLG_CANCEL, GetModuleHandle(NULL), NULL);
 
-        SendMessageW(g_hDlgName, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hDlgApps, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hDlgTargets, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hDlgPorts, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hDlgAction, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hDlgEnabled, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-
+        ApplyFontToAllChildren(hWnd, g_hFontNormal);
         return 0;
     }
 
@@ -497,11 +614,46 @@ LRESULT CALLBACK SingleRuleDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
         return (INT_PTR)g_hBrushBg;
     }
 
-    case WM_CTLCOLOREDIT: {
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
         HDC hdc = (HDC)wParam;
-        SetTextColor(hdc, RGB(240, 240, 240));
+        SetTextColor(hdc, RGB(220, 220, 220));
         SetBkColor(hdc, g_colEditBg);
         return (INT_PTR)g_hBrushEditBg;
+    }
+
+    case WM_DRAWITEM: {
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        if (pdis->CtlType == ODT_BUTTON) {
+            DrawCustomDialogButton(pdis, g_hDlgHoveredBtn);
+            return TRUE;
+        }
+        break;
+    }
+
+    case WM_SETCURSOR: {
+        HWND hTarget = (HWND)wParam;
+        if (hTarget == g_hDlgBtnOk || hTarget == g_hDlgBtnCancel) {
+            if (g_hDlgHoveredBtn != hTarget) {
+                HWND old = g_hDlgHoveredBtn;
+                g_hDlgHoveredBtn = hTarget;
+                if (old) InvalidateRect(old, NULL, FALSE);
+                InvalidateRect(g_hDlgHoveredBtn, NULL, FALSE);
+
+                TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT), TME_LEAVE, hWnd, 0 };
+                TrackMouseEvent(&tme);
+            }
+        }
+        break;
+    }
+
+    case WM_MOUSELEAVE: {
+        if (g_hDlgHoveredBtn) {
+            HWND old = g_hDlgHoveredBtn;
+            g_hDlgHoveredBtn = NULL;
+            InvalidateRect(old, NULL, FALSE);
+        }
+        break;
     }
 
     case WM_COMMAND: {
@@ -511,7 +663,7 @@ LRESULT CALLBACK SingleRuleDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
             GetWindowTextW(g_hDlgName, bufName, 256);
             std::wstring name = TrimW(bufName);
             if (name.empty()) {
-                MessageBoxW(hWnd, L"Укажите название правила.", L"Ошибка", MB_OK | MB_ICONWARNING);
+                MessageBoxW(hWnd, T_DLG_ERR_NAME.get(), T_MSG_TITLE_ERR.get(), MB_OK | MB_ICONWARNING);
                 return 0;
             }
             GetWindowTextW(g_hDlgApps, bufApps, 512);
@@ -552,6 +704,7 @@ LRESULT CALLBACK SingleRuleDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM l
 bool ShowSingleRuleDialog(HWND hParent, RuleItem& rule, bool isNew) {
     g_dlgRule = rule;
     g_dlgRuleAccepted = false;
+    g_hDlgHoveredBtn = NULL;
 
     WNDCLASSEXW wc = { sizeof(WNDCLASSEXW) };
     wc.lpfnWndProc = SingleRuleDlgProc;
@@ -561,8 +714,8 @@ bool ShowSingleRuleDialog(HWND hParent, RuleItem& rule, bool isNew) {
     wc.lpszClassName = L"ToInetSingleRuleDlgClass";
     RegisterClassExW(&wc);
 
-    int w = 500;
-    int h = 460;
+    int w = 525;
+    int h = 475;
     RECT rcParent;
     GetWindowRect(hParent, &rcParent);
     int x = rcParent.left + (rcParent.right - rcParent.left - w) / 2;
@@ -571,7 +724,7 @@ bool ShowSingleRuleDialog(HWND hParent, RuleItem& rule, bool isNew) {
     HWND hDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"ToInetSingleRuleDlgClass",
-        isNew ? L"Добавить правило" : L"Редактирование правила",
+        isNew ? T_DLG_RULE_TITLE_NEW.get() : T_DLG_RULE_TITLE_EDIT.get(),
         WS_POPUP | WS_CAPTION | WS_SYSMENU,
         x, y, w, h,
         hParent, NULL, GetModuleHandle(NULL), NULL
@@ -612,36 +765,45 @@ bool ShowSingleRuleDialog(HWND hParent, RuleItem& rule, bool isNew) {
 static ProxyItem g_dlgProxy;
 static bool g_dlgProxyAccepted = false;
 static HWND g_hPrxLabel = NULL, g_hPrxProto = NULL, g_hPrxHost = NULL, g_hPrxPort = NULL;
+static HWND g_hPrxBtnAdd = NULL, g_hPrxBtnCancel = NULL;
+static HWND g_hPrxHoveredBtn = NULL;
 
 LRESULT CALLBACK AddProxyDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     switch (uMsg) {
     case WM_CREATE: {
-        CreateWindowExW(0, L"STATIC", L"Label / Name:", WS_CHILD | WS_VISIBLE, 20, 16, 360, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hPrxLabel = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 20, 36, 360, 24, hWnd, (HMENU)IDC_PRX_LABEL, GetModuleHandle(NULL), NULL);
+        // Label
+        CreateWindowExW(0, L"STATIC", T_PRX_LBL_NAME.get(), WS_CHILD | WS_VISIBLE, 20, 16, 380, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hPrxLabel = CreateWindowExW(0, L"EDIT", L"", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP, 20, 36, 380, 26, hWnd, (HMENU)IDC_PRX_LABEL, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hPrxLabel, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Protocol:", WS_CHILD | WS_VISIBLE, 20, 68, 360, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hPrxProto = CreateWindowExW(0, L"COMBOBOX", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL, 20, 88, 360, 140, hWnd, (HMENU)IDC_PRX_PROTO, GetModuleHandle(NULL), NULL);
+        // Protocol
+        CreateWindowExW(0, L"STATIC", T_PRX_LBL_PROTO.get(), WS_CHILD | WS_VISIBLE, 20, 68, 380, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hPrxProto = CreateWindowExW(0, L"COMBOBOX", L"", WS_CHILD | WS_VISIBLE | CBS_DROPDOWNLIST | WS_VSCROLL | WS_TABSTOP, 20, 88, 380, 140, hWnd, (HMENU)IDC_PRX_PROTO, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hPrxProto, L"DarkMode_CFD", NULL);
         SendMessageW(g_hPrxProto, CB_ADDSTRING, 0, (LPARAM)L"SOCKS5");
         SendMessageW(g_hPrxProto, CB_ADDSTRING, 0, (LPARAM)L"HTTPS");
         SendMessageW(g_hPrxProto, CB_ADDSTRING, 0, (LPARAM)L"HTTP");
         SendMessageW(g_hPrxProto, CB_ADDSTRING, 0, (LPARAM)L"SOCKS4");
         SendMessageW(g_hPrxProto, CB_SETCURSEL, 0, 0);
 
-        CreateWindowExW(0, L"STATIC", L"Host Address:", WS_CHILD | WS_VISIBLE, 20, 120, 240, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hPrxHost = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"127.0.0.1", WS_CHILD | WS_VISIBLE | ES_AUTOHSCROLL, 20, 140, 240, 24, hWnd, (HMENU)IDC_PRX_HOST, GetModuleHandle(NULL), NULL);
+        // Host
+        CreateWindowExW(0, L"STATIC", T_PRX_LBL_HOST.get(), WS_CHILD | WS_VISIBLE, 20, 120, 250, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hPrxHost = CreateWindowExW(0, L"EDIT", L"127.0.0.1", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_AUTOHSCROLL | WS_TABSTOP, 20, 140, 250, 26, hWnd, (HMENU)IDC_PRX_HOST, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hPrxHost, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"STATIC", L"Port:", WS_CHILD | WS_VISIBLE, 280, 120, 100, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
-        g_hPrxPort = CreateWindowExW(WS_EX_CLIENTEDGE, L"EDIT", L"1080", WS_CHILD | WS_VISIBLE | ES_NUMBER | ES_AUTOHSCROLL, 280, 140, 100, 24, hWnd, (HMENU)IDC_PRX_PORT, GetModuleHandle(NULL), NULL);
+        // Port
+        CreateWindowExW(0, L"STATIC", T_PRX_LBL_PORT.get(), WS_CHILD | WS_VISIBLE, 285, 120, 115, 18, hWnd, NULL, GetModuleHandle(NULL), NULL);
+        g_hPrxPort = CreateWindowExW(0, L"EDIT", L"1080", WS_CHILD | WS_VISIBLE | WS_BORDER | ES_NUMBER | ES_AUTOHSCROLL | WS_TABSTOP, 285, 140, 115, 26, hWnd, (HMENU)IDC_PRX_PORT, GetModuleHandle(NULL), NULL);
+        SetWindowTheme(g_hPrxPort, L"DarkMode_CFD", NULL);
 
-        CreateWindowExW(0, L"BUTTON", L"Add", WS_CHILD | WS_VISIBLE | BS_DEFPUSHBUTTON, 200, 184, 85, 30, hWnd, (HMENU)IDC_PRX_ADD, GetModuleHandle(NULL), NULL);
-        CreateWindowExW(0, L"BUTTON", L"Cancel", WS_CHILD | WS_VISIBLE | BS_PUSHBUTTON, 295, 184, 85, 30, hWnd, (HMENU)IDC_PRX_CANCEL, GetModuleHandle(NULL), NULL);
+        // Buttons
+        g_hPrxBtnAdd = CreateWindowExW(0, L"BUTTON", T_PRX_BTN_ADD.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP, 195, 188, 100, 32, hWnd, (HMENU)IDC_PRX_ADD, GetModuleHandle(NULL), NULL);
+        g_hPrxBtnCancel = CreateWindowExW(0, L"BUTTON", T_PRX_BTN_CANCEL.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW | WS_TABSTOP, 305, 188, 95, 32, hWnd, (HMENU)IDC_PRX_CANCEL, GetModuleHandle(NULL), NULL);
 
-        SendMessageW(g_hPrxLabel, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hPrxProto, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hPrxHost, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
-        SendMessageW(g_hPrxPort, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
+        ApplyFontToAllChildren(hWnd, g_hFontNormal);
         return 0;
     }
+
     case WM_ERASEBKGND: {
         HDC hdc = (HDC)wParam;
         RECT rc;
@@ -649,18 +811,56 @@ LRESULT CALLBACK AddProxyDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
         FillRect(hdc, &rc, g_hBrushBg);
         return 1;
     }
+
     case WM_CTLCOLORSTATIC: {
         HDC hdc = (HDC)wParam;
         SetTextColor(hdc, g_colText);
         SetBkMode(hdc, TRANSPARENT);
         return (INT_PTR)g_hBrushBg;
     }
-    case WM_CTLCOLOREDIT: {
+
+    case WM_CTLCOLOREDIT:
+    case WM_CTLCOLORLISTBOX: {
         HDC hdc = (HDC)wParam;
-        SetTextColor(hdc, RGB(240, 240, 240));
+        SetTextColor(hdc, RGB(220, 220, 220));
         SetBkColor(hdc, g_colEditBg);
         return (INT_PTR)g_hBrushEditBg;
     }
+
+    case WM_DRAWITEM: {
+        LPDRAWITEMSTRUCT pdis = (LPDRAWITEMSTRUCT)lParam;
+        if (pdis->CtlType == ODT_BUTTON) {
+            DrawCustomDialogButton(pdis, g_hPrxHoveredBtn);
+            return TRUE;
+        }
+        break;
+    }
+
+    case WM_SETCURSOR: {
+        HWND hTarget = (HWND)wParam;
+        if (hTarget == g_hPrxBtnAdd || hTarget == g_hPrxBtnCancel) {
+            if (g_hPrxHoveredBtn != hTarget) {
+                HWND old = g_hPrxHoveredBtn;
+                g_hPrxHoveredBtn = hTarget;
+                if (old) InvalidateRect(old, NULL, FALSE);
+                InvalidateRect(g_hPrxHoveredBtn, NULL, FALSE);
+
+                TRACKMOUSEEVENT tme = { sizeof(TRACKMOUSEEVENT), TME_LEAVE, hWnd, 0 };
+                TrackMouseEvent(&tme);
+            }
+        }
+        break;
+    }
+
+    case WM_MOUSELEAVE: {
+        if (g_hPrxHoveredBtn) {
+            HWND old = g_hPrxHoveredBtn;
+            g_hPrxHoveredBtn = NULL;
+            InvalidateRect(old, NULL, FALSE);
+        }
+        break;
+    }
+
     case WM_COMMAND: {
         int id = LOWORD(wParam);
         if (id == IDC_PRX_ADD) {
@@ -672,7 +872,7 @@ LRESULT CALLBACK AddProxyDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
             std::wstring lbl = TrimW(bufL);
             std::wstring host = TrimW(bufH);
             if (lbl.empty() || host.empty()) {
-                MessageBoxW(hWnd, L"Укажите название и адрес прокси!", L"Внимание", MB_OK | MB_ICONWARNING);
+                MessageBoxW(hWnd, T_PRX_ERR_EMPTY.get(), T_MSG_TITLE_WARN.get(), MB_OK | MB_ICONWARNING);
                 return 0;
             }
 
@@ -698,6 +898,7 @@ LRESULT CALLBACK AddProxyDlgProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lPa
 
 bool ShowAddProxyDialog(HWND hParent, ProxyItem& outProxy) {
     g_dlgProxyAccepted = false;
+    g_hPrxHoveredBtn = NULL;
 
     WNDCLASSEXW wc = { sizeof(WNDCLASSEXW) };
     wc.lpfnWndProc = AddProxyDlgProc;
@@ -707,8 +908,8 @@ bool ShowAddProxyDialog(HWND hParent, ProxyItem& outProxy) {
     wc.lpszClassName = L"ToInetAddProxyDlgClass";
     RegisterClassExW(&wc);
 
-    int w = 410;
-    int h = 260;
+    int w = 435;
+    int h = 275;
     RECT rcParent;
     GetWindowRect(hParent, &rcParent);
     int x = rcParent.left + (rcParent.right - rcParent.left - w) / 2;
@@ -717,7 +918,7 @@ bool ShowAddProxyDialog(HWND hParent, ProxyItem& outProxy) {
     HWND hDlg = CreateWindowExW(
         WS_EX_DLGMODALFRAME,
         L"ToInetAddProxyDlgClass",
-        L"Добавить провайдер прокси",
+        T_PRX_TITLE.get(),
         WS_POPUP | WS_CAPTION | WS_SYSMENU,
         x, y, w, h,
         hParent, NULL, GetModuleHandle(NULL), NULL
@@ -797,8 +998,10 @@ void OnAddProxy() {
         }
         PopulateListView();
 
-        std::wstring msg = L"Прокси '" + p.label + L"' (" + p.type + L" " + p.address + L":" + p.port + L") добавлен в список!\nТеперь вы можете выбрать его в правилах.";
-        MessageBoxW(g_hMainWnd, msg.c_str(), L"Провайдер добавлен", MB_OK | MB_ICONINFORMATION);
+        std::wstring msg = (g_lang == LANG_RU) ?
+            (L"Прокси '" + p.label + L"' (" + p.type + L" " + p.address + L":" + p.port + L") добавлен в список!\nТеперь вы можете выбрать его в правилах.") :
+            (L"Proxy '" + p.label + L"' (" + p.type + L" " + p.address + L":" + p.port + L") added to the list!\nYou can now assign it to rules.");
+        MessageBoxW(g_hMainWnd, msg.c_str(), T_PRX_SUCCESS_TITLE.get(), MB_OK | MB_ICONINFORMATION);
     }
 }
 
@@ -824,7 +1027,9 @@ void OnDeleteRule() {
         return;
     }
 
-    std::wstring prompt = L"Удалить правило '" + g_rules[sel].name + L"'?";
+    std::wstring prompt = (g_lang == LANG_RU) ?
+        (L"Удалить правило '" + g_rules[sel].name + L"'?") :
+        (L"Delete rule '" + g_rules[sel].name + L"'?");
     if (MessageBoxW(g_hMainWnd, prompt.c_str(), T_MSG_TITLE_CONF.get(), MB_YESNO | MB_ICONQUESTION) == IDYES) {
         SyncRulesCheckState();
         g_rules.erase(g_rules.begin() + sel);
@@ -896,10 +1101,17 @@ void DrawCustomButton(LPDRAWITEMSTRUCT dis) {
     COLORREF colBorder;
 
     if (dis->CtlID == IDC_BTN_SAVE) {
+        // Calm steel blue
         if (isSelected)      { colBg = RGB(24, 62, 96);  colBorder = RGB(36, 82, 126); }
         else if (isHovered)  { colBg = RGB(42, 92, 140); colBorder = RGB(52, 110, 165); }
         else                 { colBg = RGB(32, 78, 120); colBorder = RGB(36, 82, 126); }
+    } else if (dis->CtlID == IDC_BTN_DEL_RULE) {
+        // Calm muted crimson/wine
+        if (isSelected)      { colBg = RGB(95, 32, 32);  colBorder = RGB(125, 45, 45); }
+        else if (isHovered)  { colBg = RGB(135, 48, 48); colBorder = RGB(155, 55, 55); }
+        else                 { colBg = RGB(115, 38, 38); colBorder = RGB(125, 45, 45); }
     } else {
+        // Calm dark charcoal
         if (isSelected)      { colBg = RGB(36, 36, 36);  colBorder = RGB(58, 58, 58); }
         else if (isHovered)  { colBg = RGB(60, 60, 60);  colBorder = RGB(75, 75, 75); }
         else                 { colBg = RGB(46, 46, 46);  colBorder = RGB(58, 58, 58); }
@@ -921,7 +1133,7 @@ void DrawCustomButton(LPDRAWITEMSTRUCT dis) {
     GetWindowTextW(dis->hwndItem, text, 128);
     SetBkMode(hdc, TRANSPARENT);
     SetTextColor(hdc, RGB(220, 220, 220));
-    SelectObject(hdc, g_hFontBold);
+    SelectObject(hdc, g_hFontNormal);
     DrawTextW(hdc, text, -1, &rc, DT_CENTER | DT_VCENTER | DT_SINGLELINE);
 }
 
@@ -931,16 +1143,27 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
     case WM_CREATE: {
         g_hMainWnd = hWnd;
 
-        g_hFontNormal = CreateFontW(-12, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-        g_hFontBold   = CreateFontW(-12, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
-        g_hFontSmall  = CreateFontW(-11, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        g_hFontNormal = CreateFontW(16, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        g_hFontBold   = CreateFontW(16, 0, 0, 0, FW_BOLD, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
+        g_hFontSmall  = CreateFontW(14, 0, 0, 0, FW_NORMAL, FALSE, FALSE, FALSE, DEFAULT_CHARSET, OUT_DEFAULT_PRECIS, CLIP_DEFAULT_PRECIS, CLEARTYPE_QUALITY, DEFAULT_PITCH | FF_DONTCARE, L"Segoe UI");
 
         // Rules ListView (X=18, Y=40, W=868, H=500)
-        g_hListView = CreateWindowExW(WS_EX_CLIENTEDGE, WC_LISTVIEWW, L"",
-            WS_CHILD | WS_VISIBLE | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
+        g_hListView = CreateWindowExW(0, WC_LISTVIEWW, L"",
+            WS_CHILD | WS_VISIBLE | WS_BORDER | LVS_REPORT | LVS_SINGLESEL | LVS_SHOWSELALWAYS,
             18, 40, 868, 500, hWnd, (HMENU)IDC_LIST_RULES, GetModuleHandle(NULL), NULL);
 
-        ListView_SetExtendedListViewStyle(g_hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES);
+        ListView_SetExtendedListViewStyle(g_hListView, LVS_EX_FULLROWSELECT | LVS_EX_GRIDLINES | LVS_EX_CHECKBOXES | LVS_EX_DOUBLEBUFFER);
+        SetWindowTheme(g_hListView, L"DarkMode_Explorer", NULL);
+        ListView_SetBkColor(g_hListView, RGB(24, 24, 24));
+        ListView_SetTextBkColor(g_hListView, RGB(24, 24, 24));
+        ListView_SetTextColor(g_hListView, RGB(220, 220, 220));
+
+        HWND hHeader = ListView_GetHeader(g_hListView);
+        if (hHeader) {
+            SetWindowTheme(hHeader, L"DarkMode_ItemsView", NULL);
+            SendMessageW(hHeader, WM_SETFONT, (WPARAM)g_hFontBold, TRUE);
+        }
+
         SendMessageW(g_hListView, WM_SETFONT, (WPARAM)g_hFontNormal, TRUE);
 
         // Add Columns
@@ -949,49 +1172,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
 
         lvc.iSubItem = 0; lvc.pszText = const_cast<wchar_t*>(T_COL_NAME.get()); lvc.cx = 150;
         ListView_InsertColumn(g_hListView, 0, &lvc);
-
         lvc.iSubItem = 1; lvc.pszText = const_cast<wchar_t*>(T_COL_APPS.get()); lvc.cx = 160;
         ListView_InsertColumn(g_hListView, 1, &lvc);
-
-        lvc.iSubItem = 2; lvc.pszText = const_cast<wchar_t*>(T_COL_TARGETS.get()); lvc.cx = 300;
+        lvc.iSubItem = 2; lvc.pszText = const_cast<wchar_t*>(T_COL_TARGETS.get()); lvc.cx = 240;
         ListView_InsertColumn(g_hListView, 2, &lvc);
-
-        lvc.iSubItem = 3; lvc.pszText = const_cast<wchar_t*>(T_COL_PORTS.get()); lvc.cx = 100;
+        lvc.iSubItem = 3; lvc.pszText = const_cast<wchar_t*>(T_COL_PORTS.get()); lvc.cx = 110;
         ListView_InsertColumn(g_hListView, 3, &lvc);
-
-        lvc.iSubItem = 4; lvc.pszText = const_cast<wchar_t*>(T_COL_ACTION.get()); lvc.cx = 150;
+        lvc.iSubItem = 4; lvc.pszText = const_cast<wchar_t*>(T_COL_ACTION.get()); lvc.cx = 185;
         ListView_InsertColumn(g_hListView, 4, &lvc);
 
-        // Toolbar Buttons (Y=552, H=32)
-        int btnY = 552;
-        g_hBtnAddRule = CreateWindowExW(0, L"BUTTON", T_BTN_ADD_RULE.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 18, btnY, 130, 32, hWnd, (HMENU)IDC_BTN_ADD_RULE, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnAddRule, ButtonSubclassProc, IDC_BTN_ADD_RULE, 0);
+        // Action Buttons Row (Y = 550, H = 34)
+        int btnY = 550;
+        int btnH = 34;
 
-        g_hBtnAddProxy = CreateWindowExW(0, L"BUTTON", T_BTN_ADD_PROXY.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 154, btnY, 130, 32, hWnd, (HMENU)IDC_BTN_ADD_PROXY, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnAddProxy, ButtonSubclassProc, IDC_BTN_ADD_PROXY, 0);
+        g_hBtnAddRule  = CreateWindowExW(0, L"BUTTON", T_BTN_ADD_RULE.get(),  WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 18,  btnY, 140, btnH, hWnd, (HMENU)IDC_BTN_ADD_RULE,  GetModuleHandle(NULL), NULL);
+        g_hBtnAddProxy = CreateWindowExW(0, L"BUTTON", T_BTN_ADD_PROXY.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 164, btnY, 140, btnH, hWnd, (HMENU)IDC_BTN_ADD_PROXY, GetModuleHandle(NULL), NULL);
+        g_hBtnEdit     = CreateWindowExW(0, L"BUTTON", T_BTN_EDIT.get(),      WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 310, btnY, 130, btnH, hWnd, (HMENU)IDC_BTN_EDIT_RULE, GetModuleHandle(NULL), NULL);
+        g_hBtnDelete   = CreateWindowExW(0, L"BUTTON", T_BTN_DELETE.get(),    WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 446, btnY, 90,  btnH, hWnd, (HMENU)IDC_BTN_DEL_RULE,  GetModuleHandle(NULL), NULL);
+        g_hBtnUp       = CreateWindowExW(0, L"BUTTON", T_BTN_UP.get(),        WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 542, btnY, 78,  btnH, hWnd, (HMENU)IDC_BTN_UP,        GetModuleHandle(NULL), NULL);
+        g_hBtnDown     = CreateWindowExW(0, L"BUTTON", T_BTN_DOWN.get(),      WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 626, btnY, 78,  btnH, hWnd, (HMENU)IDC_BTN_DOWN,      GetModuleHandle(NULL), NULL);
+        g_hBtnCancel   = CreateWindowExW(0, L"BUTTON", T_BTN_CANCEL.get(),    WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 710, btnY, 82,  btnH, hWnd, (HMENU)IDC_BTN_CANCEL,    GetModuleHandle(NULL), NULL);
+        g_hBtnSave     = CreateWindowExW(0, L"BUTTON", T_BTN_SAVE.get(),      WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 798, btnY, 88,  btnH, hWnd, (HMENU)IDC_BTN_SAVE,      GetModuleHandle(NULL), NULL);
 
-        g_hBtnEdit = CreateWindowExW(0, L"BUTTON", T_BTN_EDIT.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 290, btnY, 110, 32, hWnd, (HMENU)IDC_BTN_EDIT_RULE, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnEdit, ButtonSubclassProc, IDC_BTN_EDIT_RULE, 0);
+        // Subclass all buttons for hover tracking
+        HWND btns[] = { g_hBtnAddRule, g_hBtnAddProxy, g_hBtnEdit, g_hBtnDelete, g_hBtnUp, g_hBtnDown, g_hBtnCancel, g_hBtnSave };
+        for (HWND b : btns) {
+            SetWindowSubclass(b, ButtonSubclassProc, (UINT_PTR)b, 0);
+        }
 
-        g_hBtnDelete = CreateWindowExW(0, L"BUTTON", T_BTN_DELETE.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 406, btnY, 80, 32, hWnd, (HMENU)IDC_BTN_DEL_RULE, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnDelete, ButtonSubclassProc, IDC_BTN_DEL_RULE, 0);
-
-        g_hBtnUp = CreateWindowExW(0, L"BUTTON", T_BTN_UP.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 500, btnY, 78, 32, hWnd, (HMENU)IDC_BTN_UP, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnUp, ButtonSubclassProc, IDC_BTN_UP, 0);
-
-        g_hBtnDown = CreateWindowExW(0, L"BUTTON", T_BTN_DOWN.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 584, btnY, 78, 32, hWnd, (HMENU)IDC_BTN_DOWN, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnDown, ButtonSubclassProc, IDC_BTN_DOWN, 0);
-
-        g_hBtnCancel = CreateWindowExW(0, L"BUTTON", T_BTN_CANCEL.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 686, btnY, 96, 32, hWnd, (HMENU)IDC_BTN_CANCEL, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnCancel, ButtonSubclassProc, IDC_BTN_CANCEL, 0);
-
-        g_hBtnSave = CreateWindowExW(0, L"BUTTON", T_BTN_SAVE.get(), WS_CHILD | WS_VISIBLE | BS_OWNERDRAW, 788, btnY, 98, 32, hWnd, (HMENU)IDC_BTN_SAVE, GetModuleHandle(NULL), NULL);
-        SetWindowSubclass(g_hBtnSave, ButtonSubclassProc, IDC_BTN_SAVE, 0);
+        ApplyFontToAllChildren(hWnd, g_hFontNormal);
 
         if (LoadPPX()) {
             PopulateListView();
         } else {
-            MessageBoxW(hWnd, L"Файл профиля Toinet.ppx не найден!", L"Ошибка", MB_OK | MB_ICONERROR);
+            MessageBoxW(hWnd, (g_lang == LANG_RU) ? L"Файл профиля Toinet.ppx не найден!" : L"Toinet.ppx profile file not found!", T_MSG_TITLE_ERR.get(), MB_OK | MB_ICONERROR);
         }
         return 0;
     }
@@ -1018,6 +1232,39 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         if (pnm->idFrom == IDC_LIST_RULES) {
             if (pnm->code == NM_DBLCLK) {
                 OnEditRule();
+                return 0;
+            }
+            if (pnm->code == NM_CUSTOMDRAW) {
+                LPNMLVCUSTOMDRAW pcd = (LPNMLVCUSTOMDRAW)lParam;
+                switch (pcd->nmcd.dwDrawStage) {
+                case CDDS_PREPAINT:
+                    return CDRF_NOTIFYITEMDRAW;
+                case CDDS_ITEMPREPAINT: {
+                    int item = (int)pcd->nmcd.dwItemSpec;
+                    bool isSel = (ListView_GetItemState(g_hListView, item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
+                    if (isSel) {
+                        pcd->clrText = RGB(255, 255, 255);
+                        pcd->clrTextBk = RGB(32, 78, 120); // Calm steel blue selection
+                    } else {
+                        pcd->clrText = RGB(220, 220, 220);
+                        pcd->clrTextBk = (item % 2 == 0) ? RGB(24, 24, 24) : RGB(30, 30, 30);
+                    }
+                    return CDRF_NOTIFYSUBITEMDRAW;
+                }
+                case (CDDS_ITEMPREPAINT | CDDS_SUBITEM): {
+                    int item = (int)pcd->nmcd.dwItemSpec;
+                    bool isSel = (ListView_GetItemState(g_hListView, item, LVIS_SELECTED) & LVIS_SELECTED) != 0;
+                    if (isSel) {
+                        pcd->clrText = RGB(255, 255, 255);
+                        pcd->clrTextBk = RGB(32, 78, 120);
+                    } else {
+                        pcd->clrText = RGB(220, 220, 220);
+                        pcd->clrTextBk = (item % 2 == 0) ? RGB(24, 24, 24) : RGB(30, 30, 30);
+                    }
+                    return CDRF_NEWFONT;
+                }
+                }
+                return CDRF_DODEFAULT;
             }
         }
         break;
@@ -1043,7 +1290,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
                 MessageBoxW(hWnd, T_MSG_SAVED.get(), T_MSG_TITLE_OK.get(), MB_OK | MB_ICONINFORMATION);
                 DestroyWindow(hWnd);
             } else {
-                MessageBoxW(hWnd, L"Ошибка при сохранении Toinet.ppx", L"Ошибка", MB_OK | MB_ICONERROR);
+                MessageBoxW(hWnd, (g_lang == LANG_RU) ? L"Ошибка при сохранении Toinet.ppx" : L"Error saving Toinet.ppx", T_MSG_TITLE_ERR.get(), MB_OK | MB_ICONERROR);
             }
         } else if (id == IDC_BTN_CANCEL) {
             DestroyWindow(hWnd);
@@ -1056,7 +1303,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam) {
         HDC hdc = BeginPaint(hWnd, &ps);
 
         SelectObject(hdc, g_hFontSmall);
-        SetTextColor(hdc, RGB(157, 157, 157));
+        SetTextColor(hdc, RGB(160, 160, 160));
         SetBkMode(hdc, TRANSPARENT);
         TextOutW(hdc, 20, 14, T_HEADER_NOTE.get(), (int)wcslen(T_HEADER_NOTE.get()));
 
@@ -1078,13 +1325,7 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE, PWSTR, int nCmdShow) {
     INITCOMMONCONTROLSEX icex = { sizeof(INITCOMMONCONTROLSEX), ICC_STANDARD_CLASSES | ICC_WIN95_CLASSES | ICC_LISTVIEW_CLASSES };
     InitCommonControlsEx(&icex);
 
-    LANGID langId = GetUserDefaultUILanguage();
-    WORD priLang = langId & 0xFF;
-    if (priLang == 0x0C) g_lang = LANG_FR;
-    else if (priLang == 0x09) g_lang = LANG_EN;
-    else g_lang = LANG_RU;
-
-    InitPaths();
+    InitPathsAndLang();
 
     g_hBrushBg = CreateSolidBrush(g_colBg);
     g_hBrushEditBg = CreateSolidBrush(g_colEditBg);
