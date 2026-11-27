@@ -726,7 +726,7 @@ class ModeManager:
 
                 "plink.exe",
 
-                "ssh.exe",
+                "ssh_tunnel.exe",
 
                 "python.exe",
 

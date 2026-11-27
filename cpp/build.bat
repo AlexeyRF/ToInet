@@ -26,7 +26,8 @@ if not "%VS_VCVARS%"=="" (
         move /y "%~dp0..\bin\gatik.new.exe" "%~dp0..\bin\gatik.exe" >nul 2>&1
     )
     echo Compiling ssh_tunnel.exe...
-    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /Fo:"%~dp0ssh_tunnel.obj" "%~dp0ssh_tunnel.cpp" /Fe:"%~dp0..\bin\ssh_tunnel.new.exe" /link ws2_32.lib advapi32.lib
+    if not exist "%~dp0ssh_tunnel\obj" mkdir "%~dp0ssh_tunnel\obj" 2>nul
+    cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /Fo:"%~dp0ssh_tunnel\obj/" "%~dp0ssh_tunnel.cpp" "%~dp0ssh_tunnel\*.cpp" /Fe:"%~dp0..\bin\ssh_tunnel.new.exe" /link ws2_32.lib advapi32.lib bcrypt.lib
     if exist "%~dp0..\bin\ssh_tunnel.new.exe" (
         move /y "%~dp0..\bin\ssh_tunnel.exe" "%~dp0..\bin\ssh_tunnel.old" >nul 2>&1
         move /y "%~dp0..\bin\ssh_tunnel.new.exe" "%~dp0..\bin\ssh_tunnel.exe" >nul 2>&1
@@ -59,14 +60,14 @@ if not "%VS_VCVARS%"=="" (
     )
     echo Compiling zdpi_ml_optimizer.exe...
     cl.exe /nologo /O2 /EHsc /W3 /std:c++17 /utf-8 /Fo:"%~dp0zdpi_ml_optimizer.obj" "%~dp0zdpi_ml_optimizer.cpp" /Fe:"%~dp0..\bin\zdpi_ml_optimizer.exe"
-    del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
+    del /q "%~dp0*.obj" "%~dp0tgws\*.obj" "%~dp0ssh_tunnel\obj\*.obj" "%~dp0..\bin\*.lib" "%~dp0..\bin\*.exp" 2>nul
     del /q "%~dp0..\*.obj" "cpller.obj" "gatik.obj" "ssh_tunnel.obj" "programs_settings.obj" "tgws_settings.obj" "edit_bridges.obj" "ssh_settings.obj" "opera_settings.obj" "rules_editor.obj" "autostart_settings.obj" "tgws_accel.obj" "zdpi_ml_optimizer.obj" *.obj 2>nul
     echo Done!
 ) else (
     echo MSVC vcvars64.bat not found. Trying g++...
     g++ -O2 -std=c++17 "%~dp0cpller.cpp" -o "%~dp0..\bin\cpller.exe" -lwininet -ladvapi32
     g++ -O2 -std=c++17 "%~dp0gatik.cpp" -o "%~dp0..\bin\gatik.exe" -lws2_32
-    g++ -O2 -std=c++17 "%~dp0ssh_tunnel.cpp" -o "%~dp0..\bin\ssh_tunnel.new.exe" -lws2_32 -ladvapi32
+    g++ -O2 -std=c++17 "%~dp0ssh_tunnel.cpp" "%~dp0ssh_tunnel\*.cpp" -o "%~dp0..\bin\ssh_tunnel.new.exe" -lws2_32 -ladvapi32 -lbcrypt
     if exist "%~dp0..\bin\ssh_tunnel.new.exe" (
         move /y "%~dp0..\bin\ssh_tunnel.exe" "%~dp0..\bin\ssh_tunnel.old" >nul 2>&1
         move /y "%~dp0..\bin\ssh_tunnel.new.exe" "%~dp0..\bin\ssh_tunnel.exe" >nul 2>&1

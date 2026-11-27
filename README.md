@@ -22,7 +22,7 @@
 * **TGWS & Gatik:** MTProto-проксирование через веб-сокеты и динамический SOCKS5-шлюз для Telegram.
 * **Opera Proxy:** быстрый прокси-туннель через распределенную инфраструктуру Opera.
 * **EVPN (sing-box):** современные протоколы (VLESS Reality, Trojan) с поддержкой подписок.
-* **SSH SOCKS5 Туннель:** защищенное подключение к собственному VPS на базе C++ и нативного Windows OpenSSH.
+* **SSH SOCKS5 Туннель:** защищенное подключение к собственному VPS на базе собственного автономного SSH-2 клиента и SOCKS5-прокси на чистом C++ без зависимости от OpenSSH.
 
 ### Как запускать
 
@@ -67,7 +67,7 @@ Engineered for open Internet access while **maximizing bandwidth savings on your
 * **TGWS & Gatik:** WebSocket-based MTProto proxying and dynamic SOCKS5 gateway for Telegram.
 * **Opera Proxy:** Fast proxy tunnel utilizing Opera's distributed infrastructure.
 * **EVPN (sing-box):** Modern anti-censorship protocols (VLESS Reality, Trojan) with subscription support.
-* **SSH SOCKS5 Tunnel:** Secure dynamic VPS connection powered by C++ and native Windows OpenSSH.
+* **SSH SOCKS5 Tunnel:** Secure dynamic VPS connection powered by a standalone pure C++ SSH-2 client and SOCKS5 proxy (X25519, AES-CTR, HMAC-SHA2 via Windows CNG) with zero OpenSSH dependency.
 
 ### How to Run
 
@@ -110,7 +110,7 @@ Conçu pour restaurer un accès libre à Internet tout en **préservant au maxim
 * **TGWS & Gatik :** Proxy MTProto sur WebSockets et passerelle SOCKS5 dynamique pour Telegram.
 * **Opera Proxy :** Tunnel proxy rapide s'appuyant sur l'infrastructure distribuée d'Opera.
 * **EVPN (sing-box) :** Protocoles récents (VLESS Reality, Trojan) avec prise en charge des abonnements.
-* **Tunnel SSH SOCKS5 :** Connexion sécurisée vers votre propre VPS via un superviseur C++ et OpenSSH natif.
+* **Tunnel SSH SOCKS5 :** Connexion sécurisée vers votre propre VPS via un client SSH-2 et proxy SOCKS5 autonome en C++ pur (X25519, AES-CTR, HMAC-SHA2 via Windows CNG), sans aucune dépendance à OpenSSH.
 
 ### Comment lancer
 

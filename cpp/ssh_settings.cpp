@@ -386,11 +386,14 @@ bool StartTunnel(const std::wstring& host, int port, const std::wstring& user, c
                        L" --user \"" + user + L"\" --socks-port " + std::to_wstring(socksPort) +
                        L" --bind " + bindAddr + L" --interval 5";
 
-    if (!pass.empty()) {
-        cmd += L" --pass \"" + pass + L"\"";
-    }
     if (!autoReconnect) {
         cmd += L" --no-reconnect";
+    }
+
+    if (!pass.empty()) {
+        SetEnvironmentVariableW(L"TOINET_SSH_PASS", pass.c_str());
+    } else {
+        SetEnvironmentVariableW(L"TOINET_SSH_PASS", NULL);
     }
 
     STARTUPINFOW si = { sizeof(si) };
@@ -398,7 +401,9 @@ bool StartTunnel(const std::wstring& host, int port, const std::wstring& user, c
     std::vector<wchar_t> cmdBuf(cmd.begin(), cmd.end());
     cmdBuf.push_back(0);
 
-    if (CreateProcessW(NULL, cmdBuf.data(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi)) {
+    BOOL started = CreateProcessW(NULL, cmdBuf.data(), NULL, NULL, FALSE, CREATE_NO_WINDOW, NULL, NULL, &si, &pi);
+    SetEnvironmentVariableW(L"TOINET_SSH_PASS", NULL);
+    if (started) {
         CloseHandle(pi.hProcess);
         CloseHandle(pi.hThread);
         return true;

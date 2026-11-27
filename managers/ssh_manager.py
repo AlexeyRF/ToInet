@@ -94,15 +94,11 @@ class SSHTunnelManager(QObject):
             res = sock.connect_ex(('127.0.0.1', int(port)))
             sock.close()
             if res == 0:
-                for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+                for proc in psutil.process_iter(['pid', 'name']):
                     try:
                         name = (proc.info.get('name') or "").lower()
                         if name == exe_name or 'ssh_tunnel' in name:
                             return proc.info['pid']
-                        elif name == 'ssh.exe':
-                            cmdline = " ".join(proc.info.get('cmdline') or [])
-                            if f":{port}" in cmdline or "-D" in cmdline:
-                                return proc.info['pid']
                     except Exception:
                         pass
         except Exception:
@@ -151,7 +147,6 @@ class SSHTunnelManager(QObject):
             self.error_occurred.emit(err)
             return False
 
-        key_file = None
         cmd = [
             SSH_TUNNEL_EXE,
             "--host", host,
@@ -162,23 +157,6 @@ class SSHTunnelManager(QObject):
             "--interval", str(reconnect_interval)
         ]
 
-        if password:
-            # Генерация одноразового ключа шифрования в файле
-            key_bytes = os.urandom(32)
-            key_hex = key_bytes.hex()
-            pass_bytes = password.encode('utf-8')
-            enc_bytes = bytes([b ^ key_bytes[i % len(key_bytes)] for i, b in enumerate(pass_bytes)])
-            enc_pass_hex = enc_bytes.hex()
-
-            temp_dir = os.path.join(CURRENT_DIR, "data", "temp")
-            os.makedirs(temp_dir, exist_ok=True)
-            key_file = os.path.join(temp_dir, f".sk_{os.urandom(6).hex()}.key")
-            with open(key_file, "w", encoding="utf-8") as kf:
-                kf.write(key_hex)
-
-            self.key_file = key_file
-            cmd.extend(["--enc-pass", enc_pass_hex, "--key-file", key_file])
-
         if not auto_reconnect:
             cmd.append("--no-reconnect")
 
@@ -188,6 +166,8 @@ class SSHTunnelManager(QObject):
             env = os.environ.copy()
             env["TOINET_SSH_HOST"] = host
             env["TOINET_SSH_USER"] = user
+            if password:
+                env["TOINET_SSH_PASS"] = password
 
             print(f"[SSHTunnel] Запуск туннеля на {bind_addr}:{socks_port} -> {user}@{host}:{port}")
             self.process = subprocess.Popen(
@@ -226,30 +206,18 @@ class SSHTunnelManager(QObject):
         except Exception as e:
             print(f"[SSHTunnel] Ошибка при остановке: {e}")
 
-        # Kill any orphan ssh_tunnel.exe and associated ssh.exe
+        # Kill any orphan ssh_tunnel.exe
         exe_name = os.path.basename(SSH_TUNNEL_EXE).lower()
-        socks_port = str(self.config.get("ssh_socks_port", 1770))
         try:
-            for proc in psutil.process_iter(['pid', 'name', 'cmdline']):
+            for proc in psutil.process_iter(['pid', 'name']):
                 try:
                     name = (proc.info.get('name') or "").lower()
                     if name == exe_name or 'ssh_tunnel' in name:
                         proc.kill()
-                    elif name == 'ssh.exe':
-                        cmdline = " ".join(proc.info.get('cmdline') or [])
-                        if f":{socks_port}" in cmdline or "-D" in cmdline:
-                            proc.kill()
                 except (psutil.NoSuchProcess, psutil.AccessDenied):
                     pass
         except Exception:
             pass
-
-        if hasattr(self, 'key_file') and self.key_file and os.path.exists(self.key_file):
-            try:
-                os.remove(self.key_file)
-            except Exception:
-                pass
-            self.key_file = None
 
         self.running = False
         self.status_changed.emit(False)
