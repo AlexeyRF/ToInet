@@ -136,7 +136,7 @@ def add_to_blacklist(link):
 
 
 
-def build_singbox_config(nodes):
+def build_singbox_config(nodes, socks_port=None):
     bl = load_blacklist()
     if bl:
         nodes = [n for n in nodes if not is_node_blacklisted(n, bl)]
@@ -320,16 +320,21 @@ def build_singbox_config(nodes):
     cfg = config_manager.load_config() if hasattr(config_manager, 'load_config') else {}
     proxy_dns = cfg.get("proxy_dns_tun_evpn", True)
 
-    config = {
-        "log": {
-            "level": "warn"
-        },
-        "dns": {
-            "servers": [
-                {"tag": "local", "address": "local", "detour": "direct"}
-            ]
-        },
-        "inbounds": [
+    if socks_port:
+        inbounds = [
+            {
+                "type": "socks",
+                "tag": "socks-in",
+                "listen": "127.0.0.1",
+                "listen_port": int(socks_port)
+            }
+        ]
+        route_rules = [
+            {"inbound": ["socks-in"], "outbound": "auto"},
+            {"inbound": ["socks-in"], "outbound": "block"}
+        ]
+    else:
+        inbounds = [
             {
                 "type": "tun",
                 "tag": "tun-in",
@@ -341,14 +346,26 @@ def build_singbox_config(nodes):
                 "strict_route": True,
                 "stack": "mixed"
             }
-        ],
+        ]
+        route_rules = [
+            {"port": 53, "action": "hijack-dns"} if proxy_dns else {"port": 53, "outbound": "direct"},
+            {"inbound": ["tun-in"], "outbound": "auto"},
+            {"inbound": ["tun-in"], "outbound": "block"}
+        ]
+
+    config = {
+        "log": {
+            "level": "warn"
+        },
+        "dns": {
+            "servers": [
+                {"tag": "local", "address": "local", "detour": "direct"}
+            ]
+        },
+        "inbounds": inbounds,
         "outbounds": outbounds,
         "route": {
-            "rules": [
-                {"port": 53, "action": "hijack-dns"} if proxy_dns else {"port": 53, "outbound": "direct"},
-                {"inbound": ["tun-in"], "outbound": "auto"},
-                {"inbound": ["tun-in"], "outbound": "block"}
-            ],
+            "rules": route_rules,
 
             "auto_detect_interface": True,
 
@@ -566,6 +583,7 @@ class EvpnManager(QObject):
         self.tester = None
         self.working_nodes = []
         self.log_file = None
+        self.socks_port = None
 
     def log(self, msg):
         print(f"[EVPN] {msg}")
@@ -578,10 +596,11 @@ class EvpnManager(QObject):
         self.log(f"ERROR: {msg}")
         self.error_occurred.emit(msg)
 
-    def start(self):
+    def start(self, socks_port=None):
         if self.is_running:
             return
         
+        self.socks_port = socks_port
         self.is_running = True
         
         self.tester = ProxyTester()
@@ -612,7 +631,7 @@ class EvpnManager(QObject):
         
         try:
             current_dir = os.path.dirname(sys.executable) if getattr(sys, 'frozen', False) else os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-            config = build_singbox_config(self.working_nodes)
+            config = build_singbox_config(self.working_nodes, socks_port=self.socks_port)
             
             evpn_dir = os.path.join(current_dir, "evpn")
             if not os.path.exists(evpn_dir):

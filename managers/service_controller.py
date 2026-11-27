@@ -434,6 +434,11 @@ def restart_app():
     m.app.quit()
 
 def exit_app():
+    if getattr(m, 'easy_ctrl', None):
+        try:
+            m.easy_ctrl.stop_easy()
+        except Exception:
+            pass
     m.tor_manager.stop()
     m.byedpi_manager.stop()
     m.opera_mgr.stop()

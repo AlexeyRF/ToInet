@@ -48,7 +48,11 @@ class ModeManager:
 
         self.tun_proxy_port = 0
 
-        self.tun_proxy_type = "socks" # socks or http
+        self.tun_proxy_type = "socks"
+        self.easy_mode = False
+        self.easy_use_evpn_upstream = False
+        self.easy_foreign_tag = "opera"
+        self.easy_evpn_port = 1788 # socks or http
 
 
 
@@ -572,27 +576,37 @@ class ModeManager:
 
 
 
+        if getattr(self, 'easy_mode', False):
+            dns_address = "195.123.209.76"
+
         outbounds, ppx_rules, proxy_map = self._parse_ppx()
 
-        
-
         if not outbounds:
-
             outbounds = [
-
                 {"type": "direct", "tag": "direct"},
-
                 {"type": "block", "tag": "block"},
-
                 {"type": "socks", "tag": "byedpi", "server": "127.0.0.1", "server_port": 1780},
-
                 {"type": "socks", "tag": "tor", "server": "127.0.0.1", "server_port": 9853},
-
                 {"type": "socks", "tag": "opera", "server": "127.0.0.1", "server_port": 1785},
-
                 {"type": "socks", "tag": "ssh", "server": "127.0.0.1", "server_port": int(cfg.get("ssh_socks_port", 1770))}
-
             ]
+
+        if getattr(self, 'easy_mode', False):
+            if getattr(self, 'easy_use_evpn_upstream', False):
+                if not any(o.get('tag') == 'easy-vpn' for o in outbounds):
+                    outbounds.append({
+                        "type": "socks",
+                        "tag": "easy-vpn",
+                        "server": "127.0.0.1",
+                        "server_port": int(getattr(self, 'easy_evpn_port', 1788))
+                    })
+                foreign_target = "easy-vpn"
+            else:
+                foreign_target = getattr(self, 'easy_foreign_tag', 'opera') or 'opera'
+
+            for r in ppx_rules:
+                if r.get("outbound") in ("opera", "tor", "ssh"):
+                    r["outbound"] = foreign_target
 
 
 
@@ -633,13 +647,9 @@ class ModeManager:
 
 
         backup_dns = {
-
             "tag": "dns-backup",
-
             "type": "udp",
-
-            "server": "1.1.1.1"
-
+            "server": "185.112.83.4" if getattr(self, 'easy_mode', False) else "1.1.1.1"
         }
 
         if dns_detour and dns_detour != "direct":
@@ -801,13 +811,15 @@ class ModeManager:
             ]
 
         if yt_cidrs:
-
+            yt_outbound = "tor"
+            if getattr(self, 'easy_mode', False):
+                if getattr(self, 'easy_use_evpn_upstream', False):
+                    yt_outbound = "easy-vpn"
+                else:
+                    yt_outbound = getattr(self, 'easy_foreign_tag', 'opera') or 'opera'
             rules.append({
-
-                "outbound": "tor",
-
+                "outbound": yt_outbound,
                 "ip_cidr": yt_cidrs
-
             })
 
 

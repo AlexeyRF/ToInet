@@ -268,6 +268,16 @@ class MainWindow(QMainWindow):
         self.stacked = QStackedWidget()
         self.setCentralWidget(self.stacked)
 
+        if getattr(self.main_module, 'easy_mode', False):
+            self.setWindowTitle("ToInet-MAX (Easy)")
+            self.resize(460, 520)
+            self.setMinimumSize(420, 480)
+            self.easy_view = QWidget()
+            self.stacked.addWidget(self.easy_view)
+            self.build_easy_view()
+            self.stacked.setCurrentWidget(self.easy_view)
+            return
+
         self.connect_view = QWidget()
         self.provider_view = QWidget()
         self.settings_view = QWidget()
@@ -1755,6 +1765,8 @@ class MainWindow(QMainWindow):
 
     def update_ui_state(self):
         m = self.main_module
+        if getattr(m, 'easy_mode', False):
+            return
         proxy_active = getattr(m, 'proxy_enabled', False)
         
         status_text = T("Подключено", "Connected", "Connecté") if proxy_active else T("Отключено", "Disconnected", "Déconnecté")
@@ -1925,7 +1937,137 @@ class MainWindow(QMainWindow):
     def show_error(self, text):
         self.error_label.setText(text)
 
+    def build_easy_view(self):
+        m = self.main_module
+        ctrl = getattr(m, 'easy_ctrl', None)
+
+        layout = QVBoxLayout(self.easy_view)
+        layout.setContentsMargins(28, 24, 28, 24)
+        layout.setSpacing(12)
+
+        title = QLabel("ToInet-MAX")
+        title.setFont(QFont("Segoe UI Variable Text", 22, QFont.Bold))
+        title.setAlignment(Qt.AlignCenter)
+        title.setStyleSheet("color: #FFFFFF; background: transparent;")
+        layout.addWidget(title)
+
+        sub = QLabel("Простой режим • sing-box + inetcpl • Comms DNS")
+        sub.setFont(QFont("Segoe UI Variable Text", 9))
+        sub.setAlignment(Qt.AlignCenter)
+        sub.setStyleSheet("color: #8e8e8e; background: transparent;")
+        layout.addWidget(sub)
+
+        self.easy_status_chip = QLabel("Отключено")
+        self.easy_status_chip.setFont(QFont("Segoe UI Variable Text", 9, QFont.Bold))
+        self.easy_status_chip.setAlignment(Qt.AlignCenter)
+        self.easy_status_chip.setWordWrap(True)
+        self.easy_status_chip.setStyleSheet("""
+            QLabel {
+                background-color: #2b2b2b;
+                color: #9d9d9d;
+                border: 1px solid #383838;
+                border-radius: 12px;
+                padding: 6px 14px;
+            }
+        """)
+        layout.addWidget(self.easy_status_chip)
+
+        layout.addStretch(1)
+
+        btn_row = QHBoxLayout()
+        btn_row.setAlignment(Qt.AlignCenter)
+        self.easy_power_btn = PowerButton()
+        if ctrl:
+            self.easy_power_btn.clicked.connect(ctrl.toggle_easy)
+        btn_row.addWidget(self.easy_power_btn)
+        layout.addLayout(btn_row)
+
+        layout.addStretch(1)
+
+        self.easy_zdpi_label = QLabel("zDPI: ожидание запуска")
+        self.easy_zdpi_label.setFont(QFont("Segoe UI Variable Text", 9))
+        self.easy_zdpi_label.setAlignment(Qt.AlignCenter)
+        self.easy_zdpi_label.setStyleSheet("color: #9d9d9d; background: transparent;")
+        layout.addWidget(self.easy_zdpi_label)
+
+        btn_style = """
+            QPushButton {
+                background-color: #2b2b2b;
+                color: #FFFFFF;
+                border: 1px solid #3c3c3c;
+                border-radius: 8px;
+                padding: 10px 14px;
+                font-size: 13px;
+                font-weight: bold;
+            }
+            QPushButton:hover {
+                background-color: #363636;
+                border-color: #505050;
+            }
+            QPushButton:pressed {
+                background-color: #222222;
+            }
+        """
+
+        tg_btn = QPushButton("Добавить Tor в Telegram")
+        tg_btn.setCursor(Qt.PointingHandCursor)
+        tg_btn.setStyleSheet(btn_style)
+        def on_add_tor_tg():
+            from managers import system_utils
+            system_utils.add_proxy_to_telegram(9853)
+        tg_btn.clicked.connect(on_add_tor_tg)
+        layout.addWidget(tg_btn)
+
+        shortcut_btn = QPushButton("Создать ярлык на рабочем столе")
+        shortcut_btn.setCursor(Qt.PointingHandCursor)
+        shortcut_btn.setStyleSheet(btn_style)
+        def on_create_shortcut():
+            from managers import easy_mode
+            ok = easy_mode.create_easy_desktop_shortcut()
+            if ok:
+                shortcut_btn.setText("Ярлык создан на рабочем столе!")
+            else:
+                shortcut_btn.setText("Не удалось создать ярлык")
+        shortcut_btn.clicked.connect(on_create_shortcut)
+        layout.addWidget(shortcut_btn)
+
+        if ctrl:
+            def on_status(txt):
+                self.easy_status_chip.setText(txt)
+            def on_state(is_on):
+                self.easy_power_btn.set_state("on" if is_on else "off")
+                if is_on:
+                    self.easy_status_chip.setStyleSheet("""
+                        QLabel {
+                            background-color: #163322;
+                            color: #6CCB5F;
+                            border: 1px solid #2b6640;
+                            border-radius: 12px;
+                            padding: 6px 14px;
+                        }
+                    """)
+                else:
+                    self.easy_status_chip.setStyleSheet("""
+                        QLabel {
+                            background-color: #2b2b2b;
+                            color: #9d9d9d;
+                            border: 1px solid #383838;
+                            border-radius: 12px;
+                            padding: 6px 14px;
+                        }
+                    """)
+            def on_zdpi(txt):
+                self.easy_zdpi_label.setText(txt)
+
+            ctrl.status_updated.connect(on_status)
+            ctrl.state_changed.connect(on_state)
+            ctrl.zdpi_status_updated.connect(on_zdpi)
+
     def closeEvent(self, event):
+        if getattr(self.main_module, 'easy_mode', False):
+            self.main_module.exit_app()
+            event.accept()
+            return
         # Minimize to tray instead of quitting
         self.hide()
         event.ignore()

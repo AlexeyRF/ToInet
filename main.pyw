@@ -33,7 +33,10 @@ ICON_TITLE = "ToInet-MAX"
 CACHER_SCRIPT = os.path.join(CURRENT_DIR, "managers", "system_utils.py")
 
 # Инициализируем конфигурацию
+easy_mode = any(a.lower() in ("-easy", "--easy") for a in sys.argv[1:])
 config = config_manager.load_config()
+if easy_mode:
+    lang.set_language("ru")
 proxy_enabled = False
 simple_mode = True  
 mode_type = config.get("mode_type", "inetcpl")
@@ -45,10 +48,17 @@ opera_mgr = opera_manager.get_manager()
 ext_programs_manager = ext_manager.get_manager()
 tgws_mgr = tgws_manager.get_manager()
 mode_mgr = mode_manager.get_manager()
+if easy_mode:
+    mode_mgr.easy_mode = True
 evpn_mgr = evpn_manager.get_manager()
 vless_mgr = vless_manager.get_manager(config)
 ssh_mgr = ssh_manager.get_manager(config)
 pip_manager = bdsher.get_pip_manager(config)
+
+easy_ctrl = None
+if easy_mode:
+    from managers import easy_mode as easy_mode_mod
+    easy_ctrl = easy_mode_mod.EasyModeController(sys.modules[__name__])
 
 # Применяем конфигурацию к менеджерам
 byedpi_manager.update_config(config)
@@ -115,7 +125,7 @@ def create_tray_menu():
     global app, tray, tray_menu, config, app_log_window, main_window
     
     app = QApplication(sys.argv)
-    app.setQuitOnLastWindowClosed(False)
+    app.setQuitOnLastWindowClosed(bool(easy_mode))
     app_log_window = setup_logging()
 
     def handle_unhandled_exception(exc_type, exc_value, exc_traceback):
@@ -129,6 +139,15 @@ def create_tray_menu():
 
     sys.excepthook = handle_unhandled_exception
     
+    if easy_mode:
+        import ui.window_ui as window_ui
+        if main_window is None:
+            main_window = window_ui.MainWindow(sys.modules[__name__])
+        main_window.update_ui_state()
+        main_window.show()
+        main_window.activateWindow()
+        return app
+
     tray = QSystemTrayIcon()
     try:
         tray.setIcon(QIcon("icon.ico"))
